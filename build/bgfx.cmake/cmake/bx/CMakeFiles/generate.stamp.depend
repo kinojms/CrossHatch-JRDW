@@ -1,0 +1,5 @@
+# CMake generation dependency list for this directory.
+C:/CrossHatch-JRDW/bgfx.cmake/cmake/bx/CMakeLists.txt
+C:/CrossHatch-JRDW/bgfx.cmake/cmake/bx/bin2c.cmake
+C:/CrossHatch-JRDW/bgfx.cmake/cmake/bx/bx.cmake
+C:/cmake-3.22.6-windows-x86_64/share/cmake-3.22/Modules/GNUInstallDirs.cmake

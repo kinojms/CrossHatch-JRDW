@@ -1,0 +1,22 @@
+# CMake generation dependency list for this directory.
+C:/CrossHatch-JRDW/bgfx.cmake/cmake/bgfx/3rdparty/dear-imgui.cmake
+C:/CrossHatch-JRDW/bgfx.cmake/cmake/bgfx/3rdparty/fcpp.cmake
+C:/CrossHatch-JRDW/bgfx.cmake/cmake/bgfx/3rdparty/glsl-optimizer.cmake
+C:/CrossHatch-JRDW/bgfx.cmake/cmake/bgfx/3rdparty/glslang.cmake
+C:/CrossHatch-JRDW/bgfx.cmake/cmake/bgfx/3rdparty/meshoptimizer.cmake
+C:/CrossHatch-JRDW/bgfx.cmake/cmake/bgfx/3rdparty/spirv-cross.cmake
+C:/CrossHatch-JRDW/bgfx.cmake/cmake/bgfx/3rdparty/spirv-opt.cmake
+C:/CrossHatch-JRDW/bgfx.cmake/cmake/bgfx/3rdparty/webgpu.cmake
+C:/CrossHatch-JRDW/bgfx.cmake/cmake/bgfx/CMakeLists.txt
+C:/CrossHatch-JRDW/bgfx.cmake/cmake/bgfx/bgfx.cmake
+C:/CrossHatch-JRDW/bgfx.cmake/cmake/bgfx/examples.cmake
+C:/CrossHatch-JRDW/bgfx.cmake/cmake/bgfx/generated/shader.cpp.in
+C:/CrossHatch-JRDW/bgfx.cmake/cmake/bgfx/generated/vertexlayout.cpp.in
+C:/CrossHatch-JRDW/bgfx.cmake/cmake/bgfx/geometryc.cmake
+C:/CrossHatch-JRDW/bgfx.cmake/cmake/bgfx/geometryv.cmake
+C:/CrossHatch-JRDW/bgfx.cmake/cmake/bgfx/shaderc.cmake
+C:/CrossHatch-JRDW/bgfx.cmake/cmake/bgfx/shared.cmake
+C:/CrossHatch-JRDW/bgfx.cmake/cmake/bgfx/texturev.cmake
+C:/CrossHatch-JRDW/bgfx.cmake/cmake/bgfx/util/ConfigureDebugging.cmake
+C:/CrossHatch-JRDW/bgfx.cmake/cmake/bgfxToolUtils.cmake
+C:/cmake-3.22.6-windows-x86_64/share/cmake-3.22/Modules/CMakeParseArguments.cmake

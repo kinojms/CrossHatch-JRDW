@@ -102,7 +102,7 @@ static float lineThickness = 0.3f;              // Outer Hatch Weight or Line Th
 
 // You can leave the remaining components as 0 (or later repurpose them)
 static float transparencyValue = 1.0f;          // Hatch Opacity or Transparency
-static int crosshatchMode = 3;                  // 0 = hatch ver 1.0, 1 = hatch ver 1.1, 2 = hatch ver 1.2, 3 = hatch ver 1.3, 4 = basic shader
+static int crosshatchMode = 4;                  // 0 = hatch ver 1.0, 1 = hatch ver 1.1, 2 = hatch ver 1.2, 3 = hatch ver 1.3, 4 = basic shader
 
 // These static variables will hold the values for u_paramsLayer
 static float layerPatternScale = 0.5f;          // Inner Hatch Scale or Layer Pattern Scale
@@ -3262,6 +3262,12 @@ int main(void)
         tex.handle = loadTextureDDS("textures\\Wooden Boards 2.dds");
         std::cout << "Loaded texture '" << tex.name << "' with handle: " << tex.handle.idx << std::endl;
         availableTextures.push_back(tex);
+
+        // Table 1
+        tex.name = "Table 1";
+        tex.handle = loadTextureFile("textures\\table1.png");
+        std::cout << "Loaded texture '" << tex.name << "' with handle: " << tex.handle.idx << std::endl;
+        availableTextures.push_back(tex);
     }
 
 
@@ -3304,67 +3310,67 @@ int main(void)
     instances.back()->position[2] = 0.0f;
 
     // --- Spawn Cornell Box with Hierarchy ---
-    Instance* cornellBox = new Instance(instanceCounter++, "cornell_box", "empty", 8.0f, 0.0f, -5.0f, BGFX_INVALID_HANDLE, BGFX_INVALID_HANDLE);
-    // Create a walls node (dummy instance without geometry)
-    Instance* wallsNode = new Instance(instanceCounter++, "walls", "empty", 0.0f, -1.0f, 0.0f, BGFX_INVALID_HANDLE, BGFX_INVALID_HANDLE);
-    wallsNode->scale[0] = 0.2f;
-    wallsNode->scale[1] = 0.2f;
-    wallsNode->scale[2] = 0.2f;
+    //Instance* cornellBox = new Instance(instanceCounter++, "cornell_box", "empty", 8.0f, 0.0f, -5.0f, BGFX_INVALID_HANDLE, BGFX_INVALID_HANDLE);
+    //// Create a walls node (dummy instance without geometry)
+    //Instance* wallsNode = new Instance(instanceCounter++, "walls", "empty", 0.0f, -1.0f, 0.0f, BGFX_INVALID_HANDLE, BGFX_INVALID_HANDLE);
+    //wallsNode->scale[0] = 0.2f;
+    //wallsNode->scale[1] = 0.2f;
+    //wallsNode->scale[2] = 0.2f;
 
-    Instance* floorPlane = new Instance(instanceCounter++, "floor", "plane", 0.0f, -6.0f, 0.0f, vbh_plane, ibh_plane);
-    wallsNode->addChild(floorPlane);
-    Instance* ceilingPlane = new Instance(instanceCounter++, "ceiling", "plane", 0.0f, 14.0f, 0.0f, vbh_plane, ibh_plane);
-    wallsNode->addChild(ceilingPlane);
-    Instance* backPlane = new Instance(instanceCounter++, "back", "plane", 0.0f, 4.0f, -10.0f, vbh_plane, ibh_plane);
-    backPlane->rotation[0] = 1.57f;
-    wallsNode->addChild(backPlane);
-    Instance* leftPlane = new Instance(instanceCounter++, "left_wall", "plane", 10.0f, 4.0f, 0.0f, vbh_plane, ibh_plane);
-    leftPlane->objectColor[0] = 1.0f; leftPlane->objectColor[1] = 0.0f; leftPlane->objectColor[2] = 0.0f; leftPlane->objectColor[3] = 1.0f;
-    leftPlane->rotation[2] = 1.57f;
-    wallsNode->addChild(leftPlane);
-    Instance* rightPlane = new Instance(instanceCounter++, "right_wall", "plane", -10.0f, 4.0f, 0.0f, vbh_plane, ibh_plane);
-    rightPlane->objectColor[0] = 0.0f; rightPlane->objectColor[1] = 1.0f; rightPlane->objectColor[2] = 0.0f; rightPlane->objectColor[3] = 1.0f;
-    rightPlane->rotation[2] = 1.57f;
-    wallsNode->addChild(rightPlane);
+    //Instance* floorPlane = new Instance(instanceCounter++, "floor", "plane", 0.0f, -6.0f, 0.0f, vbh_plane, ibh_plane);
+    //wallsNode->addChild(floorPlane);
+    //Instance* ceilingPlane = new Instance(instanceCounter++, "ceiling", "plane", 0.0f, 14.0f, 0.0f, vbh_plane, ibh_plane);
+    //wallsNode->addChild(ceilingPlane);
+    //Instance* backPlane = new Instance(instanceCounter++, "back", "plane", 0.0f, 4.0f, -10.0f, vbh_plane, ibh_plane);
+    //backPlane->rotation[0] = 1.57f;
+    //wallsNode->addChild(backPlane);
+    //Instance* leftPlane = new Instance(instanceCounter++, "left_wall", "plane", 10.0f, 4.0f, 0.0f, vbh_plane, ibh_plane);
+    //leftPlane->objectColor[0] = 1.0f; leftPlane->objectColor[1] = 0.0f; leftPlane->objectColor[2] = 0.0f; leftPlane->objectColor[3] = 1.0f;
+    //leftPlane->rotation[2] = 1.57f;
+    //wallsNode->addChild(leftPlane);
+    //Instance* rightPlane = new Instance(instanceCounter++, "right_wall", "plane", -10.0f, 4.0f, 0.0f, vbh_plane, ibh_plane);
+    //rightPlane->objectColor[0] = 0.0f; rightPlane->objectColor[1] = 1.0f; rightPlane->objectColor[2] = 0.0f; rightPlane->objectColor[3] = 1.0f;
+    //rightPlane->rotation[2] = 1.57f;
+    //wallsNode->addChild(rightPlane);
 
-    Instance* innerCube = new Instance(instanceCounter++, "inner_cube", "cube", 0.8f, -1.5f, 0.4f, vbh_cube, ibh_cube);
-    innerCube->rotation[1] = 0.2f;
-    innerCube->scale[0] = 0.6f;
-    innerCube->scale[1] = 0.6f;
-    innerCube->scale[2] = 0.6f;
-    Instance* innerRectBox = new Instance(instanceCounter++, "inner_rectbox", "cube", -1.0f, -0.7f, 0.4f, vbh_cube, ibh_cube);
-    innerRectBox->rotation[1] = -0.3f;
-    innerRectBox->scale[0] = 0.6f;
-    innerRectBox->scale[1] = 1.5f;
-    innerRectBox->scale[2] = 0.6f;
-    cornellBox->addChild(wallsNode);
-    cornellBox->addChild(innerCube);
-    cornellBox->addChild(innerRectBox);
-    instances.push_back(cornellBox);
+    //Instance* innerCube = new Instance(instanceCounter++, "inner_cube", "cube", 0.8f, -1.5f, 0.4f, vbh_cube, ibh_cube);
+    //innerCube->rotation[1] = 0.2f;
+    //innerCube->scale[0] = 0.6f;
+    //innerCube->scale[1] = 0.6f;
+    //innerCube->scale[2] = 0.6f;
+    //Instance* innerRectBox = new Instance(instanceCounter++, "inner_rectbox", "cube", -1.0f, -0.7f, 0.4f, vbh_cube, ibh_cube);
+    //innerRectBox->rotation[1] = -0.3f;
+    //innerRectBox->scale[0] = 0.6f;
+    //innerRectBox->scale[1] = 1.5f;
+    //innerRectBox->scale[2] = 0.6f;
+    //cornellBox->addChild(wallsNode);
+    //cornellBox->addChild(innerCube);
+    //cornellBox->addChild(innerRectBox);
+    //instances.push_back(cornellBox);
 
-    spawnInstance(camera, "teapot", "teapot", vbh_teapot, ibh_teapot, instances);
-    instances.back()->position[0] = 3.0f;
-    instances.back()->position[1] = -1.0f;
-    instances.back()->position[2] = -5.0f;
-    instances.back()->scale[0] *= 0.03f;
-    instances.back()->scale[1] *= 0.03f;
-    instances.back()->scale[2] *= 0.03f;
+    //spawnInstance(camera, "teapot", "teapot", vbh_teapot, ibh_teapot, instances);
+    //instances.back()->position[0] = 3.0f;
+    //instances.back()->position[1] = -1.0f;
+    //instances.back()->position[2] = -5.0f;
+    //instances.back()->scale[0] *= 0.03f;
+    //instances.back()->scale[1] *= 0.03f;
+    //instances.back()->scale[2] *= 0.03f;
 
-    spawnInstance(camera, "bunny", "bunny", vbh_bunny, ibh_bunny, instances);
-    instances.back()->position[0] = -1.0f;
-    instances.back()->position[1] = -1.0f;
-    instances.back()->position[2] = -5.0f;
-    instances.back()->scale[0] *= 10.0f;
-    instances.back()->scale[1] *= 10.0f;
-    instances.back()->scale[2] *= 10.0f;
+    //spawnInstance(camera, "bunny", "bunny", vbh_bunny, ibh_bunny, instances);
+    //instances.back()->position[0] = -1.0f;
+    //instances.back()->position[1] = -1.0f;
+    //instances.back()->position[2] = -5.0f;
+    //instances.back()->scale[0] *= 10.0f;
+    //instances.back()->scale[1] *= 10.0f;
+    //instances.back()->scale[2] *= 10.0f;
 
-    spawnInstance(camera, "lucy", "lucy", vbh_lucy, ibh_lucy, instances);
-    instances.back()->position[0] = -4.0f;
-    instances.back()->position[1] = -1.0f;
-    instances.back()->position[2] = -5.0f;
-    instances.back()->scale[0] *= 0.01f;
-    instances.back()->scale[1] *= 0.01f;
-    instances.back()->scale[2] *= 0.01f;
+    //spawnInstance(camera, "lucy", "lucy", vbh_lucy, ibh_lucy, instances);
+    //instances.back()->position[0] = -4.0f;
+    //instances.back()->position[1] = -1.0f;
+    //instances.back()->position[2] = -5.0f;
+    //instances.back()->scale[0] *= 0.01f;
+    //instances.back()->scale[1] *= 0.01f;
+    //instances.back()->scale[2] *= 0.01f;
 
     spawnLight(camera, vbh_sphere, ibh_sphere, vbh_cone, ibh_cone, instances);
 
@@ -4564,313 +4570,314 @@ int main(void)
             ImGui::End();
 
 
-            ImGui::Begin("Crosshatch Shader Settings");
-            ImGui::Checkbox("Use Global Crosshatch Shader Settings", &useGlobalCrosshatchSettings);
-            if (useGlobalCrosshatchSettings) {
-                const char* modeItems[] = { "Crosshatch Ver 1.0", "Crosshatch Ver 1.1", "Crosshatch Ver 1.2", "Crosshatch Ver 1.3", "Simple Lighting" };
-                ImGui::Combo("Shader Mode", &crosshatchMode, modeItems, IM_ARRAYSIZE(modeItems));
-                ImGui::Spacing(); ImGui::Spacing();
-                // --- Show controls depending on the mode ---
-                if (crosshatchMode == 0)
-                {
-                    ImGui::Text("Crosshatch Ver 1.0 Settings:");
-                    ImGui::ColorEdit4("Hatch Color", inkColor);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Line Smoothness", &epsilonValue, 0.001f, 0.0f, 0.1f);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Hatch Density", &strokeMultiplier, 0.01f, 0.0f, 10.0f);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Primary Hatch Angle", &lineAngle1, 0.01f, 0.0f, TAU);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Secondary Hatch Angle", &lineAngle2, 0.01f, 0.0f, TAU);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Hatch Scale", &patternScale, 0.01f, 0.1f, 10.0f);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Line Thickness", &lineThickness, 0.01f, -10.0f, 10.0f);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Hatch Opacity", &transparencyValue, 0.01f, 0.0f, 1.0f);
-                }
-                else if (crosshatchMode == 1)
-                {
-                    ImGui::Text("Crosshatch Ver 1.1 Settings:");
-                    ImGui::ColorEdit4("Hatch Color", inkColor);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Line Smoothness", &epsilonValue, 0.001f, 0.0f, 0.1f);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Hatch Density", &strokeMultiplier, 0.01f, 0.0f, 15.0f);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Hatch Angle", &lineAngle1, 0.01f, 0.0f, TAU);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Hatch Scale", &patternScale, 0.01f, 0.0f, 15.0f);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Line Thickness", &lineThickness, 0.01f, -15.0f, 15.0f);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Hatch Opacity", &transparencyValue, 0.01f, 0.0f, 1.0f);
-                }
-                else if (crosshatchMode == 2)
-                {
-                    ImGui::Text("Crosshatch Ver 1.2 Settings:");
-                    ImGui::ColorEdit4("Hatch Color", inkColor);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Outer Line Smoothness", &epsilonValue, 0.001f, 0.0f, 0.1f);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Outer Hatch Density", &strokeMultiplier, 0.01f, 0.0f, 15.0f);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Outer Hatch Angle", &lineAngle1, 0.01f, 0.0f, TAU);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Outer Hatch Scale", &patternScale, 0.01f, 0.0f, 15.0f);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Outer Hatch Thickness", &lineThickness, 0.01f, -15.0f, 15.0f);
-                    ImGui::SetNextItemWidth(100);
-                    // Inner layer settings:
-                    ImGui::DragFloat("Inner Hatch Scale", &layerPatternScale, 0.01f, 0.0f, 15.0f);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Inner Hatch Density", &layerStrokeMult, 0.01f, 0.0f, 15.0f);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Inner Hatch Angle", &layerAngle, 0.01f, 0.0f, TAU);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Inner Hatch Thickness", &layerLineThickness, 0.01f, -15.0f, 15.0f);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Hatch Opacity", &transparencyValue, 0.01f, 0.0f, 1.0f);
-                }
-                else if (crosshatchMode == 3)
-                {
-                    ImGui::Text("Crosshatch Ver 1.3 Settings:");
-                    ImGui::ColorEdit4("Hatch Color", inkColor);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Outer Line Smoothness", &epsilonValue, 0.001f, 0.0f, 0.1f);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Outer Hatch Density", &strokeMultiplier, 0.01f, 0.0f, 15.0f);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Outer Hatch Angle", &lineAngle1, 0.01f, 0.0f, TAU);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Outer Hatch Scale", &patternScale, 0.01f, 0.0f, 15.0f);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Outer Hatch Thickness", &lineThickness, 0.01f, -15.0f, 15.0f);
-                    ImGui::SetNextItemWidth(100);
-                    // Inner layer settings:
-                    ImGui::DragFloat("Inner Hatch Scale", &layerPatternScale, 0.01f, 0.0f, 15.0f);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Inner Hatch Density", &layerStrokeMult, 0.01f, 0.0f, 15.0f);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Inner Hatch Angle", &layerAngle, 0.01f, 0.0f, TAU);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Inner Hatch Thickness", &layerLineThickness, 0.01f, -15.0f, 15.0f);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Hatch Opacity", &transparencyValue, 0.01f, 0.0f, 1.0f);
-                }
-                else if (crosshatchMode == 4)
-                {
-                    ImGui::Text("Simple Lighting (No Crosshatch)");
-                }
+            //ImGui::Begin("Crosshatch Shader Settings");
+            //ImGui::Checkbox("Use Global Crosshatch Shader Settings", &useGlobalCrosshatchSettings);
+            //if (useGlobalCrosshatchSettings) {
+            //    const char* modeItems[] = { "Simple Lighting" };
+            //    ImGui::Combo("Shader Mode", &crosshatchMode, modeItems, IM_ARRAYSIZE(modeItems));
+            //    ImGui::Spacing(); ImGui::Spacing();
+            //    // --- Show controls depending on the mode ---
+            //    if (crosshatchMode == 0)
+            //    {
+            //        ImGui::Text("Crosshatch Ver 1.0 Settings:");
+            //        ImGui::ColorEdit4("Hatch Color", inkColor);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Line Smoothness", &epsilonValue, 0.001f, 0.0f, 0.1f);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Hatch Density", &strokeMultiplier, 0.01f, 0.0f, 10.0f);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Primary Hatch Angle", &lineAngle1, 0.01f, 0.0f, TAU);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Secondary Hatch Angle", &lineAngle2, 0.01f, 0.0f, TAU);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Hatch Scale", &patternScale, 0.01f, 0.1f, 10.0f);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Line Thickness", &lineThickness, 0.01f, -10.0f, 10.0f);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Hatch Opacity", &transparencyValue, 0.01f, 0.0f, 1.0f);
+            //    }
+            //    else if (crosshatchMode == 1)
+            //    {
+            //        ImGui::Text("Crosshatch Ver 1.1 Settings:");
+            //        ImGui::ColorEdit4("Hatch Color", inkColor);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Line Smoothness", &epsilonValue, 0.001f, 0.0f, 0.1f);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Hatch Density", &strokeMultiplier, 0.01f, 0.0f, 15.0f);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Hatch Angle", &lineAngle1, 0.01f, 0.0f, TAU);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Hatch Scale", &patternScale, 0.01f, 0.0f, 15.0f);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Line Thickness", &lineThickness, 0.01f, -15.0f, 15.0f);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Hatch Opacity", &transparencyValue, 0.01f, 0.0f, 1.0f);
+            //    }
+            //    else if (crosshatchMode == 2)
+            //    {
+            //        ImGui::Text("Crosshatch Ver 1.2 Settings:");
+            //        ImGui::ColorEdit4("Hatch Color", inkColor);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Outer Line Smoothness", &epsilonValue, 0.001f, 0.0f, 0.1f);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Outer Hatch Density", &strokeMultiplier, 0.01f, 0.0f, 15.0f);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Outer Hatch Angle", &lineAngle1, 0.01f, 0.0f, TAU);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Outer Hatch Scale", &patternScale, 0.01f, 0.0f, 15.0f);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Outer Hatch Thickness", &lineThickness, 0.01f, -15.0f, 15.0f);
+            //        ImGui::SetNextItemWidth(100);
+            //        // Inner layer settings:
+            //        ImGui::DragFloat("Inner Hatch Scale", &layerPatternScale, 0.01f, 0.0f, 15.0f);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Inner Hatch Density", &layerStrokeMult, 0.01f, 0.0f, 15.0f);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Inner Hatch Angle", &layerAngle, 0.01f, 0.0f, TAU);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Inner Hatch Thickness", &layerLineThickness, 0.01f, -15.0f, 15.0f);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Hatch Opacity", &transparencyValue, 0.01f, 0.0f, 1.0f);
+            //    }
+            //    else if (crosshatchMode == 3)
+            //    {
+            //        ImGui::Text("Crosshatch Ver 1.3 Settings:");
+            //        ImGui::ColorEdit4("Hatch Color", inkColor);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Outer Line Smoothness", &epsilonValue, 0.001f, 0.0f, 0.1f);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Outer Hatch Density", &strokeMultiplier, 0.01f, 0.0f, 15.0f);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Outer Hatch Angle", &lineAngle1, 0.01f, 0.0f, TAU);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Outer Hatch Scale", &patternScale, 0.01f, 0.0f, 15.0f);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Outer Hatch Thickness", &lineThickness, 0.01f, -15.0f, 15.0f);
+            //        ImGui::SetNextItemWidth(100);
+            //        // Inner layer settings:
+            //        ImGui::DragFloat("Inner Hatch Scale", &layerPatternScale, 0.01f, 0.0f, 15.0f);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Inner Hatch Density", &layerStrokeMult, 0.01f, 0.0f, 15.0f);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Inner Hatch Angle", &layerAngle, 0.01f, 0.0f, TAU);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Inner Hatch Thickness", &layerLineThickness, 0.01f, -15.0f, 15.0f);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Hatch Opacity", &transparencyValue, 0.01f, 0.0f, 1.0f);
+            //    }
+            //    else if (crosshatchMode == 4)
+            //    {
+            //        ImGui::Text("Simple Lighting (No Crosshatch)");
+            //    }
 
-                if (crosshatchMode != 4) {
-                    ImGui::Spacing(); ImGui::Spacing();
-                    if (ImGui::Button("Reset Crosshatch Settings")) {
-                        ResetCrosshatchSettings();
-                    }
-                    ImGui::Spacing(); ImGui::Spacing();
-                }
+            //    if (crosshatchMode != 4) {
+            //        ImGui::Spacing(); ImGui::Spacing();
+            //        if (ImGui::Button("Reset Crosshatch Settings")) {
+            //            ResetCrosshatchSettings();
+            //        }
+            //        ImGui::Spacing(); ImGui::Spacing();
+            //    }
 
-                // New: noise texture selection
-                if (!availableNoiseTextures.empty() && crosshatchMode != 4)
-                {
-                    // Automatically update currentNoiseIndex based on the instance's noise texture.
-                    bool found = false;
-                    for (int i = 0; i < (int)availableNoiseTextures.size(); i++)
-                    {
-                        if (availableNoiseTextures[i].handle.idx == noiseTexture.idx)
-                        {
-                            globalCurrentNoiseIndex = i;
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (!found)
-                    {
-                        // If the instance doesn't have a valid noise texture, default to index 0.
-                        globalCurrentNoiseIndex = 0;
-                        noiseTexture = availableNoiseTextures[0].handle;
-                    }
+            //    // New: noise texture selection
+            //    if (!availableNoiseTextures.empty() && crosshatchMode != 4)
+            //    {
+            //        // Automatically update currentNoiseIndex based on the instance's noise texture.
+            //        bool found = false;
+            //        for (int i = 0; i < (int)availableNoiseTextures.size(); i++)
+            //        {
+            //            if (availableNoiseTextures[i].handle.idx == noiseTexture.idx)
+            //            {
+            //                globalCurrentNoiseIndex = i;
+            //                found = true;
+            //                break;
+            //            }
+            //        }
+            //        if (!found)
+            //        {
+            //            // If the instance doesn't have a valid noise texture, default to index 0.
+            //            globalCurrentNoiseIndex = 0;
+            //            noiseTexture = availableNoiseTextures[0].handle;
+            //        }
 
-                    // Build an array of c-strings from the names in availableNoiseTextures
-                    std::vector<const char*> noiseNames;
-                    noiseNames.reserve(availableNoiseTextures.size());
-                    for (auto& n : availableNoiseTextures)
-                    {
-                        noiseNames.push_back(n.name.c_str());
-                    }
+            //        // Build an array of c-strings from the names in availableNoiseTextures
+            //        std::vector<const char*> noiseNames;
+            //        noiseNames.reserve(availableNoiseTextures.size());
+            //        for (auto& n : availableNoiseTextures)
+            //        {
+            //            noiseNames.push_back(n.name.c_str());
+            //        }
 
-                    ImGui::Spacing(); ImGui::Spacing();
-                    ImGui::Separator();
-                    ImGui::Spacing(); ImGui::Spacing();
-                    // Let user pick which noise texture to use
-                    if (ImGui::Combo("Noise Pattern", &globalCurrentNoiseIndex, noiseNames.data(), (int)noiseNames.size()))
-                    {
-                        noiseTexture = availableNoiseTextures[globalCurrentNoiseIndex].handle;
-                    }
+            //        ImGui::Spacing(); ImGui::Spacing();
+            //        ImGui::Separator();
+            //        ImGui::Spacing(); ImGui::Spacing();
+            //        // Let user pick which noise texture to use
+            //        if (ImGui::Combo("Noise Pattern", &globalCurrentNoiseIndex, noiseNames.data(), (int)noiseNames.size()))
+            //        {
+            //            noiseTexture = availableNoiseTextures[globalCurrentNoiseIndex].handle;
+            //        }
 
-                    ImGui::Text("Noise Texture Preview:");
-                    if (bgfx::isValid(noiseTexture))
-                    {
-                        ImTextureID noiseID = (ImTextureID)(uintptr_t)(noiseTexture.idx);
-                        ImGui::Image(noiseID, ImVec2(256, 256));
-                    }
-                    else
-                    {
-                        ImGui::Text("No valid noise texture selected.");
-                    }
-                }
-            }
-            else if (selectedInstance && selectedInstance->isLight == false) {
-                const char* modeItems[] = { "Crosshatch Ver 1.0", "Crosshatch Ver 1.1", "Crosshatch Ver 1.2", "Crosshatch Ver 1.3", "Simple Lighting" };
-                ImGui::Combo("Shader Mode", &selectedInstance->crosshatchMode, modeItems, IM_ARRAYSIZE(modeItems));
-                ImGui::Spacing(); ImGui::Spacing();
-                // --- Show controls depending on the mode ---
-                if (selectedInstance->crosshatchMode == 0)
-                {
-                    ImGui::Text("Crosshatch Ver 1.0 Settings:");
-                    ImGui::ColorEdit4("Hatch Color", selectedInstance->inkColor);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Line Smoothness", &selectedInstance->epsilonValue, 0.001f, 0.0f, 0.1f);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Hatch Density", &selectedInstance->strokeMultiplier, 0.1f, 0.0f, 10.0f);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Primary Hatch Angle", &selectedInstance->lineAngle1, 0.1f, 0.0f, TAU);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Secondary Hatch Angle", &selectedInstance->lineAngle2, 0.1f, 0.0f, TAU);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Hatch Scale", &selectedInstance->patternScale, 0.1f, 0.1f, 10.0f);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Line Weight", &selectedInstance->lineThickness, 0.1f, -10.0f, 10.0f);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Hatch Opacity", &selectedInstance->transparencyValue, 0.01f, 0.0f, 1.0f);
-                }
-                else if (selectedInstance->crosshatchMode == 1)
-                {
-                    ImGui::Text("Crosshatch Ver 1.1 Settings:");
-                    ImGui::ColorEdit4("Hatch Color", selectedInstance->inkColor);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Line Smoothness", &selectedInstance->epsilonValue, 0.001f, 0.0f, 0.1f);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Hatch Density", &selectedInstance->strokeMultiplier, 0.1f, 0.0f, 10.0f);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Hatch Angle", &selectedInstance->lineAngle1, 0.1f, 0.0f, TAU);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Hatch Scale", &selectedInstance->patternScale, 0.1f, 0.1f, 10.0f);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Line Weight", &selectedInstance->lineThickness, 0.1f, -10.0f, 10.0f);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Hatch Opacity", &selectedInstance->transparencyValue, 0.01f, 0.0f, 1.0f);
-                }
-                else if (selectedInstance->crosshatchMode == 2)
-                {
-                    ImGui::Text("Crosshatch Ver 1.2 Settings:");
-                    ImGui::ColorEdit4("Hatch Color", selectedInstance->inkColor);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Outer Line Smoothness", &selectedInstance->epsilonValue, 0.001f, 0.0f, 0.1f);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Outer Hatch Density", &selectedInstance->strokeMultiplier, 0.1f, 0.0f, 10.0f);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Outer Hatch Angle", &selectedInstance->lineAngle1, 0.1f, 0.0f, TAU);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Outer Hatch Scale", &selectedInstance->patternScale, 0.1f, 0.1f, 10.0f);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Outer Hatch Weight", &selectedInstance->lineThickness, 0.1f, -10.0f, 10.0f);
-                    ImGui::SetNextItemWidth(100);
-                    // Inner layer settings:
-                    ImGui::DragFloat("Inner Hatch Scale", &selectedInstance->layerPatternScale, 0.1f, 0.1f, 10.0f);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Inner Hatch Density", &selectedInstance->layerStrokeMult, 0.1f, 0.0f, 10.0f);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Inner Hatch Angle", &selectedInstance->layerAngle, 0.1f, 0.0f, TAU);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Inner Hatch Weight", &selectedInstance->layerLineThickness, 0.1f, -10.0f, 10.0f);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Hatch Opacity", &selectedInstance->transparencyValue, 0.01f, 0.0f, 1.0f);
-                }
-                else if (selectedInstance->crosshatchMode == 3)
-                {
-                    ImGui::Text("Crosshatch Ver 1.3 Settings:");
-                    ImGui::ColorEdit4("Hatch Color", selectedInstance->inkColor);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Outer Line Smoothness", &selectedInstance->epsilonValue, 0.001f, 0.0f, 0.1f);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Outer Hatch Density", &selectedInstance->strokeMultiplier, 0.1f, 0.0f, 10.0f);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Outer Hatch Angle", &selectedInstance->lineAngle1, 0.1f, 0.0f, TAU);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Outer Hatch Scale", &selectedInstance->patternScale, 0.1f, 0.1f, 10.0f);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Outer Hatch Weight", &selectedInstance->lineThickness, 0.1f, -10.0f, 10.0f);
-                    ImGui::SetNextItemWidth(100);
-                    // Inner layer settings:
-                    ImGui::DragFloat("Inner Hatch Scale", &selectedInstance->layerPatternScale, 0.1f, 0.1f, 10.0f);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Inner Hatch Density", &selectedInstance->layerStrokeMult, 0.1f, 0.0f, 10.0f);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Inner Hatch Angle", &selectedInstance->layerAngle, 0.1f, 0.0f, TAU);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Inner Hatch Weight", &selectedInstance->layerLineThickness, 0.1f, -10.0f, 10.0f);
-                    ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat("Hatch Opacity", &selectedInstance->transparencyValue, 0.01f, 0.0f, 1.0f);
-                }
-                else if (selectedInstance->crosshatchMode == 4)
-                {
-                    ImGui::Text("Simple Lighting (No Crosshatch)");
-                }
+            //        ImGui::Text("Noise Texture Preview:");
+            //        if (bgfx::isValid(noiseTexture))
+            //        {
+            //            ImTextureID noiseID = (ImTextureID)(uintptr_t)(noiseTexture.idx);
+            //            ImGui::Image(noiseID, ImVec2(256, 256));
+            //        }
+            //        else
+            //        {
+            //            ImGui::Text("No valid noise texture selected.");
+            //        }
+            //    }
+            //}
+            //else if (selectedInstance && selectedInstance->isLight == false) {
+            //    const char* modeItems[] = { "Crosshatch Ver 1.0", "Crosshatch Ver 1.1", "Crosshatch Ver 1.2", "Crosshatch Ver 1.3", "Simple Lighting" };
+            //    ImGui::Combo("Shader Mode", &selectedInstance->crosshatchMode, modeItems, IM_ARRAYSIZE(modeItems));
+            //    ImGui::Spacing(); ImGui::Spacing();
+            //    // --- Show controls depending on the mode ---
+            //    if (selectedInstance->crosshatchMode == 0)
+            //    {
+            //        ImGui::Text("Crosshatch Ver 1.0 Settings:");
+            //        ImGui::ColorEdit4("Hatch Color", selectedInstance->inkColor);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Line Smoothness", &selectedInstance->epsilonValue, 0.001f, 0.0f, 0.1f);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Hatch Density", &selectedInstance->strokeMultiplier, 0.1f, 0.0f, 10.0f);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Primary Hatch Angle", &selectedInstance->lineAngle1, 0.1f, 0.0f, TAU);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Secondary Hatch Angle", &selectedInstance->lineAngle2, 0.1f, 0.0f, TAU);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Hatch Scale", &selectedInstance->patternScale, 0.1f, 0.1f, 10.0f);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Line Weight", &selectedInstance->lineThickness, 0.1f, -10.0f, 10.0f);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Hatch Opacity", &selectedInstance->transparencyValue, 0.01f, 0.0f, 1.0f);
+            //    }
+            //    else if (selectedInstance->crosshatchMode == 1)
+            //    {
+            //        ImGui::Text("Crosshatch Ver 1.1 Settings:");
+            //        ImGui::ColorEdit4("Hatch Color", selectedInstance->inkColor);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Line Smoothness", &selectedInstance->epsilonValue, 0.001f, 0.0f, 0.1f);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Hatch Density", &selectedInstance->strokeMultiplier, 0.1f, 0.0f, 10.0f);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Hatch Angle", &selectedInstance->lineAngle1, 0.1f, 0.0f, TAU);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Hatch Scale", &selectedInstance->patternScale, 0.1f, 0.1f, 10.0f);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Line Weight", &selectedInstance->lineThickness, 0.1f, -10.0f, 10.0f);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Hatch Opacity", &selectedInstance->transparencyValue, 0.01f, 0.0f, 1.0f);
+            //    }
+            //    else if (selectedInstance->crosshatchMode == 2)
+            //    {
+            //        ImGui::Text("Crosshatch Ver 1.2 Settings:");
+            //        ImGui::ColorEdit4("Hatch Color", selectedInstance->inkColor);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Outer Line Smoothness", &selectedInstance->epsilonValue, 0.001f, 0.0f, 0.1f);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Outer Hatch Density", &selectedInstance->strokeMultiplier, 0.1f, 0.0f, 10.0f);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Outer Hatch Angle", &selectedInstance->lineAngle1, 0.1f, 0.0f, TAU);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Outer Hatch Scale", &selectedInstance->patternScale, 0.1f, 0.1f, 10.0f);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Outer Hatch Weight", &selectedInstance->lineThickness, 0.1f, -10.0f, 10.0f);
+            //        ImGui::SetNextItemWidth(100);
+            //        // Inner layer settings:
+            //        ImGui::DragFloat("Inner Hatch Scale", &selectedInstance->layerPatternScale, 0.1f, 0.1f, 10.0f);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Inner Hatch Density", &selectedInstance->layerStrokeMult, 0.1f, 0.0f, 10.0f);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Inner Hatch Angle", &selectedInstance->layerAngle, 0.1f, 0.0f, TAU);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Inner Hatch Weight", &selectedInstance->layerLineThickness, 0.1f, -10.0f, 10.0f);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Hatch Opacity", &selectedInstance->transparencyValue, 0.01f, 0.0f, 1.0f);
+            //    }
+            //    else if (selectedInstance->crosshatchMode == 3)
+            //    {
+            //        ImGui::Text("Crosshatch Ver 1.3 Settings:");
+            //        ImGui::ColorEdit4("Hatch Color", selectedInstance->inkColor);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Outer Line Smoothness", &selectedInstance->epsilonValue, 0.001f, 0.0f, 0.1f);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Outer Hatch Density", &selectedInstance->strokeMultiplier, 0.1f, 0.0f, 10.0f);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Outer Hatch Angle", &selectedInstance->lineAngle1, 0.1f, 0.0f, TAU);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Outer Hatch Scale", &selectedInstance->patternScale, 0.1f, 0.1f, 10.0f);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Outer Hatch Weight", &selectedInstance->lineThickness, 0.1f, -10.0f, 10.0f);
+            //        ImGui::SetNextItemWidth(100);
+            //        // Inner layer settings:
+            //        ImGui::DragFloat("Inner Hatch Scale", &selectedInstance->layerPatternScale, 0.1f, 0.1f, 10.0f);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Inner Hatch Density", &selectedInstance->layerStrokeMult, 0.1f, 0.0f, 10.0f);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Inner Hatch Angle", &selectedInstance->layerAngle, 0.1f, 0.0f, TAU);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Inner Hatch Weight", &selectedInstance->layerLineThickness, 0.1f, -10.0f, 10.0f);
+            //        ImGui::SetNextItemWidth(100);
+            //        ImGui::DragFloat("Hatch Opacity", &selectedInstance->transparencyValue, 0.01f, 0.0f, 1.0f);
+            //    }
+            //    else if (selectedInstance->crosshatchMode == 4)
+            //    {
+            //        ImGui::Text("Simple Lighting (No Crosshatch)");
+            //    }
 
-                // New: noise texture selection
-                if (!availableNoiseTextures.empty() && selectedInstance->crosshatchMode != 4)
-                {
-                    // Automatically update currentNoiseIndex based on the instance's noise texture.
-                    bool found = false;
-                    for (int i = 0; i < (int)availableNoiseTextures.size(); i++)
-                    {
-                        if (availableNoiseTextures[i].handle.idx == selectedInstance->noiseTexture.idx)
-                        {
-                            currentNoiseIndex = i;
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (!found)
-                    {
-                        // If the instance doesn't have a valid noise texture, default to index 0.
-                        currentNoiseIndex = 0;
-                        selectedInstance->noiseTexture = availableNoiseTextures[0].handle;
-                    }
+            //    // New: noise texture selection
+            //    if (!availableNoiseTextures.empty() && selectedInstance->crosshatchMode != 4)
+            //    {
+            //        // Automatically update currentNoiseIndex based on the instance's noise texture.
+            //        bool found = false;
+            //        for (int i = 0; i < (int)availableNoiseTextures.size(); i++)
+            //        {
+            //            if (availableNoiseTextures[i].handle.idx == selectedInstance->noiseTexture.idx)
+            //            {
+            //                currentNoiseIndex = i;
+            //                found = true;
+            //                break;
+            //            }
+            //        }
+            //        if (!found)
+            //        {
+            //            // If the instance doesn't have a valid noise texture, default to index 0.
+            //            currentNoiseIndex = 0;
+            //            selectedInstance->noiseTexture = availableNoiseTextures[0].handle;
+            //        }
 
-                    // Build an array of c-strings from the names in availableNoiseTextures
-                    std::vector<const char*> noiseNames;
-                    noiseNames.reserve(availableNoiseTextures.size());
-                    for (auto& n : availableNoiseTextures)
-                    {
-                        noiseNames.push_back(n.name.c_str());
-                    }
+            //        // Build an array of c-strings from the names in availableNoiseTextures
+            //        std::vector<const char*> noiseNames;
+            //        noiseNames.reserve(availableNoiseTextures.size());
+            //        for (auto& n : availableNoiseTextures)
+            //        {
+            //            noiseNames.push_back(n.name.c_str());
+            //        }
 
-                    ImGui::Spacing(); ImGui::Spacing();
-                    ImGui::Separator();
-                    ImGui::Spacing(); ImGui::Spacing();
-                    // Let user pick which noise texture to use
-                    if (ImGui::Combo("Noise Pattern", &currentNoiseIndex, noiseNames.data(), (int)noiseNames.size()))
-                    {
-                        selectedInstance->noiseTexture = availableNoiseTextures[currentNoiseIndex].handle;
-                    }
+            //        ImGui::Spacing(); ImGui::Spacing();
+            //        ImGui::Separator();
+            //        ImGui::Spacing(); ImGui::Spacing();
+            //        // Let user pick which noise texture to use
+            //        if (ImGui::Combo("Noise Pattern", &currentNoiseIndex, noiseNames.data(), (int)noiseNames.size()))
+            //        {
+            //            selectedInstance->noiseTexture = availableNoiseTextures[currentNoiseIndex].handle;
+            //        }
 
-                    ImGui::Text("Noise Texture Preview:");
-                    if (bgfx::isValid(selectedInstance->noiseTexture))
-                    {
-                        ImTextureID noiseID = (ImTextureID)(uintptr_t)(selectedInstance->noiseTexture.idx);
-                        ImGui::Image(noiseID, ImVec2(256, 256));
-                    }
-                    else
-                    {
-                        ImGui::Text("No valid noise texture selected.");
-                    }
-                }
-            }
-            ImGui::End();
+            //        ImGui::Text("Noise Texture Preview:");
+            //        if (bgfx::isValid(selectedInstance->noiseTexture))
+            //        {
+            //            ImTextureID noiseID = (ImTextureID)(uintptr_t)(selectedInstance->noiseTexture.idx);
+            //            ImGui::Image(noiseID, ImVec2(256, 256));
+            //        }
+            //        else
+            //        {
+            //            ImGui::Text("No valid noise texture selected.");
+            //        }
+            //    }
+            //}
+            //ImGui::End();
+			//ImGui::Begin("Crosshatch Shader Settings");
             // Add a new window for camera settings
             ImGui::Begin("Camera Settings", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
             Camera& activeCamera = cameras[currentCameraIndex];

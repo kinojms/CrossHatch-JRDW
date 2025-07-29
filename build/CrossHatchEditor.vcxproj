@@ -1,0 +1,464 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
+  </PropertyGroup>
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="MinSizeRel|x64">
+      <Configuration>MinSizeRel</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="RelWithDebInfo|x64">
+      <Configuration>RelWithDebInfo</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{4C3AD4EE-6D8B-3F8A-BF98-F6425B2F11AE}</ProjectGuid>
+    <WindowsTargetPlatformVersion>10.0.26100.0</WindowsTargetPlatformVersion>
+    <Keyword>Win32Proj</Keyword>
+    <Platform>x64</Platform>
+    <ProjectName>CrossHatchEditor</ProjectName>
+    <VCProjectUpgraderObjectName>NoUpgrade</VCProjectUpgraderObjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\CrossHatch-JRDW\build\Debug\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CrossHatchEditor.dir\Debug\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CrossHatchEditor</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.exe</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</GenerateManifest>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\CrossHatch-JRDW\build\Release\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CrossHatchEditor.dir\Release\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CrossHatchEditor</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.exe</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</GenerateManifest>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\CrossHatch-JRDW\build\MinSizeRel\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">CrossHatchEditor.dir\MinSizeRel\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">CrossHatchEditor</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">.exe</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">true</GenerateManifest>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\CrossHatch-JRDW\build\RelWithDebInfo\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">CrossHatchEditor.dir\RelWithDebInfo\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">CrossHatchEditor</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">.exe</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">true</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">true</GenerateManifest>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>C:\CrossHatch-JRDW\bgfx;C:\CrossHatch-JRDW\shaders;C:\CrossHatch-JRDW\meshes;C:\CrossHatch-JRDW\noise textures;C:\CrossHatch-JRDW\videos;C:\CrossHatch-JRDW\fonts;C:\CrossHatch-JRDW\comic elements;C:\CrossHatch-JRDW\assets;C:\CrossHatch-JRDW\textures;C:\CrossHatch-JRDW\saves;C:\CrossHatch-JRDW\imgui;C:\CrossHatch-JRDW\assimp\include;C:\CrossHatch-JRDW\ffmpeg\include;C:\CrossHatch-JRDW\bgfx.cmake\bgfx\include;C:\CrossHatch-JRDW\bgfx.cmake\bx\include;C:\CrossHatch-JRDW\bgfx.cmake\bx\3rdparty;C:\CrossHatch-JRDW\bgfx.cmake\bx\include\compat\msvc;C:\CrossHatch-JRDW\bgfx.cmake\bimg\include;C:\CrossHatch-JRDW\glfw\include;C:\CrossHatch-JRDW\build\include\generated\shaders;C:\CrossHatch-JRDW\ImGuizmo;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /Zc:__cplusplus</AdditionalOptions>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <Optimization>Disabled</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <UseFullPaths>false</UseFullPaths>
+      <UseStandardPreprocessor>true</UseStandardPreprocessor>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;BX_CONFIG_DEBUG=1;BGFX_CONFIG_DEBUG_ANNOTATION=1;BGFX_CONFIG_MULTITHREADED=1;__STDC_LIMIT_MACROS;__STDC_FORMAT_MACROS;__STDC_CONSTANT_MACROS;CMAKE_INTDIR="Debug"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_DEBUG;_WINDOWS;BX_CONFIG_DEBUG=1;BGFX_CONFIG_DEBUG_ANNOTATION=1;BGFX_CONFIG_MULTITHREADED=1;__STDC_LIMIT_MACROS;__STDC_FORMAT_MACROS;__STDC_CONSTANT_MACROS;CMAKE_INTDIR=\"Debug\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\CrossHatch-JRDW\bgfx;C:\CrossHatch-JRDW\shaders;C:\CrossHatch-JRDW\meshes;C:\CrossHatch-JRDW\noise textures;C:\CrossHatch-JRDW\videos;C:\CrossHatch-JRDW\fonts;C:\CrossHatch-JRDW\comic elements;C:\CrossHatch-JRDW\assets;C:\CrossHatch-JRDW\textures;C:\CrossHatch-JRDW\saves;C:\CrossHatch-JRDW\imgui;C:\CrossHatch-JRDW\assimp\include;C:\CrossHatch-JRDW\ffmpeg\include;C:\CrossHatch-JRDW\bgfx.cmake\bgfx\include;C:\CrossHatch-JRDW\bgfx.cmake\bx\include;C:\CrossHatch-JRDW\bgfx.cmake\bx\3rdparty;C:\CrossHatch-JRDW\bgfx.cmake\bx\include\compat\msvc;C:\CrossHatch-JRDW\bgfx.cmake\bimg\include;C:\CrossHatch-JRDW\glfw\include;C:\CrossHatch-JRDW\build\include\generated\shaders;C:\CrossHatch-JRDW\ImGuizmo;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>C:\CrossHatch-JRDW\bgfx;C:\CrossHatch-JRDW\shaders;C:\CrossHatch-JRDW\meshes;C:\CrossHatch-JRDW\noise textures;C:\CrossHatch-JRDW\videos;C:\CrossHatch-JRDW\fonts;C:\CrossHatch-JRDW\comic elements;C:\CrossHatch-JRDW\assets;C:\CrossHatch-JRDW\textures;C:\CrossHatch-JRDW\saves;C:\CrossHatch-JRDW\imgui;C:\CrossHatch-JRDW\assimp\include;C:\CrossHatch-JRDW\ffmpeg\include;C:\CrossHatch-JRDW\bgfx.cmake\bgfx\include;C:\CrossHatch-JRDW\bgfx.cmake\bx\include;C:\CrossHatch-JRDW\bgfx.cmake\bx\3rdparty;C:\CrossHatch-JRDW\bgfx.cmake\bx\include\compat\msvc;C:\CrossHatch-JRDW\bgfx.cmake\bimg\include;C:\CrossHatch-JRDW\glfw\include;C:\CrossHatch-JRDW\build\include\generated\shaders;C:\CrossHatch-JRDW\ImGuizmo;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <PostBuildEvent>
+      <Message>	</Message>
+      <Command>setlocal
+C:\cmake-3.22.6-windows-x86_64\bin\cmake.exe -E copy_if_different C:/CrossHatch-JRDW/assimp/bin/assimp-vc143-mtd.dll C:/CrossHatch-JRDW/build/Debug
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+C:\cmake-3.22.6-windows-x86_64\bin\cmake.exe -E copy_if_different C:/CrossHatch-JRDW/ffmpeg/bin/avcodec-61.dll C:/CrossHatch-JRDW/ffmpeg/bin/avformat-61.dll C:/CrossHatch-JRDW/ffmpeg/bin/avutil-59.dll C:/CrossHatch-JRDW/ffmpeg/bin/swscale-8.dll C:/CrossHatch-JRDW/ffmpeg/bin/swresample-5.dll C:/CrossHatch-JRDW/build/Debug
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+    </PostBuildEvent>
+    <Link>
+      <AdditionalDependencies>bgfx.cmake\cmake\bgfx\Debug\bgfx.lib;bgfx.cmake\cmake\bx\Debug\bx.lib;bgfx.cmake\cmake\bimg\Debug\bimg.lib;glfw\src\Debug\glfw3.lib;Debug\imgui.lib;assimp-vc143-mtd.lib;Debug\ImGuizmo.lib;avcodec.lib;avformat.lib;avutil.lib;swscale.lib;swresample.lib;bgfx.cmake\cmake\bx\Debug\bx.lib;psapi.lib;glfw\src\Debug\glfw3.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:/CrossHatch-JRDW/assimp/lib;C:/CrossHatch-JRDW/assimp/lib/$(Configuration);C:/CrossHatch-JRDW/ffmpeg/lib;C:/CrossHatch-JRDW/ffmpeg/lib/$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImportLibrary>C:/CrossHatch-JRDW/build/Debug/CrossHatchEditor.lib</ImportLibrary>
+      <ProgramDataBaseFile>C:/CrossHatch-JRDW/build/Debug/CrossHatchEditor.pdb</ProgramDataBaseFile>
+      <SubSystem>Console</SubSystem>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>C:\CrossHatch-JRDW\bgfx;C:\CrossHatch-JRDW\shaders;C:\CrossHatch-JRDW\meshes;C:\CrossHatch-JRDW\noise textures;C:\CrossHatch-JRDW\videos;C:\CrossHatch-JRDW\fonts;C:\CrossHatch-JRDW\comic elements;C:\CrossHatch-JRDW\assets;C:\CrossHatch-JRDW\textures;C:\CrossHatch-JRDW\saves;C:\CrossHatch-JRDW\imgui;C:\CrossHatch-JRDW\assimp\include;C:\CrossHatch-JRDW\ffmpeg\include;C:\CrossHatch-JRDW\bgfx.cmake\bgfx\include;C:\CrossHatch-JRDW\bgfx.cmake\bx\include;C:\CrossHatch-JRDW\bgfx.cmake\bx\3rdparty;C:\CrossHatch-JRDW\bgfx.cmake\bx\include\compat\msvc;C:\CrossHatch-JRDW\bgfx.cmake\bimg\include;C:\CrossHatch-JRDW\glfw\include;C:\CrossHatch-JRDW\build\include\generated\shaders;C:\CrossHatch-JRDW\ImGuizmo;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /Zc:__cplusplus</AdditionalOptions>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <Optimization>MaxSpeed</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <UseFullPaths>false</UseFullPaths>
+      <UseStandardPreprocessor>true</UseStandardPreprocessor>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;BX_CONFIG_DEBUG=0;BGFX_CONFIG_DEBUG_ANNOTATION=0;BGFX_CONFIG_MULTITHREADED=1;__STDC_LIMIT_MACROS;__STDC_FORMAT_MACROS;__STDC_CONSTANT_MACROS;CMAKE_INTDIR="Release"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;BX_CONFIG_DEBUG=0;BGFX_CONFIG_DEBUG_ANNOTATION=0;BGFX_CONFIG_MULTITHREADED=1;__STDC_LIMIT_MACROS;__STDC_FORMAT_MACROS;__STDC_CONSTANT_MACROS;CMAKE_INTDIR=\"Release\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\CrossHatch-JRDW\bgfx;C:\CrossHatch-JRDW\shaders;C:\CrossHatch-JRDW\meshes;C:\CrossHatch-JRDW\noise textures;C:\CrossHatch-JRDW\videos;C:\CrossHatch-JRDW\fonts;C:\CrossHatch-JRDW\comic elements;C:\CrossHatch-JRDW\assets;C:\CrossHatch-JRDW\textures;C:\CrossHatch-JRDW\saves;C:\CrossHatch-JRDW\imgui;C:\CrossHatch-JRDW\assimp\include;C:\CrossHatch-JRDW\ffmpeg\include;C:\CrossHatch-JRDW\bgfx.cmake\bgfx\include;C:\CrossHatch-JRDW\bgfx.cmake\bx\include;C:\CrossHatch-JRDW\bgfx.cmake\bx\3rdparty;C:\CrossHatch-JRDW\bgfx.cmake\bx\include\compat\msvc;C:\CrossHatch-JRDW\bgfx.cmake\bimg\include;C:\CrossHatch-JRDW\glfw\include;C:\CrossHatch-JRDW\build\include\generated\shaders;C:\CrossHatch-JRDW\ImGuizmo;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>C:\CrossHatch-JRDW\bgfx;C:\CrossHatch-JRDW\shaders;C:\CrossHatch-JRDW\meshes;C:\CrossHatch-JRDW\noise textures;C:\CrossHatch-JRDW\videos;C:\CrossHatch-JRDW\fonts;C:\CrossHatch-JRDW\comic elements;C:\CrossHatch-JRDW\assets;C:\CrossHatch-JRDW\textures;C:\CrossHatch-JRDW\saves;C:\CrossHatch-JRDW\imgui;C:\CrossHatch-JRDW\assimp\include;C:\CrossHatch-JRDW\ffmpeg\include;C:\CrossHatch-JRDW\bgfx.cmake\bgfx\include;C:\CrossHatch-JRDW\bgfx.cmake\bx\include;C:\CrossHatch-JRDW\bgfx.cmake\bx\3rdparty;C:\CrossHatch-JRDW\bgfx.cmake\bx\include\compat\msvc;C:\CrossHatch-JRDW\bgfx.cmake\bimg\include;C:\CrossHatch-JRDW\glfw\include;C:\CrossHatch-JRDW\build\include\generated\shaders;C:\CrossHatch-JRDW\ImGuizmo;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <PostBuildEvent>
+      <Message>	</Message>
+      <Command>setlocal
+C:\cmake-3.22.6-windows-x86_64\bin\cmake.exe -E copy_if_different C:/CrossHatch-JRDW/assimp/bin/assimp-vc143-mtd.dll C:/CrossHatch-JRDW/build/Release
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+C:\cmake-3.22.6-windows-x86_64\bin\cmake.exe -E copy_if_different C:/CrossHatch-JRDW/ffmpeg/bin/avcodec-61.dll C:/CrossHatch-JRDW/ffmpeg/bin/avformat-61.dll C:/CrossHatch-JRDW/ffmpeg/bin/avutil-59.dll C:/CrossHatch-JRDW/ffmpeg/bin/swscale-8.dll C:/CrossHatch-JRDW/ffmpeg/bin/swresample-5.dll C:/CrossHatch-JRDW/build/Release
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+    </PostBuildEvent>
+    <Link>
+      <AdditionalDependencies>bgfx.cmake\cmake\bgfx\Release\bgfx.lib;bgfx.cmake\cmake\bx\Release\bx.lib;bgfx.cmake\cmake\bimg\Release\bimg.lib;glfw\src\Release\glfw3.lib;Release\imgui.lib;assimp-vc143-mtd.lib;Release\ImGuizmo.lib;avcodec.lib;avformat.lib;avutil.lib;swscale.lib;swresample.lib;bgfx.cmake\cmake\bx\Release\bx.lib;psapi.lib;glfw\src\Release\glfw3.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:/CrossHatch-JRDW/assimp/lib;C:/CrossHatch-JRDW/assimp/lib/$(Configuration);C:/CrossHatch-JRDW/ffmpeg/lib;C:/CrossHatch-JRDW/ffmpeg/lib/$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImportLibrary>C:/CrossHatch-JRDW/build/Release/CrossHatchEditor.lib</ImportLibrary>
+      <ProgramDataBaseFile>C:/CrossHatch-JRDW/build/Release/CrossHatchEditor.pdb</ProgramDataBaseFile>
+      <SubSystem>Console</SubSystem>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>C:\CrossHatch-JRDW\bgfx;C:\CrossHatch-JRDW\shaders;C:\CrossHatch-JRDW\meshes;C:\CrossHatch-JRDW\noise textures;C:\CrossHatch-JRDW\videos;C:\CrossHatch-JRDW\fonts;C:\CrossHatch-JRDW\comic elements;C:\CrossHatch-JRDW\assets;C:\CrossHatch-JRDW\textures;C:\CrossHatch-JRDW\saves;C:\CrossHatch-JRDW\imgui;C:\CrossHatch-JRDW\assimp\include;C:\CrossHatch-JRDW\ffmpeg\include;C:\CrossHatch-JRDW\bgfx.cmake\bgfx\include;C:\CrossHatch-JRDW\bgfx.cmake\bx\include;C:\CrossHatch-JRDW\bgfx.cmake\bx\3rdparty;C:\CrossHatch-JRDW\bgfx.cmake\bx\include\compat\msvc;C:\CrossHatch-JRDW\bgfx.cmake\bimg\include;C:\CrossHatch-JRDW\glfw\include;C:\CrossHatch-JRDW\build\include\generated\shaders;C:\CrossHatch-JRDW\ImGuizmo;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /Zc:__cplusplus</AdditionalOptions>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <Optimization>MinSpace</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <UseFullPaths>false</UseFullPaths>
+      <UseStandardPreprocessor>true</UseStandardPreprocessor>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;BX_CONFIG_DEBUG=0;BGFX_CONFIG_DEBUG_ANNOTATION=0;BGFX_CONFIG_MULTITHREADED=1;__STDC_LIMIT_MACROS;__STDC_FORMAT_MACROS;__STDC_CONSTANT_MACROS;CMAKE_INTDIR="MinSizeRel"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;BX_CONFIG_DEBUG=0;BGFX_CONFIG_DEBUG_ANNOTATION=0;BGFX_CONFIG_MULTITHREADED=1;__STDC_LIMIT_MACROS;__STDC_FORMAT_MACROS;__STDC_CONSTANT_MACROS;CMAKE_INTDIR=\"MinSizeRel\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\CrossHatch-JRDW\bgfx;C:\CrossHatch-JRDW\shaders;C:\CrossHatch-JRDW\meshes;C:\CrossHatch-JRDW\noise textures;C:\CrossHatch-JRDW\videos;C:\CrossHatch-JRDW\fonts;C:\CrossHatch-JRDW\comic elements;C:\CrossHatch-JRDW\assets;C:\CrossHatch-JRDW\textures;C:\CrossHatch-JRDW\saves;C:\CrossHatch-JRDW\imgui;C:\CrossHatch-JRDW\assimp\include;C:\CrossHatch-JRDW\ffmpeg\include;C:\CrossHatch-JRDW\bgfx.cmake\bgfx\include;C:\CrossHatch-JRDW\bgfx.cmake\bx\include;C:\CrossHatch-JRDW\bgfx.cmake\bx\3rdparty;C:\CrossHatch-JRDW\bgfx.cmake\bx\include\compat\msvc;C:\CrossHatch-JRDW\bgfx.cmake\bimg\include;C:\CrossHatch-JRDW\glfw\include;C:\CrossHatch-JRDW\build\include\generated\shaders;C:\CrossHatch-JRDW\ImGuizmo;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>C:\CrossHatch-JRDW\bgfx;C:\CrossHatch-JRDW\shaders;C:\CrossHatch-JRDW\meshes;C:\CrossHatch-JRDW\noise textures;C:\CrossHatch-JRDW\videos;C:\CrossHatch-JRDW\fonts;C:\CrossHatch-JRDW\comic elements;C:\CrossHatch-JRDW\assets;C:\CrossHatch-JRDW\textures;C:\CrossHatch-JRDW\saves;C:\CrossHatch-JRDW\imgui;C:\CrossHatch-JRDW\assimp\include;C:\CrossHatch-JRDW\ffmpeg\include;C:\CrossHatch-JRDW\bgfx.cmake\bgfx\include;C:\CrossHatch-JRDW\bgfx.cmake\bx\include;C:\CrossHatch-JRDW\bgfx.cmake\bx\3rdparty;C:\CrossHatch-JRDW\bgfx.cmake\bx\include\compat\msvc;C:\CrossHatch-JRDW\bgfx.cmake\bimg\include;C:\CrossHatch-JRDW\glfw\include;C:\CrossHatch-JRDW\build\include\generated\shaders;C:\CrossHatch-JRDW\ImGuizmo;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <PostBuildEvent>
+      <Message>	</Message>
+      <Command>setlocal
+C:\cmake-3.22.6-windows-x86_64\bin\cmake.exe -E copy_if_different C:/CrossHatch-JRDW/assimp/bin/assimp-vc143-mtd.dll C:/CrossHatch-JRDW/build/MinSizeRel
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+C:\cmake-3.22.6-windows-x86_64\bin\cmake.exe -E copy_if_different C:/CrossHatch-JRDW/ffmpeg/bin/avcodec-61.dll C:/CrossHatch-JRDW/ffmpeg/bin/avformat-61.dll C:/CrossHatch-JRDW/ffmpeg/bin/avutil-59.dll C:/CrossHatch-JRDW/ffmpeg/bin/swscale-8.dll C:/CrossHatch-JRDW/ffmpeg/bin/swresample-5.dll C:/CrossHatch-JRDW/build/MinSizeRel
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+    </PostBuildEvent>
+    <Link>
+      <AdditionalDependencies>bgfx.cmake\cmake\bgfx\MinSizeRel\bgfx.lib;bgfx.cmake\cmake\bx\MinSizeRel\bx.lib;bgfx.cmake\cmake\bimg\MinSizeRel\bimg.lib;glfw\src\MinSizeRel\glfw3.lib;MinSizeRel\imgui.lib;assimp-vc143-mtd.lib;MinSizeRel\ImGuizmo.lib;avcodec.lib;avformat.lib;avutil.lib;swscale.lib;swresample.lib;bgfx.cmake\cmake\bx\MinSizeRel\bx.lib;psapi.lib;glfw\src\MinSizeRel\glfw3.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:/CrossHatch-JRDW/assimp/lib;C:/CrossHatch-JRDW/assimp/lib/$(Configuration);C:/CrossHatch-JRDW/ffmpeg/lib;C:/CrossHatch-JRDW/ffmpeg/lib/$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImportLibrary>C:/CrossHatch-JRDW/build/MinSizeRel/CrossHatchEditor.lib</ImportLibrary>
+      <ProgramDataBaseFile>C:/CrossHatch-JRDW/build/MinSizeRel/CrossHatchEditor.pdb</ProgramDataBaseFile>
+      <SubSystem>Console</SubSystem>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>C:\CrossHatch-JRDW\bgfx;C:\CrossHatch-JRDW\shaders;C:\CrossHatch-JRDW\meshes;C:\CrossHatch-JRDW\noise textures;C:\CrossHatch-JRDW\videos;C:\CrossHatch-JRDW\fonts;C:\CrossHatch-JRDW\comic elements;C:\CrossHatch-JRDW\assets;C:\CrossHatch-JRDW\textures;C:\CrossHatch-JRDW\saves;C:\CrossHatch-JRDW\imgui;C:\CrossHatch-JRDW\assimp\include;C:\CrossHatch-JRDW\ffmpeg\include;C:\CrossHatch-JRDW\bgfx.cmake\bgfx\include;C:\CrossHatch-JRDW\bgfx.cmake\bx\include;C:\CrossHatch-JRDW\bgfx.cmake\bx\3rdparty;C:\CrossHatch-JRDW\bgfx.cmake\bx\include\compat\msvc;C:\CrossHatch-JRDW\bgfx.cmake\bimg\include;C:\CrossHatch-JRDW\glfw\include;C:\CrossHatch-JRDW\build\include\generated\shaders;C:\CrossHatch-JRDW\ImGuizmo;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /Zc:__cplusplus</AdditionalOptions>
+      <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <Optimization>MaxSpeed</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <UseFullPaths>false</UseFullPaths>
+      <UseStandardPreprocessor>true</UseStandardPreprocessor>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;BX_CONFIG_DEBUG=0;BGFX_CONFIG_DEBUG_ANNOTATION=0;BGFX_CONFIG_MULTITHREADED=1;__STDC_LIMIT_MACROS;__STDC_FORMAT_MACROS;__STDC_CONSTANT_MACROS;CMAKE_INTDIR="RelWithDebInfo"</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;BX_CONFIG_DEBUG=0;BGFX_CONFIG_DEBUG_ANNOTATION=0;BGFX_CONFIG_MULTITHREADED=1;__STDC_LIMIT_MACROS;__STDC_FORMAT_MACROS;__STDC_CONSTANT_MACROS;CMAKE_INTDIR=\"RelWithDebInfo\"</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\CrossHatch-JRDW\bgfx;C:\CrossHatch-JRDW\shaders;C:\CrossHatch-JRDW\meshes;C:\CrossHatch-JRDW\noise textures;C:\CrossHatch-JRDW\videos;C:\CrossHatch-JRDW\fonts;C:\CrossHatch-JRDW\comic elements;C:\CrossHatch-JRDW\assets;C:\CrossHatch-JRDW\textures;C:\CrossHatch-JRDW\saves;C:\CrossHatch-JRDW\imgui;C:\CrossHatch-JRDW\assimp\include;C:\CrossHatch-JRDW\ffmpeg\include;C:\CrossHatch-JRDW\bgfx.cmake\bgfx\include;C:\CrossHatch-JRDW\bgfx.cmake\bx\include;C:\CrossHatch-JRDW\bgfx.cmake\bx\3rdparty;C:\CrossHatch-JRDW\bgfx.cmake\bx\include\compat\msvc;C:\CrossHatch-JRDW\bgfx.cmake\bimg\include;C:\CrossHatch-JRDW\glfw\include;C:\CrossHatch-JRDW\build\include\generated\shaders;C:\CrossHatch-JRDW\ImGuizmo;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>C:\CrossHatch-JRDW\bgfx;C:\CrossHatch-JRDW\shaders;C:\CrossHatch-JRDW\meshes;C:\CrossHatch-JRDW\noise textures;C:\CrossHatch-JRDW\videos;C:\CrossHatch-JRDW\fonts;C:\CrossHatch-JRDW\comic elements;C:\CrossHatch-JRDW\assets;C:\CrossHatch-JRDW\textures;C:\CrossHatch-JRDW\saves;C:\CrossHatch-JRDW\imgui;C:\CrossHatch-JRDW\assimp\include;C:\CrossHatch-JRDW\ffmpeg\include;C:\CrossHatch-JRDW\bgfx.cmake\bgfx\include;C:\CrossHatch-JRDW\bgfx.cmake\bx\include;C:\CrossHatch-JRDW\bgfx.cmake\bx\3rdparty;C:\CrossHatch-JRDW\bgfx.cmake\bx\include\compat\msvc;C:\CrossHatch-JRDW\bgfx.cmake\bimg\include;C:\CrossHatch-JRDW\glfw\include;C:\CrossHatch-JRDW\build\include\generated\shaders;C:\CrossHatch-JRDW\ImGuizmo;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <PostBuildEvent>
+      <Message>	</Message>
+      <Command>setlocal
+C:\cmake-3.22.6-windows-x86_64\bin\cmake.exe -E copy_if_different C:/CrossHatch-JRDW/assimp/bin/assimp-vc143-mtd.dll C:/CrossHatch-JRDW/build/RelWithDebInfo
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+C:\cmake-3.22.6-windows-x86_64\bin\cmake.exe -E copy_if_different C:/CrossHatch-JRDW/ffmpeg/bin/avcodec-61.dll C:/CrossHatch-JRDW/ffmpeg/bin/avformat-61.dll C:/CrossHatch-JRDW/ffmpeg/bin/avutil-59.dll C:/CrossHatch-JRDW/ffmpeg/bin/swscale-8.dll C:/CrossHatch-JRDW/ffmpeg/bin/swresample-5.dll C:/CrossHatch-JRDW/build/RelWithDebInfo
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+    </PostBuildEvent>
+    <Link>
+      <AdditionalDependencies>bgfx.cmake\cmake\bgfx\RelWithDebInfo\bgfx.lib;bgfx.cmake\cmake\bx\RelWithDebInfo\bx.lib;bgfx.cmake\cmake\bimg\RelWithDebInfo\bimg.lib;glfw\src\RelWithDebInfo\glfw3.lib;RelWithDebInfo\imgui.lib;assimp-vc143-mtd.lib;RelWithDebInfo\ImGuizmo.lib;avcodec.lib;avformat.lib;avutil.lib;swscale.lib;swresample.lib;bgfx.cmake\cmake\bx\RelWithDebInfo\bx.lib;psapi.lib;glfw\src\RelWithDebInfo\glfw3.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:/CrossHatch-JRDW/assimp/lib;C:/CrossHatch-JRDW/assimp/lib/$(Configuration);C:/CrossHatch-JRDW/ffmpeg/lib;C:/CrossHatch-JRDW/ffmpeg/lib/$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImportLibrary>C:/CrossHatch-JRDW/build/RelWithDebInfo/CrossHatchEditor.lib</ImportLibrary>
+      <ProgramDataBaseFile>C:/CrossHatch-JRDW/build/RelWithDebInfo/CrossHatchEditor.pdb</ProgramDataBaseFile>
+      <SubSystem>Console</SubSystem>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\CrossHatch-JRDW\CMakeLists.txt">
+      <UseUtf8Encoding>Always</UseUtf8Encoding>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule C:/CrossHatch-JRDW/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+C:\cmake-3.22.6-windows-x86_64\bin\cmake.exe -SC:/CrossHatch-JRDW -BC:/CrossHatch-JRDW/build --check-stamp-file C:/CrossHatch-JRDW/build/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\CrossHatch-JRDW\build\CMakeFiles\3.22.6\CMakeCCompiler.cmake;C:\CrossHatch-JRDW\build\CMakeFiles\3.22.6\CMakeCXXCompiler.cmake;C:\CrossHatch-JRDW\build\CMakeFiles\3.22.6\CMakeRCCompiler.cmake;C:\CrossHatch-JRDW\build\CMakeFiles\3.22.6\CMakeSystem.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeCInformation.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeCXXInformation.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeCommonLanguageInclude.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeGenericSystem.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeInitializeConfigs.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeLanguageInformation.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeRCInformation.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeSystemSpecificInformation.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeSystemSpecificInitialize.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CPack.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CPackComponent.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\Compiler\CMakeCommonCompilerMacros.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\Compiler\MSVC-C.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\Compiler\MSVC-CXX.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\Platform\Windows-MSVC-C.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\Platform\Windows-MSVC-CXX.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\Platform\Windows-MSVC.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\Platform\Windows.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\Platform\WindowsPaths.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Templates\CPackConfig.cmake.in;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\CrossHatch-JRDW\build\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule C:/CrossHatch-JRDW/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+C:\cmake-3.22.6-windows-x86_64\bin\cmake.exe -SC:/CrossHatch-JRDW -BC:/CrossHatch-JRDW/build --check-stamp-file C:/CrossHatch-JRDW/build/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\CrossHatch-JRDW\build\CMakeFiles\3.22.6\CMakeCCompiler.cmake;C:\CrossHatch-JRDW\build\CMakeFiles\3.22.6\CMakeCXXCompiler.cmake;C:\CrossHatch-JRDW\build\CMakeFiles\3.22.6\CMakeRCCompiler.cmake;C:\CrossHatch-JRDW\build\CMakeFiles\3.22.6\CMakeSystem.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeCInformation.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeCXXInformation.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeCommonLanguageInclude.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeGenericSystem.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeInitializeConfigs.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeLanguageInformation.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeRCInformation.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeSystemSpecificInformation.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeSystemSpecificInitialize.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CPack.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CPackComponent.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\Compiler\CMakeCommonCompilerMacros.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\Compiler\MSVC-C.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\Compiler\MSVC-CXX.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\Platform\Windows-MSVC-C.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\Platform\Windows-MSVC-CXX.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\Platform\Windows-MSVC.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\Platform\Windows.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\Platform\WindowsPaths.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Templates\CPackConfig.cmake.in;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\CrossHatch-JRDW\build\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Building Custom Rule C:/CrossHatch-JRDW/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+C:\cmake-3.22.6-windows-x86_64\bin\cmake.exe -SC:/CrossHatch-JRDW -BC:/CrossHatch-JRDW/build --check-stamp-file C:/CrossHatch-JRDW/build/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\CrossHatch-JRDW\build\CMakeFiles\3.22.6\CMakeCCompiler.cmake;C:\CrossHatch-JRDW\build\CMakeFiles\3.22.6\CMakeCXXCompiler.cmake;C:\CrossHatch-JRDW\build\CMakeFiles\3.22.6\CMakeRCCompiler.cmake;C:\CrossHatch-JRDW\build\CMakeFiles\3.22.6\CMakeSystem.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeCInformation.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeCXXInformation.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeCommonLanguageInclude.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeGenericSystem.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeInitializeConfigs.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeLanguageInformation.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeRCInformation.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeSystemSpecificInformation.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeSystemSpecificInitialize.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CPack.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CPackComponent.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\Compiler\CMakeCommonCompilerMacros.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\Compiler\MSVC-C.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\Compiler\MSVC-CXX.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\Platform\Windows-MSVC-C.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\Platform\Windows-MSVC-CXX.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\Platform\Windows-MSVC.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\Platform\Windows.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\Platform\WindowsPaths.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Templates\CPackConfig.cmake.in;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\CrossHatch-JRDW\build\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Building Custom Rule C:/CrossHatch-JRDW/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+C:\cmake-3.22.6-windows-x86_64\bin\cmake.exe -SC:/CrossHatch-JRDW -BC:/CrossHatch-JRDW/build --check-stamp-file C:/CrossHatch-JRDW/build/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\CrossHatch-JRDW\build\CMakeFiles\3.22.6\CMakeCCompiler.cmake;C:\CrossHatch-JRDW\build\CMakeFiles\3.22.6\CMakeCXXCompiler.cmake;C:\CrossHatch-JRDW\build\CMakeFiles\3.22.6\CMakeRCCompiler.cmake;C:\CrossHatch-JRDW\build\CMakeFiles\3.22.6\CMakeSystem.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeCInformation.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeCXXInformation.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeCommonLanguageInclude.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeGenericSystem.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeInitializeConfigs.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeLanguageInformation.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeRCInformation.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeSystemSpecificInformation.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeSystemSpecificInitialize.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CPack.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CPackComponent.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\Compiler\CMakeCommonCompilerMacros.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\Compiler\MSVC-C.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\Compiler\MSVC-CXX.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\Platform\Windows-MSVC-C.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\Platform\Windows-MSVC-CXX.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\Platform\Windows-MSVC.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\Platform\Windows.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\Platform\WindowsPaths.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Templates\CPackConfig.cmake.in;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\CrossHatch-JRDW\build\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="C:\CrossHatch-JRDW\CrossHatchEditor.cpp" />
+    <ClInclude Include="C:\CrossHatch-JRDW\CrossHatchEditor.h" />
+    <ClInclude Include="C:\CrossHatch-JRDW\Camera.h" />
+    <ClCompile Include="C:\CrossHatch-JRDW\InputManager.cpp" />
+    <ClInclude Include="C:\CrossHatch-JRDW\InputManager.h" />
+    <ClCompile Include="C:\CrossHatch-JRDW\ObjLoader.cpp" />
+    <ClInclude Include="C:\CrossHatch-JRDW\ObjLoader.h" />
+    <ClInclude Include="C:\CrossHatch-JRDW\PrimitiveObjects.h" />
+    <ClCompile Include="C:\CrossHatch-JRDW\bgfx-imgui\imgui_impl_bgfx.cpp" />
+    <ClCompile Include="C:\CrossHatch-JRDW\Logger.cpp" />
+    <ClInclude Include="C:\CrossHatch-JRDW\Light.h" />
+    <ClInclude Include="C:\CrossHatch-JRDW\stb_image.h" />
+    <ClInclude Include="C:\CrossHatch-JRDW\stb_image_write.h" />
+    <ClInclude Include="C:\CrossHatch-JRDW\VideoPlayer.h" />
+    <ClInclude Include="C:\CrossHatch-JRDW\TextRenderer.h" />
+    <ClCompile Include="C:\CrossHatch-JRDW\TextRenderer.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\ZERO_CHECK.vcxproj">
+      <Project>{AAC8710C-EB8C-3E3F-8CBD-78E2F2A137E1}</Project>
+      <Name>ZERO_CHECK</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\ImGuizmo.vcxproj">
+      <Project>{E26A9A08-CDE3-3610-80E4-7DC300C8A0A0}</Project>
+      <Name>ImGuizmo</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\bgfx.vcxproj">
+      <Project>{485B8F59-8CBC-32FE-BE38-3B3E69B18C2B}</Project>
+      <Name>bgfx</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bimg\bimg.vcxproj">
+      <Project>{F0EC1008-48A4-3EF6-96E1-C9DDEE796E48}</Project>
+      <Name>bimg</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bx\bx.vcxproj">
+      <Project>{5ED100FD-7DAF-3453-91A4-A166424D7976}</Project>
+      <Name>bx</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\glfw\src\glfw.vcxproj">
+      <Project>{1078748E-CD8C-3679-884D-02D9FDF3B1AC}</Project>
+      <Name>glfw</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\imgui.vcxproj">
+      <Project>{A7DECADF-2074-3524-9C51-7641E08E0AC2}</Project>
+      <Name>imgui</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

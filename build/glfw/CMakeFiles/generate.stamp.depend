@@ -1,0 +1,16 @@
+# CMake generation dependency list for this directory.
+C:/CrossHatch-JRDW/glfw/CMake/cmake_uninstall.cmake.in
+C:/CrossHatch-JRDW/glfw/CMake/glfw3Config.cmake.in
+C:/CrossHatch-JRDW/glfw/CMakeLists.txt
+C:/cmake-3.22.6-windows-x86_64/share/cmake-3.22/Modules/BasicConfigVersion-SameMajorVersion.cmake.in
+C:/cmake-3.22.6-windows-x86_64/share/cmake-3.22/Modules/CMakeDependentOption.cmake
+C:/cmake-3.22.6-windows-x86_64/share/cmake-3.22/Modules/CMakePackageConfigHelpers.cmake
+C:/cmake-3.22.6-windows-x86_64/share/cmake-3.22/Modules/CheckCSourceCompiles.cmake
+C:/cmake-3.22.6-windows-x86_64/share/cmake-3.22/Modules/CheckIncludeFile.cmake
+C:/cmake-3.22.6-windows-x86_64/share/cmake-3.22/Modules/CheckLibraryExists.cmake
+C:/cmake-3.22.6-windows-x86_64/share/cmake-3.22/Modules/FindPackageHandleStandardArgs.cmake
+C:/cmake-3.22.6-windows-x86_64/share/cmake-3.22/Modules/FindPackageMessage.cmake
+C:/cmake-3.22.6-windows-x86_64/share/cmake-3.22/Modules/FindThreads.cmake
+C:/cmake-3.22.6-windows-x86_64/share/cmake-3.22/Modules/GNUInstallDirs.cmake
+C:/cmake-3.22.6-windows-x86_64/share/cmake-3.22/Modules/Internal/CheckSourceCompiles.cmake
+C:/cmake-3.22.6-windows-x86_64/share/cmake-3.22/Modules/WriteBasicConfigVersionFile.cmake

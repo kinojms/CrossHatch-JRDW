@@ -1,0 +1,201 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
+  </PropertyGroup>
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="MinSizeRel|x64">
+      <Configuration>MinSizeRel</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="RelWithDebInfo|x64">
+      <Configuration>RelWithDebInfo</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{96456672-6E73-3FF2-9518-380616C6F364}</ProjectGuid>
+    <WindowsTargetPlatformVersion>10.0.26100.0</WindowsTargetPlatformVersion>
+    <Keyword>Win32Proj</Keyword>
+    <Platform>x64</Platform>
+    <ProjectName>tools</ProjectName>
+    <VCProjectUpgraderObjectName>NoUpgrade</VCProjectUpgraderObjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\CrossHatch-JRDW\bgfx.cmake\CMakeLists.txt">
+      <UseUtf8Encoding>Always</UseUtf8Encoding>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule C:/CrossHatch-JRDW/bgfx.cmake/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+C:\cmake-3.22.6-windows-x86_64\bin\cmake.exe -SC:/CrossHatch-JRDW -BC:/CrossHatch-JRDW/build --check-stamp-file C:/CrossHatch-JRDW/build/bgfx.cmake/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\CrossHatch-JRDW\bgfx.cmake\cmake\Config.cmake.in;C:\CrossHatch-JRDW\bgfx.cmake\cmake\version.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\BasicConfigVersion-SameMinorVersion.cmake.in;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeDependentOption.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakePackageConfigHelpers.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\FindGit.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\FindPackageHandleStandardArgs.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\FindPackageMessage.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\GNUInstallDirs.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\WriteBasicConfigVersionFile.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\CrossHatch-JRDW\build\bgfx.cmake\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule C:/CrossHatch-JRDW/bgfx.cmake/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+C:\cmake-3.22.6-windows-x86_64\bin\cmake.exe -SC:/CrossHatch-JRDW -BC:/CrossHatch-JRDW/build --check-stamp-file C:/CrossHatch-JRDW/build/bgfx.cmake/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\CrossHatch-JRDW\bgfx.cmake\cmake\Config.cmake.in;C:\CrossHatch-JRDW\bgfx.cmake\cmake\version.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\BasicConfigVersion-SameMinorVersion.cmake.in;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeDependentOption.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakePackageConfigHelpers.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\FindGit.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\FindPackageHandleStandardArgs.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\FindPackageMessage.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\GNUInstallDirs.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\WriteBasicConfigVersionFile.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\CrossHatch-JRDW\build\bgfx.cmake\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Building Custom Rule C:/CrossHatch-JRDW/bgfx.cmake/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+C:\cmake-3.22.6-windows-x86_64\bin\cmake.exe -SC:/CrossHatch-JRDW -BC:/CrossHatch-JRDW/build --check-stamp-file C:/CrossHatch-JRDW/build/bgfx.cmake/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\CrossHatch-JRDW\bgfx.cmake\cmake\Config.cmake.in;C:\CrossHatch-JRDW\bgfx.cmake\cmake\version.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\BasicConfigVersion-SameMinorVersion.cmake.in;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeDependentOption.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakePackageConfigHelpers.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\FindGit.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\FindPackageHandleStandardArgs.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\FindPackageMessage.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\GNUInstallDirs.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\WriteBasicConfigVersionFile.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\CrossHatch-JRDW\build\bgfx.cmake\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Building Custom Rule C:/CrossHatch-JRDW/bgfx.cmake/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+C:\cmake-3.22.6-windows-x86_64\bin\cmake.exe -SC:/CrossHatch-JRDW -BC:/CrossHatch-JRDW/build --check-stamp-file C:/CrossHatch-JRDW/build/bgfx.cmake/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\CrossHatch-JRDW\bgfx.cmake\cmake\Config.cmake.in;C:\CrossHatch-JRDW\bgfx.cmake\cmake\version.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\BasicConfigVersion-SameMinorVersion.cmake.in;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeDependentOption.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakePackageConfigHelpers.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\FindGit.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\FindPackageHandleStandardArgs.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\FindPackageMessage.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\GNUInstallDirs.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\WriteBasicConfigVersionFile.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\CrossHatch-JRDW\build\bgfx.cmake\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\ZERO_CHECK.vcxproj">
+      <Project>{AAC8710C-EB8C-3E3F-8CBD-78E2F2A137E1}</Project>
+      <Name>ZERO_CHECK</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bx\bin2c.vcxproj">
+      <Project>{3649A2E3-8A05-3906-8187-6B422A0C9BB3}</Project>
+      <Name>bin2c</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\geometryc.vcxproj">
+      <Project>{E6186099-4BC7-32A7-932A-7199BE6FFAFD}</Project>
+      <Name>geometryc</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\geometryv.vcxproj">
+      <Project>{82965045-A2D7-3823-A040-C01E962301F6}</Project>
+      <Name>geometryv</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\shaderc.vcxproj">
+      <Project>{87AB27F5-AED0-3231-A705-FF3286855CBA}</Project>
+      <Name>shaderc</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bimg\texturec.vcxproj">
+      <Project>{EED8288B-8DBB-3E38-8022-FC846DF68751}</Project>
+      <Name>texturec</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\texturev.vcxproj">
+      <Project>{83FA5481-9227-37C4-9D18-F9BA3AB3EFA8}</Project>
+      <Name>texturev</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

@@ -1,0 +1,33 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\CrossHatch-JRDW\bgfx.cmake\bgfx\examples\30-picking\picking.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\CrossHatch-JRDW\bgfx.cmake\bgfx\examples\30-picking\fs_picking_id.sc">
+      <Filter>Shader Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\CrossHatch-JRDW\bgfx.cmake\bgfx\examples\30-picking\fs_picking_shaded.sc">
+      <Filter>Shader Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\CrossHatch-JRDW\bgfx.cmake\bgfx\examples\30-picking\vs_picking_shaded.sc">
+      <Filter>Shader Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="C:\CrossHatch-JRDW\bgfx.cmake\bgfx\examples\30-picking\varying.def.sc">
+      <Filter>Shader Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Shader Files">
+      <UniqueIdentifier>{01B21117-F841-3EB2-A39F-856C2DFB504D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{1010E3DC-E3ED-39FE-9B2C-51DA1DDF3326}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

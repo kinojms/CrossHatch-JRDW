@@ -1,0 +1,357 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
+  </PropertyGroup>
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="MinSizeRel|x64">
+      <Configuration>MinSizeRel</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="RelWithDebInfo|x64">
+      <Configuration>RelWithDebInfo</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{1A27CD1F-6E42-3CA7-B481-5AA32B7A25AA}</ProjectGuid>
+    <WindowsTargetPlatformVersion>10.0.26100.0</WindowsTargetPlatformVersion>
+    <Keyword>Win32Proj</Keyword>
+    <Platform>x64</Platform>
+    <ProjectName>examples</ProjectName>
+    <VCProjectUpgraderObjectName>NoUpgrade</VCProjectUpgraderObjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\CMakeLists.txt">
+      <UseUtf8Encoding>Always</UseUtf8Encoding>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule C:/CrossHatch-JRDW/bgfx.cmake/cmake/bgfx/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+C:\cmake-3.22.6-windows-x86_64\bin\cmake.exe -SC:/CrossHatch-JRDW -BC:/CrossHatch-JRDW/build --check-stamp-file C:/CrossHatch-JRDW/build/bgfx.cmake/cmake/bgfx/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\dear-imgui.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\fcpp.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\glsl-optimizer.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\glslang.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\meshoptimizer.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\spirv-cross.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\spirv-opt.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\webgpu.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\bgfx.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\examples.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\generated\shader.cpp.in;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\generated\vertexlayout.cpp.in;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\geometryc.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\geometryv.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\shaderc.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\shared.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\texturev.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\util\ConfigureDebugging.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfxToolUtils.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeParseArguments.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule C:/CrossHatch-JRDW/bgfx.cmake/cmake/bgfx/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+C:\cmake-3.22.6-windows-x86_64\bin\cmake.exe -SC:/CrossHatch-JRDW -BC:/CrossHatch-JRDW/build --check-stamp-file C:/CrossHatch-JRDW/build/bgfx.cmake/cmake/bgfx/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\dear-imgui.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\fcpp.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\glsl-optimizer.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\glslang.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\meshoptimizer.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\spirv-cross.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\spirv-opt.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\webgpu.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\bgfx.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\examples.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\generated\shader.cpp.in;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\generated\vertexlayout.cpp.in;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\geometryc.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\geometryv.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\shaderc.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\shared.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\texturev.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\util\ConfigureDebugging.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfxToolUtils.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeParseArguments.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Building Custom Rule C:/CrossHatch-JRDW/bgfx.cmake/cmake/bgfx/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+C:\cmake-3.22.6-windows-x86_64\bin\cmake.exe -SC:/CrossHatch-JRDW -BC:/CrossHatch-JRDW/build --check-stamp-file C:/CrossHatch-JRDW/build/bgfx.cmake/cmake/bgfx/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\dear-imgui.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\fcpp.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\glsl-optimizer.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\glslang.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\meshoptimizer.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\spirv-cross.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\spirv-opt.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\webgpu.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\bgfx.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\examples.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\generated\shader.cpp.in;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\generated\vertexlayout.cpp.in;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\geometryc.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\geometryv.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\shaderc.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\shared.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\texturev.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\util\ConfigureDebugging.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfxToolUtils.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeParseArguments.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Building Custom Rule C:/CrossHatch-JRDW/bgfx.cmake/cmake/bgfx/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+C:\cmake-3.22.6-windows-x86_64\bin\cmake.exe -SC:/CrossHatch-JRDW -BC:/CrossHatch-JRDW/build --check-stamp-file C:/CrossHatch-JRDW/build/bgfx.cmake/cmake/bgfx/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\dear-imgui.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\fcpp.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\glsl-optimizer.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\glslang.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\meshoptimizer.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\spirv-cross.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\spirv-opt.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\webgpu.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\bgfx.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\examples.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\generated\shader.cpp.in;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\generated\vertexlayout.cpp.in;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\geometryc.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\geometryv.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\shaderc.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\shared.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\texturev.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\util\ConfigureDebugging.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfxToolUtils.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeParseArguments.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\ZERO_CHECK.vcxproj">
+      <Project>{AAC8710C-EB8C-3E3F-8CBD-78E2F2A137E1}</Project>
+      <Name>ZERO_CHECK</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-00-helloworld.vcxproj">
+      <Project>{1C256FBA-03EA-34AB-9DD0-26C81D1321F6}</Project>
+      <Name>example-00-helloworld</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-01-cubes.vcxproj">
+      <Project>{393DDE5A-910E-3062-B3BA-AFDE7A67E01D}</Project>
+      <Name>example-01-cubes</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-02-metaballs.vcxproj">
+      <Project>{273BF262-4A44-3F85-9CCC-163A77CFD126}</Project>
+      <Name>example-02-metaballs</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-03-raymarch.vcxproj">
+      <Project>{847AACB1-CB3E-3B47-A731-30939075F7C6}</Project>
+      <Name>example-03-raymarch</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-04-mesh.vcxproj">
+      <Project>{D08BA9FF-ACB7-3E7D-B69F-F6CBA4C346EF}</Project>
+      <Name>example-04-mesh</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-05-instancing.vcxproj">
+      <Project>{97408A49-F77D-3708-BCBB-B82509CDAEBB}</Project>
+      <Name>example-05-instancing</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-06-bump.vcxproj">
+      <Project>{7D59CC5E-7012-3CE1-8B6F-AB986CBC34AE}</Project>
+      <Name>example-06-bump</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-07-callback.vcxproj">
+      <Project>{01A6FAA6-66DD-3A1C-9DEE-6484B75745F9}</Project>
+      <Name>example-07-callback</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-08-update.vcxproj">
+      <Project>{FF62B718-5CC2-3B49-AC67-310682EE3975}</Project>
+      <Name>example-08-update</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-09-hdr.vcxproj">
+      <Project>{F0C343B5-1DB8-39BE-A611-E8B9E4F8AD9B}</Project>
+      <Name>example-09-hdr</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-10-font.vcxproj">
+      <Project>{B0EE172B-E117-3245-A1C8-13E9FE6E546C}</Project>
+      <Name>example-10-font</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-11-fontsdf.vcxproj">
+      <Project>{40E9FE5B-A1C6-3E81-8364-F5250FCFDF84}</Project>
+      <Name>example-11-fontsdf</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-12-lod.vcxproj">
+      <Project>{7E587CC4-AEEB-3AFF-BB08-4C408BCE8CBC}</Project>
+      <Name>example-12-lod</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-13-stencil.vcxproj">
+      <Project>{7E1118B0-D2A3-30DA-9243-2470D94BA66B}</Project>
+      <Name>example-13-stencil</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-14-shadowvolumes.vcxproj">
+      <Project>{7C6D6CCC-E837-33FE-9E2B-4C8FCFFE0B5C}</Project>
+      <Name>example-14-shadowvolumes</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-15-shadowmaps-simple.vcxproj">
+      <Project>{17DFA7A5-7233-3CC4-A173-0269C9407BC2}</Project>
+      <Name>example-15-shadowmaps-simple</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-16-shadowmaps.vcxproj">
+      <Project>{51726823-E517-38AB-81E8-F93C3E703258}</Project>
+      <Name>example-16-shadowmaps</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-17-drawstress.vcxproj">
+      <Project>{C8059B36-8C8B-3D0D-A923-73A593075601}</Project>
+      <Name>example-17-drawstress</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-18-ibl.vcxproj">
+      <Project>{AFB0E122-5EC8-3A72-A641-FA3E5215BCAF}</Project>
+      <Name>example-18-ibl</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-19-oit.vcxproj">
+      <Project>{46B5E125-D442-34CA-9F6F-84D9AFA97DA1}</Project>
+      <Name>example-19-oit</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-20-nanovg.vcxproj">
+      <Project>{AE31CF18-B742-31E5-A762-C64D3F18F402}</Project>
+      <Name>example-20-nanovg</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-22-windows.vcxproj">
+      <Project>{4DF8CECB-0705-3D23-819E-EE982C51400E}</Project>
+      <Name>example-22-windows</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-23-vectordisplay.vcxproj">
+      <Project>{B7C9D2C6-8A9D-37F7-BE16-B8C9895B6653}</Project>
+      <Name>example-23-vectordisplay</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-24-nbody.vcxproj">
+      <Project>{3D5FB76F-8295-3181-94E5-66AEF4B8968A}</Project>
+      <Name>example-24-nbody</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-25-c99.vcxproj">
+      <Project>{1BC76799-70B9-3547-BBE5-E0400F123A46}</Project>
+      <Name>example-25-c99</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-26-occlusion.vcxproj">
+      <Project>{8C610C0B-F477-3EF8-BE50-3DB258EED254}</Project>
+      <Name>example-26-occlusion</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-27-terrain.vcxproj">
+      <Project>{46DFC0CB-6D5D-3F52-9C8E-463966CA10AD}</Project>
+      <Name>example-27-terrain</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-28-wireframe.vcxproj">
+      <Project>{1ED5B98E-38C7-3734-8779-31EA7D380494}</Project>
+      <Name>example-28-wireframe</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-29-debugdraw.vcxproj">
+      <Project>{31AAC815-4BF4-3ED9-99BB-A980F79BB78A}</Project>
+      <Name>example-29-debugdraw</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-30-picking.vcxproj">
+      <Project>{C10E1EB8-985F-32DE-A797-C25B29339A98}</Project>
+      <Name>example-30-picking</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-31-rsm.vcxproj">
+      <Project>{ED1E8154-96CD-36ED-AA70-A9E1627231ED}</Project>
+      <Name>example-31-rsm</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-32-particles.vcxproj">
+      <Project>{94CEB900-BC93-3BEF-9B77-35D043AAF5A9}</Project>
+      <Name>example-32-particles</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-33-pom.vcxproj">
+      <Project>{2503451F-76FD-3B09-A2F1-67F6863DFD98}</Project>
+      <Name>example-33-pom</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-34-mvs.vcxproj">
+      <Project>{C7FC1621-7BE8-32F7-83E6-5D7B83CE8E1E}</Project>
+      <Name>example-34-mvs</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-35-dynamic.vcxproj">
+      <Project>{5EDE7FC2-BDBF-37EC-898F-E894BAB6BEA0}</Project>
+      <Name>example-35-dynamic</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-36-sky.vcxproj">
+      <Project>{262247C1-865B-3C00-B294-BB3E9BCD00C6}</Project>
+      <Name>example-36-sky</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-38-bloom.vcxproj">
+      <Project>{2CF3CA6F-FC8C-3A7E-94B6-6ABB46639224}</Project>
+      <Name>example-38-bloom</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-39-assao.vcxproj">
+      <Project>{D309430E-A40A-38A6-928E-509A76F28354}</Project>
+      <Name>example-39-assao</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-40-svt.vcxproj">
+      <Project>{3EC9AC1D-3BD4-3254-913F-6D364903FE1D}</Project>
+      <Name>example-40-svt</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-42-bunnylod.vcxproj">
+      <Project>{BBC79048-5689-3C07-8CEC-469F2E0C6B72}</Project>
+      <Name>example-42-bunnylod</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-43-denoise.vcxproj">
+      <Project>{87689B5A-DE52-35A4-AD14-7064A9DA1E13}</Project>
+      <Name>example-43-denoise</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-44-sss.vcxproj">
+      <Project>{B3BEC9CA-992C-3FC9-A250-80D24E21FF75}</Project>
+      <Name>example-44-sss</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-45-bokeh.vcxproj">
+      <Project>{F9C46670-B0AC-3D41-8A8C-C43CC439F7E9}</Project>
+      <Name>example-45-bokeh</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-46-fsr.vcxproj">
+      <Project>{05354766-95BC-3B55-9E43-206F697003FC}</Project>
+      <Name>example-46-fsr</Name>
+    </ProjectReference>
+    <ProjectReference Include="C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\example-47-pixelformats.vcxproj">
+      <Project>{9FC9DDD8-021E-3F15-89BE-5F10BCAA0761}</Project>
+      <Name>example-47-pixelformats</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

@@ -1,0 +1,5 @@
+# CMake generation dependency list for this directory.
+C:/CrossHatch-JRDW/glfw/docs/CMakeLists.txt
+C:/cmake-3.22.6-windows-x86_64/share/cmake-3.22/Modules/FindDoxygen.cmake
+C:/cmake-3.22.6-windows-x86_64/share/cmake-3.22/Modules/FindPackageHandleStandardArgs.cmake
+C:/cmake-3.22.6-windows-x86_64/share/cmake-3.22/Modules/FindPackageMessage.cmake

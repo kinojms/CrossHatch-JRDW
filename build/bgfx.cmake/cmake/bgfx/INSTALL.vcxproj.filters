@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\CrossHatch-JRDW\build\CMakeFiles\9015e9c75a039803f32d1bebee07da1b\INSTALL_force.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{56ABA782-A7F0-344A-BFD7-6F54E9678EED}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

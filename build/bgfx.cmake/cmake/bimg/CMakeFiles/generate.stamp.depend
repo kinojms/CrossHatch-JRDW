@@ -1,0 +1,22 @@
+# CMake generation dependency list for this directory.
+C:/CrossHatch-JRDW/bgfx.cmake/cmake/bimg/3rdparty/astc_encoder.cmake
+C:/CrossHatch-JRDW/bgfx.cmake/cmake/bimg/3rdparty/edtaa3.cmake
+C:/CrossHatch-JRDW/bgfx.cmake/cmake/bimg/3rdparty/etc1.cmake
+C:/CrossHatch-JRDW/bgfx.cmake/cmake/bimg/3rdparty/etc2.cmake
+C:/CrossHatch-JRDW/bgfx.cmake/cmake/bimg/3rdparty/iqa.cmake
+C:/CrossHatch-JRDW/bgfx.cmake/cmake/bimg/3rdparty/libsquish.cmake
+C:/CrossHatch-JRDW/bgfx.cmake/cmake/bimg/3rdparty/loadpng.cmake
+C:/CrossHatch-JRDW/bgfx.cmake/cmake/bimg/3rdparty/miniz.cmake
+C:/CrossHatch-JRDW/bgfx.cmake/cmake/bimg/3rdparty/nvtt.cmake
+C:/CrossHatch-JRDW/bgfx.cmake/cmake/bimg/3rdparty/pvrtc.cmake
+C:/CrossHatch-JRDW/bgfx.cmake/cmake/bimg/3rdparty/tinyexr.cmake
+C:/CrossHatch-JRDW/bgfx.cmake/cmake/bimg/CMakeLists.txt
+C:/CrossHatch-JRDW/bgfx.cmake/cmake/bimg/bimg.cmake
+C:/CrossHatch-JRDW/bgfx.cmake/cmake/bimg/bimg_decode.cmake
+C:/CrossHatch-JRDW/bgfx.cmake/cmake/bimg/bimg_encode.cmake
+C:/CrossHatch-JRDW/bgfx.cmake/cmake/bimg/texturec.cmake
+C:/cmake-3.22.6-windows-x86_64/share/cmake-3.22/Modules/CMakeCheckCompilerFlagCommonPatterns.cmake
+C:/cmake-3.22.6-windows-x86_64/share/cmake-3.22/Modules/CheckCXXCompilerFlag.cmake
+C:/cmake-3.22.6-windows-x86_64/share/cmake-3.22/Modules/CheckCXXSourceCompiles.cmake
+C:/cmake-3.22.6-windows-x86_64/share/cmake-3.22/Modules/Internal/CheckCompilerFlag.cmake
+C:/cmake-3.22.6-windows-x86_64/share/cmake-3.22/Modules/Internal/CheckSourceCompiles.cmake

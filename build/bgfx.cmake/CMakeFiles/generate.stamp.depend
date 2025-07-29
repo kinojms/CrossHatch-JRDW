@@ -1,0 +1,12 @@
+# CMake generation dependency list for this directory.
+C:/CrossHatch-JRDW/bgfx.cmake/CMakeLists.txt
+C:/CrossHatch-JRDW/bgfx.cmake/cmake/Config.cmake.in
+C:/CrossHatch-JRDW/bgfx.cmake/cmake/version.cmake
+C:/cmake-3.22.6-windows-x86_64/share/cmake-3.22/Modules/BasicConfigVersion-SameMinorVersion.cmake.in
+C:/cmake-3.22.6-windows-x86_64/share/cmake-3.22/Modules/CMakeDependentOption.cmake
+C:/cmake-3.22.6-windows-x86_64/share/cmake-3.22/Modules/CMakePackageConfigHelpers.cmake
+C:/cmake-3.22.6-windows-x86_64/share/cmake-3.22/Modules/FindGit.cmake
+C:/cmake-3.22.6-windows-x86_64/share/cmake-3.22/Modules/FindPackageHandleStandardArgs.cmake
+C:/cmake-3.22.6-windows-x86_64/share/cmake-3.22/Modules/FindPackageMessage.cmake
+C:/cmake-3.22.6-windows-x86_64/share/cmake-3.22/Modules/GNUInstallDirs.cmake
+C:/cmake-3.22.6-windows-x86_64/share/cmake-3.22/Modules/WriteBasicConfigVersionFile.cmake
