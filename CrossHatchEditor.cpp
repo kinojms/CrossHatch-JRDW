@@ -4536,7 +4536,8 @@ int main(void)
             ImGui::End();
 
             ImGui::Begin("Controls", p_open, window_flags);
-            ImGui::Text("Controls:");
+
+            /*ImGui::Text("Controls:");
             ImGui::Text("WASD - Move Camera");
             ImGui::Text("Right Click - Rotate Camera");
             ImGui::Text("Ctrl + Right Click - Pan Camera");
@@ -4549,7 +4550,37 @@ int main(void)
             ImGui::Text("Double Left Click - Teleport to Object");
             ImGui::Text("F1 - Toggle bgfx stats");
             ImGui::Text("F2 - Disable/Enable UI");
-            ImGui::Text("F3 - Take Screenshot");
+            ImGui::Text("F3 - Take Screenshot");*/
+
+
+            if (ImGui::BeginTable("ControlsTable", 3, ImGuiTableFlags_NoBordersInBody))
+            {
+                // Column 1
+                ImGui::TableNextColumn();
+                //ImGui::Text("Controls:");
+                ImGui::Text("WASD - Move Camera");
+                ImGui::Text("Left Click - Select Object");
+                ImGui::Text("Double Left Click - Teleport to Object");
+                ImGui::Text("Right Click - Rotate Camera");
+                ImGui::Text("Ctrl + Right Click - Pan Camera");
+                ImGui::Text("Shift - Move Down");
+                ImGui::Text("Space - Move Up");
+
+                // Column 2
+                ImGui::TableNextColumn();
+                ImGui::Text("1 - Switch Gizmo to Translate");
+                ImGui::Text("2 - Switch Gizmo to Rotate");
+                ImGui::Text("3 - Switch Gizmo to Scale");
+
+                // Column 3
+                ImGui::TableNextColumn();
+                ImGui::Text("F1 - Toggle bgfx stats");
+                ImGui::Text("F2 - Disable/Enable UI");
+                ImGui::Text("F3 - Take Screenshot");
+
+                ImGui::EndTable();
+            }
+
             ImGui::End();
 
             ImGui::Begin("Screenshot", p_open, window_flags);
