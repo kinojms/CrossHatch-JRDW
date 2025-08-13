@@ -4576,20 +4576,28 @@ int main(void)
             /*-------------------------------------------------------------------------------------*/
 
             ImGui::Begin("Info", p_open, window_flags);
-            ImGui::Text("Crosshatch Editor Demo Build");
-            ImGui::Text("Press F1 to toggle bgfx stats");
-            ImGui::Text("FPS: %.1f ", ImGui::GetIO().Framerate);
-            ImGui::Text("Frame Time: %.3f ms", 1000.0f / ImGui::GetIO().Framerate);
-            ImGui::Separator();
-            ImGui::Text("Rendered Instances: %d", instances.size());
-            ImGui::Text("Selected Instance: %s", selectedInstance ? selectedInstance->name.c_str() : "None");
-            ImGui::Text("Selected Instance ID: %d", selectedInstance ? selectedInstance->id : -1);
-            ImGui::Text("Selected Instance Parent: %s", selectedInstance && selectedInstance->parent ? selectedInstance->parent->name.c_str() : "None");
-            ImGui::Text("Selected Instance Children: %d", selectedInstance ? selectedInstance->children.size() : 0);
-            ImGui::Separator();
-            ImGui::Text("Camera Position: %.2f, %.2f, %.2f", cameras[currentCameraIndex].position.x, cameras[currentCameraIndex].position.y, cameras[currentCameraIndex].position.z);
-            //ImGui::Text("Frame: % 7.3f[ms]", 1000.0f / bgfx::getStats()->cpuTimeFrame);
-            ImGui::Text("");
+
+            if (ImGui::BeginTable("Info", 2, ImGuiTableFlags_NoBordersInBody))
+            {
+
+                ImGui::TableNextColumn();
+                ImGui::Text("Crosshatch Editor Demo Build");
+                ImGui::Text("Press F1 to toggle bgfx stats");
+                ImGui::Text("FPS: %.1f ", ImGui::GetIO().Framerate);
+                ImGui::Text("Frame Time: %.3f ms", 1000.0f / ImGui::GetIO().Framerate);
+
+                ImGui::TableNextColumn();
+                ImGui::Text("Rendered Instances: %d", instances.size());
+                ImGui::Text("Selected Instance: %s", selectedInstance ? selectedInstance->name.c_str() : "None");
+                ImGui::Text("Selected Instance ID: %d", selectedInstance ? selectedInstance->id : -1);
+                ImGui::Text("Selected Instance Parent: %s", selectedInstance && selectedInstance->parent ? selectedInstance->parent->name.c_str() : "None");
+                ImGui::Text("Selected Instance Children: %d", selectedInstance ? selectedInstance->children.size() : 0);
+                ImGui::Separator();
+                ImGui::Text("Camera Position: %.2f, %.2f, %.2f", cameras[currentCameraIndex].position.x, cameras[currentCameraIndex].position.y, cameras[currentCameraIndex].position.z);
+                //ImGui::Text("Frame: % 7.3f[ms]", 1000.0f / bgfx::getStats()->cpuTimeFrame);
+                ImGui::Text("");
+                ImGui::EndTable();
+            }
             ImGui::End();
 
             ImGui::Begin("Controls", p_open, window_flags);
