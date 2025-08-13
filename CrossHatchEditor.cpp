@@ -3493,14 +3493,14 @@ int main(void)
                 ImGui::SetWindowFontScale(3.0f);
 
                 // Measure text at correct scale
-                ImVec2 titleSize = ImGui::CalcTextSize("Anito Construct");
+                ImVec2 titleSize = ImGui::CalcTextSize("Anito GeoForge");
 
                 // Center position
                 float titleX = (windowWidth - titleSize.x) * 0.5f;
                 float titleY = (windowHeight * 0.3f) - (titleSize.y * 0.5f);
 
                 ImGui::SetCursorPos(ImVec2(titleX, titleY));
-                ImGui::Text("Anito Construct");
+                ImGui::Text("Anito GeoForge");
 
                 // Restore font scale
                 ImGui::SetWindowFontScale(2.0f);
