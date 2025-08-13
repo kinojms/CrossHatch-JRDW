@@ -3492,12 +3492,12 @@ int main(void)
                 ImGui::SetCursorPos(ImVec2(logoX, logoY));
                 ImGui::Image(logoID, logoSize);
 
-                float titleWidth = ImGui::CalcTextSize("AnitoCrossHatch").x * 3;
-                float titleHeight = ImGui::CalcTextSize("AnitoCrossHatch").y * 3;
+                float titleWidth = ImGui::CalcTextSize("Anito Space Forger").x * 3;
+                float titleHeight = ImGui::CalcTextSize("Anito Space Forger").y * 3;
                 ImGui::SetCursorPosX((windowWidth - titleWidth) * 0.5f);
                 ImGui::SetCursorPosY((windowHeight - titleHeight) * 0.3f);
                 ImGui::SetWindowFontScale(3.0f);
-                ImGui::Text("AnitoCrossHatch");
+                ImGui::Text("Anito Space Forger");
                 ImGui::SetWindowFontScale(2.0f);
 
                 // Vertical spacing
