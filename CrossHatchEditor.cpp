@@ -3422,6 +3422,22 @@ int main(void)
         static bool showCreditsPage = false;
         static bool showGallery = false;
 
+        // OVERRIDE default blue tabs:
+        ImGuiStyle& style = ImGui::GetStyle();
+        style.Colors[ImGuiCol_TitleBg] = ImVec4(0.20f, 0.3f, 0.0f, 0.75f); // unfocused
+        style.Colors[ImGuiCol_TitleBgActive] = ImVec4(0.20f, 0.40f, 0.0f, 0.75f); // active
+        style.Colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.10f, 0.10f, 0.10f, 1.0f); // collapsed
+
+        // Optional: Tabs
+        style.Colors[ImGuiCol_Tab] = ImVec4(0.20f, 0.3f, 0.0f, 0.75f); // unfocused
+        style.Colors[ImGuiCol_TabActive] = ImVec4(0.20f, 0.60f, 0.0f, 0.75f); // active
+        style.Colors[ImGuiCol_TabHovered] = ImVec4(0.10f, 0.10f, 0.10f, 1.0f); 
+
+        style.Colors[ImGuiCol_TabUnfocused] = ImVec4(0.15f, 0.15f, 0.15f, 1.0f);   // unfocused inactive
+        style.Colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0, 0, 0, 1.0f); // unfocused active
+
+
+
         ImGui_ImplGlfw_NewFrame();
         ImGui_Implbgfx_NewFrame();
         ImGui::NewFrame();
