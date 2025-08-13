@@ -3489,15 +3489,20 @@ int main(void)
                 float logoX = (windowWidth - logoSize.x) * 0.5f;
                 float logoY = (windowHeight * 0.3f) - (logoSize.y + 20); // 20px spacing
 
-                ImGui::SetCursorPos(ImVec2(logoX, logoY));
-                ImGui::Image(logoID, logoSize);
-
-                float titleWidth = ImGui::CalcTextSize("Anito Space Forger").x * 3;
-                float titleHeight = ImGui::CalcTextSize("Anito Space Forger").y * 3;
-                ImGui::SetCursorPosX((windowWidth - titleWidth) * 0.5f);
-                ImGui::SetCursorPosY((windowHeight - titleHeight) * 0.3f);
+                // Set font scale before measuring
                 ImGui::SetWindowFontScale(3.0f);
-                ImGui::Text("Anito Space Forger");
+
+                // Measure text at correct scale
+                ImVec2 titleSize = ImGui::CalcTextSize("Anito Construct");
+
+                // Center position
+                float titleX = (windowWidth - titleSize.x) * 0.5f;
+                float titleY = (windowHeight * 0.3f) - (titleSize.y * 0.5f);
+
+                ImGui::SetCursorPos(ImVec2(titleX, titleY));
+                ImGui::Text("Anito Construct");
+
+                // Restore font scale
                 ImGui::SetWindowFontScale(2.0f);
 
                 // Vertical spacing
@@ -3734,6 +3739,16 @@ int main(void)
 
             ImGui::End();*/
 
+            ImGuiWindowFlags menu_flags =
+                ImGuiWindowFlags_MenuBar |
+                ImGuiWindowFlags_NoCollapse |
+                ImGuiWindowFlags_NoResize |
+                ImGuiWindowFlags_AlwaysAutoResize |
+                ImGuiWindowFlags_NoMove |
+                ImGuiWindowFlags_NoBringToFrontOnFocus; // Prevent bringing it forward
+
+            ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
+            ImGui::SetNextWindowSize(ImVec2(ImGui::GetIO().DisplaySize.x, 0)); // full width
             ImGui::Begin("MenuBar", p_open, menu_flags);
             if (ImGui::BeginMenuBar())
             {
