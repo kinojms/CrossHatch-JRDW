@@ -4245,6 +4245,7 @@ int main(void)
             //IMGUI WINDOW FOR CONTROLS
             //FOR REFERENCE USE THIS: https://pthom.github.io/imgui_manual_online/manual/imgui_manual.html
             ImGui::Begin("Inspector", p_open, window_flags);
+            ImGui::SetWindowFontScale(0.85f);
 
             // If an instance is selected, show its transform controls.
             if (selectedInstance)
@@ -4967,6 +4968,7 @@ int main(void)
 			//ImGui::Begin("Crosshatch Shader Settings");
             // Add a new window for camera settings
             ImGui::Begin("Camera Settings", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+            ImGui::SetWindowFontScale(0.85f);
             Camera& activeCamera = cameras[currentCameraIndex];
             // Basic camera controls
             ImGui::SliderFloat("Movement Speed", &activeCamera.movementSpeed, 0.1f, 20.0f);
