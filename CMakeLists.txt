@@ -1,16 +1,31 @@
-﻿# CMakeList.txt : CMake project for CrossHatchEditor, include source and define
-# project specific logic here.
-#
-cmake_minimum_required (VERSION 3.12)
+﻿cmake_minimum_required(VERSION 3.12)
 
-# Enable Hot Reload for MSVC compilers if supported.
+# ---------------------------------------------------------------------------
+# VCPKG Setup (must be defined before project())
+# ---------------------------------------------------------------------------
+set(CMAKE_TOOLCHAIN_FILE "${CMAKE_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake"
+    CACHE STRING "Vcpkg toolchain file")
+
+# ---------------------------------------------------------------------------
+# Project Setup
+# ---------------------------------------------------------------------------
+project("CrossHatchEditor")
+
+# Enable Hot Reload for MSVC compilers if supported
 if (POLICY CMP0141)
   cmake_policy(SET CMP0141 NEW)
-  set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<IF:$<AND:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>,$<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>,$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>>")
+  set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT 
+      "$<IF:$<AND:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>,\
+      $<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>,\
+      $<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>>")
 endif()
 
-project ("CrossHatchEditor")
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# ---------------------------------------------------------------------------
+# Asset Directories
+# ---------------------------------------------------------------------------
 set(SHADERS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/shaders")
 set(MESHES_DIR "${CMAKE_CURRENT_SOURCE_DIR}/meshes")
 set(NOISE_TEX_DIR "${CMAKE_CURRENT_SOURCE_DIR}/noise textures")
@@ -21,32 +36,40 @@ set(ASSETS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/assets")
 set(TEXTURES_DIR "${CMAKE_CURRENT_SOURCE_DIR}/textures")
 set(SAVES_DIR "${CMAKE_CURRENT_SOURCE_DIR}/saves")
 
-# Generate Shaders
-
-# Add source to this project's executable.
-add_executable (${PROJECT_NAME})
-
-if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set_property(TARGET ${PROJECT_NAME}  PROPERTY CXX_STANDARD 20)
-endif()
-
-# TODO: Add tests and install targets if needed.
-target_sources(${PROJECT_NAME} PRIVATE 
-"CrossHatchEditor.cpp" 
-"CrossHatchEditor.h"
-"Camera.h"
-"InputManager.cpp"
-"InputManager.h" 
-"ObjLoader.cpp"
-"ObjLoader.h" 
-"PrimitiveObjects.h"
-"bgfx-imgui/imgui_impl_bgfx.cpp" "Logger.cpp" "Light.h" "stb_image.h" "stb_image_write.h" "VideoPlayer.h" "TextRenderer.h" "TextRenderer.cpp")
+# ---------------------------------------------------------------------------
+# Main Executable
+# ---------------------------------------------------------------------------
+add_executable(${PROJECT_NAME}
+    "CrossHatchEditor.cpp"
+    "CrossHatchEditor.h"
+    "Camera.h"
+    "InputManager.cpp"
+    "InputManager.h"
+    "ObjLoader.cpp"
+    "ObjLoader.h"
+    "PrimitiveObjects.h"
+    "bgfx-imgui/imgui_impl_bgfx.cpp"
+    "Logger.cpp"
+    "Light.h"
+    "stb_image.h"
+    "stb_image_write.h"
+    "VideoPlayer.h"
+    "TextRenderer.h"
+    "TextRenderer.cpp"
+    "FrameExtractor.cpp"
+ "FrameExtractor.h")
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
 
+# ---------------------------------------------------------------------------
+# Dependencies: bgfx, glfw
+# ---------------------------------------------------------------------------
 add_subdirectory(./bgfx.cmake)
 add_subdirectory(./glfw)
 
+# ---------------------------------------------------------------------------
+# BGFX Shader Compilation
+# ---------------------------------------------------------------------------
 BGFX_COMPILE_SHADERS(
     TYPE FRAGMENT
     SHADERS ${CMAKE_SOURCE_DIR}/baseshaders/crosshatching_frag_variant1.sc
@@ -58,38 +81,12 @@ BGFX_COMPILE_SHADERS(
 add_library(shaderLib INTERFACE)
 target_include_directories(shaderLib INTERFACE ${CMAKE_BINARY_DIR}/include/generated/shaders)
 
-target_link_libraries(${PROJECT_NAME}  PRIVATE bgfx bx bimg glfw imgui shaderLib)
-target_include_directories(${PROJECT_NAME}  PRIVATE bgfx)
-
-file(COPY ${SHADERS_DIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-include_directories(${SHADERS_DIR})
-
-file(COPY ${MESHES_DIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-include_directories(${MESHES_DIR})
-
-file(COPY ${NOISE_TEX_DIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-include_directories(${NOISE_TEX_DIR})
-
-file(COPY ${VIDEOS_DIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-include_directories(${VIDEOS_DIR})
-
-file(COPY ${FONTS_DIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-include_directories(${FONTS_DIR})
-
-file(COPY ${COMIC_ELEMENTS_DIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-include_directories(${COMIC_ELEMENTS_DIR})
-
-file(COPY ${ASSETS_DIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-include_directories(${ASSETS_DIR})
-
-file(COPY ${TEXTURES_DIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-include_directories(${TEXTURES_DIR})
-
-file(COPY ${SAVES_DIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-include_directories(${SAVES_DIR})
-
+# ---------------------------------------------------------------------------
+# ImGui Setup
+# ---------------------------------------------------------------------------
 set(IMGUI_PATH ${CMAKE_CURRENT_LIST_DIR}/imgui)
-file(GLOB IMGUI_GLOB
+
+file(GLOB IMGUI_SOURCES
     ${IMGUI_PATH}/imgui.h
     ${IMGUI_PATH}/imgui.cpp
     ${IMGUI_PATH}/imconfig.h
@@ -101,56 +98,53 @@ file(GLOB IMGUI_GLOB
     ${IMGUI_PATH}/imstb_truetype.h
     ${IMGUI_PATH}/imgui_tables.cpp
     ${IMGUI_PATH}/imgui_widgets.cpp
-
-    # specific bindings...
     ${IMGUI_PATH}/backends/imgui_impl_glfw.h
     ${IMGUI_PATH}/backends/imgui_impl_glfw.cpp
     ${IMGUI_PATH}/backends/imgui_impl_opengl3.h
     ${IMGUI_PATH}/backends/imgui_impl_opengl3.cpp
-    ${IMGUI_PATH}/backends/imgui_impl_opengl3_loader.cpp)
-add_library("imgui" STATIC ${IMGUI_GLOB} "Logger.cpp")
-target_include_directories("imgui" PUBLIC ${IMGUI_PATH})
-target_link_libraries("imgui" PRIVATE glfw)
+    ${IMGUI_PATH}/backends/imgui_impl_opengl3_loader.cpp
+)
 
-target_include_directories(CrossHatchEditor PUBLIC imgui)
+add_library(imgui STATIC ${IMGUI_SOURCES} "FrameExtractor.h")
+target_include_directories(imgui PUBLIC ${IMGUI_PATH})
+target_link_libraries(imgui PRIVATE glfw)
 
-# Set the path where Assimp was built
+# ---------------------------------------------------------------------------
+# Assimp Setup
+# ---------------------------------------------------------------------------
 set(ASSIMP_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR}/assimp)
+target_include_directories(${PROJECT_NAME} PRIVATE ${ASSIMP_ROOT_DIR}/include)
+target_link_directories(${PROJECT_NAME} PRIVATE ${ASSIMP_ROOT_DIR}/lib/Debug)
+target_link_libraries(${PROJECT_NAME} PRIVATE assimp-vc143-mtd)
 
-# Include Assimp headers
-target_include_directories(CrossHatchEditor PRIVATE ${ASSIMP_ROOT_DIR}/include)
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${ASSIMP_ROOT_DIR}/bin/Debug/assimp-vc143-mtd.dll"
+        $<TARGET_FILE_DIR:${PROJECT_NAME}>
+)
 
-# Link Assimp library
-target_link_directories(CrossHatchEditor PRIVATE ${ASSIMP_ROOT_DIR}/lib/Debug)
-target_link_libraries(CrossHatchEditor PRIVATE assimp-vc143-mtd)
-
+# ---------------------------------------------------------------------------
+# ImGuizmo Setup
+# ---------------------------------------------------------------------------
 set(IMGUIZMO_PATH "${CMAKE_CURRENT_SOURCE_DIR}/ImGuizmo")
-# Add ImGuizmo as a static library.
 add_library(ImGuizmo STATIC
     "${IMGUIZMO_PATH}/ImGuizmo.h"
     "${IMGUIZMO_PATH}/ImGuizmo.cpp"
-    # Optionally, if you also want the .h in the build, though usually .h is not compiled:
-    # "${IMGUIZMO_PATH}/ImGuizmo.h"
-)
-# Tell ImGuizmo where to find its own headers AND the imgui headers.
+ "FrameExtractor.h")
 target_include_directories(ImGuizmo PUBLIC
     "${IMGUIZMO_PATH}"
     "${IMGUI_PATH}"
 )
-# Now link ImGuizmo:
-target_link_libraries(CrossHatchEditor PRIVATE ImGuizmo)
+target_link_libraries(${PROJECT_NAME} PRIVATE ImGuizmo)
 
-add_custom_command(TARGET CrossHatchEditor POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${ASSIMP_ROOT_DIR}/bin/Debug/assimp-vc143-mtd.dll"  # Replace with the actual path to assimp.dll
-        $<TARGET_FILE_DIR:CrossHatchEditor>)
+# ---------------------------------------------------------------------------
+# FFmpeg Setup
+# ---------------------------------------------------------------------------
+set(FFMPEG_DIR "${CMAKE_CURRENT_LIST_DIR}/ffmpeg")
+target_include_directories(${PROJECT_NAME} PRIVATE ${FFMPEG_DIR}/include)
+target_link_directories(${PROJECT_NAME} PRIVATE ${FFMPEG_DIR}/lib)
 
-# FFmpeg setup
-set(FFMPEG_DIR "${CMAKE_CURRENT_LIST_DIR}/ffmpeg")  # Adjust this path
-target_include_directories(CrossHatchEditor PRIVATE ${FFMPEG_DIR}/include)
-target_link_directories(CrossHatchEditor PRIVATE ${FFMPEG_DIR}/lib)
-
-target_link_libraries(CrossHatchEditor PRIVATE
+target_link_libraries(${PROJECT_NAME} PRIVATE
     avcodec
     avformat
     avutil
@@ -158,27 +152,66 @@ target_link_libraries(CrossHatchEditor PRIVATE
     swresample
 )
 
-# Copy FFmpeg DLLs after build
-add_custom_command(TARGET CrossHatchEditor POST_BUILD
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${FFMPEG_DIR}/bin/avcodec-61.dll"
         "${FFMPEG_DIR}/bin/avformat-61.dll"
         "${FFMPEG_DIR}/bin/avutil-59.dll"
         "${FFMPEG_DIR}/bin/swscale-8.dll"
         "${FFMPEG_DIR}/bin/swresample-5.dll"
-        $<TARGET_FILE_DIR:CrossHatchEditor>
+        $<TARGET_FILE_DIR:${PROJECT_NAME}>
 )
 
-# Packaging
+# ---------------------------------------------------------------------------
+# OpenCV + OpenGL (for FrameExtractor)
+# ---------------------------------------------------------------------------
+find_package(OpenCV REQUIRED)
+find_package(OpenGL REQUIRED)
 
-# Set output directory for build binaries
+target_include_directories(${PROJECT_NAME} PRIVATE
+    ${OpenCV_INCLUDE_DIRS}
+    ${CMAKE_SOURCE_DIR}/imgui
+    ${CMAKE_SOURCE_DIR}/imgui/backends
+    ${CMAKE_SOURCE_DIR}/glfw/include
+)
+
+target_link_libraries(${PROJECT_NAME} PRIVATE
+    ${OpenCV_LIBS}
+    OpenGL::GL
+)
+
+# ---------------------------------------------------------------------------
+# Link All Dependencies
+# ---------------------------------------------------------------------------
+target_link_libraries(${PROJECT_NAME} PRIVATE
+    bgfx
+    bx
+    bimg
+    glfw
+    imgui
+    shaderLib
+)
+
+# ---------------------------------------------------------------------------
+# Copy Asset Directories
+# ---------------------------------------------------------------------------
+file(COPY ${SHADERS_DIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY ${MESHES_DIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY ${NOISE_TEX_DIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY ${VIDEOS_DIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY ${FONTS_DIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY ${COMIC_ELEMENTS_DIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY ${ASSETS_DIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY ${TEXTURES_DIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY ${SAVES_DIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+
+# ---------------------------------------------------------------------------
+# Packaging Configuration
+# ---------------------------------------------------------------------------
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-# Install the executable
-install(TARGETS CrossHatchEditor
-        RUNTIME DESTINATION .)
+install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION .)
 
-# Install shader files
 install(DIRECTORY ${SHADERS_DIR} DESTINATION .)
 install(DIRECTORY ${MESHES_DIR} DESTINATION .)
 install(DIRECTORY "${NOISE_TEX_DIR}" DESTINATION .)
@@ -190,7 +223,6 @@ install(DIRECTORY "${TEXTURES_DIR}" DESTINATION .)
 install(DIRECTORY "${SAVES_DIR}" DESTINATION .)
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/imgui.ini DESTINATION .)
 
-# Install required DLLs
 install(FILES
     "${ASSIMP_ROOT_DIR}/bin/assimp-vc143-mtd.dll"
     "${FFMPEG_DIR}/bin/avcodec-61.dll"

@@ -1,6 +1,7 @@
 ﻿// CrossHatchEditor.cpp : Defines the entry point for the application.
 //
 #include "CrossHatchEditor.h"
+#include "FrameExtractor.h"
 #include <iostream>
 #include <cstring>
 #include <vector>
@@ -66,6 +67,7 @@ namespace fs = std::filesystem;
 #include "stb_image_write.h"
 
 #include "TextRenderer.h" // for text element
+//#include "ImGuiFileDialog.h"
 
 std::vector<Camera> cameras;
 int currentCameraIndex = 0;
@@ -2618,7 +2620,7 @@ int main(void)
         std::cerr << "Failed to initialize GLFW" << std::endl;
         return false;
     }
-    GLFWwindow* window = glfwCreateWindow(WNDW_WIDTH, WNDW_HEIGHT, "CrossHatchEditor", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(WNDW_WIDTH, WNDW_HEIGHT, "Anito GeoForge", NULL, NULL);
     if (!window) {
         std::cerr << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
@@ -4571,6 +4573,16 @@ int main(void)
 
 
             }
+            ImGui::End();
+
+            /*-------------------------------------------------------------------------------------*/
+
+            Logger::GetInstance().DrawImGuiLogger();
+
+            ImGui::Begin("Gallery", p_open, window_flags);
+           
+            FrameExtractor::Draw();
+            
             ImGui::End();
 
             /*-------------------------------------------------------------------------------------*/
