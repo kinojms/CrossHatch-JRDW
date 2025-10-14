@@ -1,4 +1,4 @@
-#include "FrameExtractor.h"
+﻿#include "FrameExtractor.h"
 
 #include <opencv2/opencv.hpp>
 #include <imgui.h>
@@ -61,7 +61,7 @@ static std::string openFileDialog() {
 }
 
 // ======================
-// State (static inside namespace)
+// FrameExtractor namespace
 // ======================
 namespace FrameExtractor {
     static std::string videoPath;
@@ -70,20 +70,55 @@ namespace FrameExtractor {
     static std::string buildDir = fs::current_path().string();
     static std::string projectRoot = fs::absolute(buildDir + "/../../..").string();
     static std::string pythonScript = (fs::path(projectRoot) / "remove_bg.py").string();
-
     static fs::path outputRoot = fs::path(buildDir);
 
     static SafeQueue<std::pair<int, cv::Mat>> frameQueue;
     static std::atomic<bool> extracting{ false };
     static std::atomic<bool> extractionDone{ false };
+    static std::atomic<bool> removingBG{ false };
+    static std::atomic<bool> removalDone{ false };
+
     static std::atomic<int> savedCount{ 0 };
     static std::atomic<int> totalFrames{ 0 };
     static std::atomic<double> fps{ 0.0 };
     static int savedFPS = 1;
     static cv::VideoCapture cap;
+    static std::atomic<int> originalTotalFrames{0};
 
+    // ----------------------------
+    // Helper: Centered large text
+    // ----------------------------
+    static void CenterLargeText(const std::string& text) {
+        float windowWidth = ImGui::GetWindowSize().x;
+        ImGui::SetCursorPosX((windowWidth - ImGui::CalcTextSize(text.c_str()).x) * 0.5f);
+        ImGui::PushFont(ImGui::GetFont()); // keep current, but can use custom large font if registered
+        ImGui::SetWindowFontScale(1.3f);   // enlarge text temporarily
+        ImGui::TextUnformatted(text.c_str());
+        ImGui::SetWindowFontScale(1.0f);
+        ImGui::PopFont();
+    }
+
+    // ----------------------------
+    // Helper: Centered progress bar (green)
+    // ----------------------------
+    static void CenterGreenProgressBar(float fraction, const ImVec2& size) {
+        float windowWidth = ImGui::GetWindowSize().x;
+        ImGui::SetCursorPosX((windowWidth - size.x) * 0.5f);
+
+        ImVec4 green = ImVec4(0.2f, 0.8f, 0.2f, 1.0f);
+        ImVec4 bg = ImGui::GetStyleColorVec4(ImGuiCol_FrameBg);
+
+        ImGui::PushStyleColor(ImGuiCol_PlotHistogram, green);
+        ImGui::PushStyleColor(ImGuiCol_FrameBg, bg);
+        ImGui::ProgressBar(fraction, size);
+        ImGui::PopStyleColor(2);
+    }
+
+    // ----------------------------
+    // Main Draw function
+    // ----------------------------
     void Draw() {
-        // Ensure output root exists
+        // Ensure output directory exists
         if (!fs::exists(outputRoot)) {
             std::error_code ec;
             fs::create_directories(outputRoot, ec);
@@ -92,8 +127,9 @@ namespace FrameExtractor {
             }
         }
 
-        ImGui::Begin("Video Frame Extractor", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+        ImGui::Begin("Video Frame Extractor", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
+        // --- File Picker ---
         if (ImGui::Button("Choose Video File")) {
             std::string chosen = openFileDialog();
             if (!chosen.empty()) {
@@ -101,14 +137,11 @@ namespace FrameExtractor {
                 outputDir = (outputRoot / fs::path(videoPath).stem()).string();
                 std::error_code ec;
                 fs::create_directories(outputDir, ec);
-                if (ec) {
-                    std::cerr << "[FrameExtractor] Failed to create output dir: " << ec.message() << "\n";
-                }
                 cap.open(videoPath);
 
                 if (cap.isOpened()) {
                     fps = cap.get(cv::CAP_PROP_FPS);
-                    totalFrames = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_COUNT));
+                    originalTotalFrames = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_COUNT));
                 }
                 else {
                     std::cerr << "Error: Cannot open video.\n";
@@ -119,7 +152,7 @@ namespace FrameExtractor {
         if (!videoPath.empty()) {
             ImGui::Text("Video: %s", videoPath.c_str());
             ImGui::Text("FPS: %.2f", fps.load());
-            ImGui::Text("Total Frames: %d", totalFrames.load());
+            ImGui::Text("Total Frames: %d", originalTotalFrames.load());
             ImGui::Text("Output Directory: %s", outputDir.c_str());
         }
 
@@ -134,10 +167,12 @@ namespace FrameExtractor {
         ImGui::NewLine();
         ImGui::Separator();
 
+        // --- Start extraction ---
         if (!extracting && ImGui::Button("Start Extraction")) {
             if (cap.isOpened()) {
                 extracting = true;
                 extractionDone = false;
+                removalDone = false;
                 savedCount = 0;
 
                 // --- Thread 1: Frame extraction ---
@@ -146,9 +181,9 @@ namespace FrameExtractor {
                     int frameIndex = 0;
                     int savedIndex = 0;
                     int step = std::max(1, static_cast<int>(fps / savedFPS));
+
                     while (cap.read(frame)) {
                         if (frameIndex % step == 0) {
-                            // clone frame to own memory for thread-safety
                             frameQueue.push({ savedIndex++, frame.clone() });
                         }
                         frameIndex++;
@@ -157,67 +192,104 @@ namespace FrameExtractor {
                     cap.release();
                     }).detach();
 
-                // --- Thread 2: Frame saving and post-processing ---
+                // --- Thread 2: Frame saving + background removal ---
                 std::thread([]() {
+                    int totalExpectedFrames = static_cast<int>((totalFrames / (fps / savedFPS)) + 1);
+
                     while (!extractionDone || !frameQueue.empty()) {
                         std::pair<int, cv::Mat> item;
                         if (frameQueue.pop(item)) {
                             std::string filename = (fs::path(outputDir) / ("frame_" + std::to_string(item.first) + ".png")).string();
                             cv::imwrite(filename, item.second);
                             savedCount++;
+
+                            // print progress
+                            std::cout << "[FrameExtractor] Extracting " << savedCount.load()
+                                << " / " << totalExpectedFrames << " frames" << std::endl;
                         }
                         else {
                             std::this_thread::sleep_for(std::chrono::milliseconds(5));
                         }
                     }
 
-                    // --- After saving all frames, run rembg batch (preserve original behavior) ---
-                    if (!pythonScript.empty()) {
-                        std::string command = "python \"" + pythonScript + "\" \"" + outputDir + "\"";
-                        std::cout << "[FrameExtractor] Running: " << command << std::endl;
-                        int rc = std::system(command.c_str());
-                        if (rc != 0) {
-                            std::cerr << "[FrameExtractor] Python script returned code: " << rc << std::endl;
-                        }
-                    }
-                    else {
-                        std::cerr << "[FrameExtractor] pythonScript path is empty, skipping post-processing\n";
+                    // --- Run background removal ---
+                    totalFrames.store(savedCount);
+                    removingBG = true;
+                    std::cout << "[FrameExtractor] Starting background removal..." << std::endl;
+                   
+                    std::string command = "python \"" + pythonScript + "\" \"" + outputDir + "\"";
+                    std::cout << "[FrameExtractor] Running: " << command << std::endl;
+
+                    FILE* pipe = _popen(command.c_str(), "r");
+                    if (!pipe) {
+                        std::cerr << "[FrameExtractor] Failed to run Python script.\n";
+                        removingBG = false;
+                        removalDone = true;
+                        extracting = false;
+                        return;
                     }
 
+                    char buffer[256];
+                    while (fgets(buffer, sizeof(buffer), pipe)) {
+                        std::string line(buffer);
+                        std::cout << "[Python] " << line; // keep log visible
+
+                        // Detect Python progress output
+                        if (line.rfind("PROGRESS", 0) == 0) {
+                            int done = 0, total = 0;
+                            if (sscanf(line.c_str(), "PROGRESS %d/%d", &done, &total) == 2) {
+                                savedCount.store(done);      // reuse savedCount for BG progress
+                                totalFrames.store(total);    // keep total known for display
+                            }
+                        }
+                    }
+
+                    int rc = _pclose(pipe);
+                    removingBG = false;
+                    removalDone = true;
                     extracting = false;
+
+                    if (rc != 0) {
+                        std::cerr << "[FrameExtractor] Python exited with code: " << rc << std::endl;
+                    }
+
+
+                    if (rc != 0) {
+                        std::cerr << "[FrameExtractor] Python script returned code: " << rc << std::endl;
+                    }
                     }).detach();
             }
         }
 
-        if (extracting) {
-            ImGui::Text("Extracting... saved %d frames", savedCount.load());
-            // compute progress safely
-            double denom = 1.0;
-            double f = fps.load();
-            if (f > 0.0 && totalFrames.load() > 0) {
-                denom = (static_cast<double>(totalFrames.load()) / f) * static_cast<double>(savedFPS);
-                if (denom <= 0.0) denom = 1.0;
-            }
-            float progress = static_cast<float>(std::min<double>(1.0, static_cast<double>(savedCount.load()) / denom));
-            ImGui::ProgressBar(progress, ImVec2(300, 20));
-        }
-        else if (!videoPath.empty() && extractionDone) {
-            ImGui::Text("Extraction complete! Total saved: %d", savedCount.load());
-        }
+        // --- Progress Display ---
+        if (extracting || removingBG) {
+            /*int totalExpectedFrames = static_cast<int>((totalFrames / (fps / savedFPS)) + 1);*/
+            float frameProgress = static_cast<float>(savedCount.load()) / std::max(1, totalFrames.load());
+            float removalProgress = removingBG ? 0.5f : (removalDone ? 1.0f : 0.0f);
 
- //       if (ImGui::Button("Exit")) {
-   //         // if using GLFW, close current context window
-     //       // caller must map this to actual window close if needed
-       //     // example for GLFW:
-         //   if (GLFWwindow* w = glfwGetCurrentContext()) {
-           //     glfwSetWindowShouldClose(w, true);
-           // }
-        //}
+
+            // Large centered text with count
+            std::string statusText = removingBG
+                ? "Removing background... " + std::to_string(savedCount.load()) + " / " + std::to_string(totalFrames) + " frames"
+                : "Extracting frames... " + std::to_string(savedCount.load()) + " frames";
+
+            CenterLargeText(statusText);
+
+
+            if (removingBG) {
+                CenterGreenProgressBar(removalProgress, ImVec2(320, 24));
+            } {
+                CenterGreenProgressBar(frameProgress, ImVec2(320, 24));
+            }
+        }
+        else if (!videoPath.empty() && removalDone) {
+            CenterLargeText("All done!");
+            ImGui::Text("Total frames saved: %d", savedCount.load());
+        }
 
         ImGui::End();
     }
 
-    // Optional empty implementations (kept for API completeness)
     void Init() {}
     void Shutdown() {}
 }
