@@ -83,7 +83,7 @@ namespace FrameExtractor {
     static std::atomic<double> fps{ 0.0 };
     static int savedFPS = 1;
     static cv::VideoCapture cap;
-    static std::atomic<int> originalTotalFrames{0};
+    static std::atomic<int> originalTotalFrames{ 0 };
 
     // ----------------------------
     // Helper: Centered large text
@@ -194,7 +194,7 @@ namespace FrameExtractor {
 
                 // --- Thread 2: Frame saving + background removal ---
                 std::thread([]() {
-                    int totalExpectedFrames = static_cast<int>((totalFrames / (fps / savedFPS)) + 1);
+                    int totalExpectedFrames = static_cast<int>((originalTotalFrames / (fps / savedFPS)) + 1);
 
                     while (!extractionDone || !frameQueue.empty()) {
                         std::pair<int, cv::Mat> item;
@@ -214,73 +214,111 @@ namespace FrameExtractor {
 
                     // --- Run background removal ---
                     totalFrames.store(savedCount);
+                    // After extractionDone = true; and cap.release();
                     removingBG = true;
-                    std::cout << "[FrameExtractor] Starting background removal..." << std::endl;
-                   
-                    std::string command = "python \"" + pythonScript + "\" \"" + outputDir + "\"";
-                    std::cout << "[FrameExtractor] Running: " << command << std::endl;
+                    std::cout << "[FrameExtractor] Starting parallel background removal..." << std::endl;
 
-                    FILE* pipe = _popen(command.c_str(), "r");
-                    if (!pipe) {
-                        std::cerr << "[FrameExtractor] Failed to run Python script.\n";
+                    // Gather all frame files
+                    std::vector<fs::path> frameFiles;
+                    for (const auto& entry : fs::directory_iterator(outputDir)) {
+                        if (entry.is_regular_file() && entry.path().extension() == ".png") {
+                            frameFiles.push_back(entry.path());
+                        }
+                    }
+
+                    int totalFiles = static_cast<int>(frameFiles.size());
+                    if (totalFiles == 0) {
+                        std::cerr << "[FrameExtractor] No frames found for background removal.\n";
                         removingBG = false;
                         removalDone = true;
                         extracting = false;
                         return;
                     }
 
-                    char buffer[256];
-                    while (fgets(buffer, sizeof(buffer), pipe)) {
-                        std::string line(buffer);
-                        std::cout << "[Python] " << line; // keep log visible
+                    savedCount.store(0);
+                    totalFrames.store(totalFiles);
 
-                        // Detect Python progress output
-                        if (line.rfind("PROGRESS", 0) == 0) {
-                            int done = 0, total = 0;
-                            if (sscanf(line.c_str(), "PROGRESS %d/%d", &done, &total) == 2) {
-                                savedCount.store(done);      // reuse savedCount for BG progress
-                                totalFrames.store(total);    // keep total known for display
+                    int numThreads = std::min(5, totalFiles);
+                    std::atomic<int> activeThreads = 0;
+                    std::mutex coutMutex;
+
+                    auto worker = [&](int id, int startIndex, int step) {
+                        activeThreads++;
+                        for (int i = startIndex; i < totalFiles; i += step) {
+                            const auto& file = frameFiles[i];
+                            std::string command = "python \"" + pythonScript + "\" \"" + outputDir + "\" \"" + file.string() + "\"";
+
+                            std::cout << command;
+                            {
+                                std::lock_guard<std::mutex> lock(coutMutex);
+                                std::cout << "[Thread " << id << "] Running: " << command << std::endl;
+                            }
+
+                            FILE* pipe = _popen(command.c_str(), "r");
+                            if (pipe) {
+                                char buffer[256];
+                                while (fgets(buffer, sizeof(buffer), pipe)) {
+                                    std::string line(buffer);
+                                    std::lock_guard<std::mutex> lock(coutMutex);
+                                    std::cout << "[Python T" << id << "] " << line;
+
+                                    if (line.rfind("PROGRESS", 0) == 0) {
+                                       // int done = 0, total = 0;
+                                       // if (sscanf(line.c_str(), "PROGRESS %d/%d", &done, &total) == 2) {
+                                            savedCount.fetch_add(1);
+                                        // }
+                                    }
+                                    else if (line.rfind("Processed", 0) == 0) {
+                                        savedCount.fetch_add(1);
+                                    }
+                                }
+                                _pclose(pipe);
+                            }
+                            else {
+                                std::lock_guard<std::mutex> lock(coutMutex);
+                                std::cerr << "[Thread " << id << "] Failed to run script for " << file.filename() << std::endl;
                             }
                         }
+                        activeThreads--;
+                        };
+
+                    // Launch threads
+                    std::vector<std::thread> threads;
+                    for (int i = 0; i < numThreads; ++i) {
+                        threads.emplace_back(worker, i + 1, i, numThreads);
                     }
 
-                    int rc = _pclose(pipe);
+                    // Wait for all to complete
+                    for (auto& t : threads) {
+                        if (t.joinable()) t.join();
+                    }
+
                     removingBG = false;
                     removalDone = true;
                     extracting = false;
+                    std::cout << "[FrameExtractor] All background removals done.\n";
 
-                    if (rc != 0) {
-                        std::cerr << "[FrameExtractor] Python exited with code: " << rc << std::endl;
-                    }
-
-
-                    if (rc != 0) {
-                        std::cerr << "[FrameExtractor] Python script returned code: " << rc << std::endl;
-                    }
-                    }).detach();
+                    }).detach(); // ✅ Properly close and detach the thread
             }
         }
 
         // --- Progress Display ---
         if (extracting || removingBG) {
-            /*int totalExpectedFrames = static_cast<int>((totalFrames / (fps / savedFPS)) + 1);*/
-            float frameProgress = static_cast<float>(savedCount.load()) / std::max(1, totalFrames.load());
-            float removalProgress = removingBG ? 0.5f : (removalDone ? 1.0f : 0.0f);
-
+            int totalExpectedFrames = static_cast<int>(( originalTotalFrames / (fps / savedFPS)) + 1); 
+            float frameProgress = static_cast<float>(savedCount.load()) / std::max(1, totalExpectedFrames);
+            float removalProgress = static_cast<float>(savedCount.load()) / std::max(1, totalFrames.load());
 
             // Large centered text with count
             std::string statusText = removingBG
-                ? "Removing background... " + std::to_string(savedCount.load()) + " / " + std::to_string(totalFrames) + " frames"
+                ? "Removing background... " + std::to_string(savedCount.load()) + " / " + std::to_string(totalFrames.load()) + " frames"
                 : "Extracting frames... " + std::to_string(savedCount.load()) + " frames";
 
             CenterLargeText(statusText);
 
-
-            if (removingBG) {
+            if (removingBG)
                 CenterGreenProgressBar(removalProgress, ImVec2(320, 24));
-            } {
+            else
                 CenterGreenProgressBar(frameProgress, ImVec2(320, 24));
-            }
         }
         else if (!videoPath.empty() && removalDone) {
             CenterLargeText("All done!");
@@ -288,8 +326,9 @@ namespace FrameExtractor {
         }
 
         ImGui::End();
-    }
+    } 
 
     void Init() {}
     void Shutdown() {}
-}
+
+} 
