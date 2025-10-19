@@ -22,9 +22,6 @@
     <ClCompile Include="C:\CrossHatch-JRDW\imgui\imgui_widgets.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\CrossHatch-JRDW\Logger.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="C:\CrossHatch-JRDW\imgui\backends\imgui_impl_glfw.h">
@@ -49,6 +46,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="C:\CrossHatch-JRDW\imgui\imstb_truetype.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\CrossHatch-JRDW\FrameExtractor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,4 +1,4 @@
-﻿cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.12)
 
 # ---------------------------------------------------------------------------
 # VCPKG Setup (must be defined before project())
@@ -162,9 +162,62 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
         $<TARGET_FILE_DIR:${PROJECT_NAME}>
 )
 
+# Also copy the entire FFmpeg bin directory to ensure all transitive DLLs are available
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${FFMPEG_DIR}/bin"
+        $<TARGET_FILE_DIR:${PROJECT_NAME}>
+)
+
+# Copy OpenCV DLLs and dependencies
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/opencv_calib3d4.dll"
+        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/opencv_core4.dll"
+        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/opencv_dnn4.dll"
+        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/opencv_features2d4.dll"
+        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/opencv_flann4.dll"
+        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/opencv_highgui4.dll"
+        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/opencv_imgcodecs4.dll"
+        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/opencv_imgproc4.dll"
+        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/opencv_ml4.dll"
+        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/opencv_objdetect4.dll"
+        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/opencv_photo4.dll"
+        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/opencv_stitching4.dll"
+        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/opencv_video4.dll"
+        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/opencv_videoio4.dll"
+        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/abseil_dll.dll"
+        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/libprotobuf-lite.dll"
+        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/libprotobuf.dll"
+        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/libprotoc.dll"
+        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/turbojpeg.dll"
+        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/jpeg62.dll"
+        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/liblzma.dll"
+        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/libpng16.dll"
+        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/libsharpyuv.dll"
+        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/libwebp.dll"
+        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/libwebpdecoder.dll"
+        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/libwebpdemux.dll"
+        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/libwebpmux.dll"
+        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/tiff.dll"
+        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/zlib1.dll"
+        $<TARGET_FILE_DIR:${PROJECT_NAME}>
+)
+
+# Also copy the entire vcpkg x64-windows bin directory to ensure any additional runtime deps are present
+set(VCPKG_BIN_DIR "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin")
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${VCPKG_BIN_DIR}"
+        $<TARGET_FILE_DIR:${PROJECT_NAME}>
+)
+
 # ---------------------------------------------------------------------------
 # OpenCV + OpenGL (for FrameExtractor)
 # ---------------------------------------------------------------------------
+# Set vcpkg paths for OpenCV and its dependencies
+set(CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows" ${CMAKE_PREFIX_PATH})
+set(OpenCV_DIR "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/share/opencv4")
 find_package(OpenCV REQUIRED)
 find_package(OpenGL REQUIRED)
 
@@ -230,6 +283,35 @@ install(FILES
     "${FFMPEG_DIR}/bin/avutil-59.dll"
     "${FFMPEG_DIR}/bin/swscale-8.dll"
     "${FFMPEG_DIR}/bin/swresample-5.dll"
+    "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/opencv_calib3d4.dll"
+    "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/opencv_core4.dll"
+    "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/opencv_dnn4.dll"
+    "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/opencv_features2d4.dll"
+    "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/opencv_flann4.dll"
+    "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/opencv_highgui4.dll"
+    "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/opencv_imgcodecs4.dll"
+    "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/opencv_imgproc4.dll"
+    "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/opencv_ml4.dll"
+    "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/opencv_objdetect4.dll"
+    "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/opencv_photo4.dll"
+    "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/opencv_stitching4.dll"
+    "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/opencv_video4.dll"
+    "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/opencv_videoio4.dll"
+    "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/abseil_dll.dll"
+    "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/libprotobuf-lite.dll"
+    "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/libprotobuf.dll"
+    "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/libprotoc.dll"
+    "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/turbojpeg.dll"
+    "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/jpeg62.dll"
+    "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/liblzma.dll"
+    "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/libpng16.dll"
+    "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/libsharpyuv.dll"
+    "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/libwebp.dll"
+    "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/libwebpdecoder.dll"
+    "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/libwebpdemux.dll"
+    "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/libwebpmux.dll"
+    "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/tiff.dll"
+    "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/zlib1.dll"
     DESTINATION .
 )
 

@@ -19,6 +19,9 @@
     <ClCompile Include="C:\CrossHatch-JRDW\TextRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="C:\CrossHatch-JRDW\FrameExtractor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="C:\CrossHatch-JRDW\CrossHatchEditor.h">
@@ -49,6 +52,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="C:\CrossHatch-JRDW\TextRenderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\CrossHatch-JRDW\FrameExtractor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

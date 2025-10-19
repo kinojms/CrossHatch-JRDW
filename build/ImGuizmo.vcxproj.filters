@@ -9,6 +9,9 @@
     <ClInclude Include="C:\CrossHatch-JRDW\ImGuizmo\ImGuizmo.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="C:\CrossHatch-JRDW\FrameExtractor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="C:\CrossHatch-JRDW\CMakeLists.txt" />

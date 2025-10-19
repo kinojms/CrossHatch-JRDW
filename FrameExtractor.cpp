@@ -50,14 +50,14 @@ public:
 // ======================
 static std::string openFileDialog() {
     char filename[MAX_PATH] = "";
-    OPENFILENAME ofn{};
+    OPENFILENAMEA ofn{};
     ofn.lStructSize = sizeof(ofn);
     ofn.lpstrFilter = "Video Files\0*.mp4;*.avi;*.mkv;*.mov\0All Files\0*.*\0";
     ofn.lpstrFile = filename;
     ofn.nMaxFile = MAX_PATH;
     ofn.Flags = OFN_FILEMUSTEXIST;
     ofn.lpstrTitle = "Select Video File";
-    return GetOpenFileName(&ofn) ? std::string(filename) : "";
+    return GetOpenFileNameA(&ofn) ? std::string(filename) : "";
 }
 
 // ======================
@@ -66,6 +66,11 @@ static std::string openFileDialog() {
 namespace FrameExtractor {
     static std::string videoPath;
     static std::string outputDir;
+    static std::string imagesDir;
+
+    // Paths/commands for post-extraction automation
+    static const char* kColmapScriptPath = "C:\\0_Thesis\\instant-ngp-rtx-3000\\scripts\\colmap2nerf.py";
+    static const char* kInstantNgpCmd = "C:\\0_Thesis\\instant-ngp-rtx-3000\\instant-ngp.exe";
 
     static std::string buildDir = fs::current_path().string();
     static std::string projectRoot = fs::absolute(buildDir + "/../../..").string();
@@ -84,6 +89,25 @@ namespace FrameExtractor {
     static int savedFPS = 1;
     static cv::VideoCapture cap;
     static std::atomic<int> originalTotalFrames{ 0 };
+
+    // ----------------------------
+    // Helper: Run a shell command and stream output
+    // ----------------------------
+    static int runShellCommand(const std::string& command) {
+        std::cout << "[Shell] " << command << std::endl;
+        FILE* pipe = _popen(command.c_str(), "r");
+        if (!pipe) {
+            std::cerr << "[Shell] Failed to run command." << std::endl;
+            return -1;
+        }
+        char buffer[512];
+        while (fgets(buffer, sizeof(buffer), pipe)) {
+            std::cout << buffer;
+        }
+        int rc = _pclose(pipe);
+        std::cout << "[Shell] Exit code: " << rc << std::endl;
+        return rc;
+    }
 
     // ----------------------------
     // Helper: Centered large text
@@ -135,8 +159,9 @@ namespace FrameExtractor {
             if (!chosen.empty()) {
                 videoPath = chosen;
                 outputDir = (outputRoot / fs::path(videoPath).stem()).string();
+                imagesDir = (fs::path(outputDir) / "images").string();
                 std::error_code ec;
-                fs::create_directories(outputDir, ec);
+                fs::create_directories(imagesDir, ec);
                 cap.open(videoPath);
 
                 if (cap.isOpened()) {
@@ -153,7 +178,7 @@ namespace FrameExtractor {
             ImGui::Text("Video: %s", videoPath.c_str());
             ImGui::Text("FPS: %.2f", fps.load());
             ImGui::Text("Total Frames: %d", originalTotalFrames.load());
-            ImGui::Text("Output Directory: %s", outputDir.c_str());
+            ImGui::Text("Images Directory: %s", imagesDir.c_str());
         }
 
         ImGui::Separator();
@@ -199,7 +224,7 @@ namespace FrameExtractor {
                     while (!extractionDone || !frameQueue.empty()) {
                         std::pair<int, cv::Mat> item;
                         if (frameQueue.pop(item)) {
-                            std::string filename = (fs::path(outputDir) / ("frame_" + std::to_string(item.first) + ".png")).string();
+                            std::string filename = (fs::path(imagesDir) / ("frame_" + std::to_string(item.first) + ".png")).string();
                             cv::imwrite(filename, item.second);
                             savedCount++;
 
@@ -220,7 +245,7 @@ namespace FrameExtractor {
 
                     // Gather all frame files
                     std::vector<fs::path> frameFiles;
-                    for (const auto& entry : fs::directory_iterator(outputDir)) {
+                    for (const auto& entry : fs::directory_iterator(imagesDir)) {
                         if (entry.is_regular_file() && entry.path().extension() == ".png") {
                             frameFiles.push_back(entry.path());
                         }
@@ -294,9 +319,33 @@ namespace FrameExtractor {
                     }
 
                     removingBG = false;
+
+                    // --- Post-extraction automation: COLMAP + instant-ngp ---
+                    std::cout << "[FrameExtractor] Starting COLMAP/NeRF automation..." << std::endl;
+                    // Ensure we execute in the video's folder so --images images resolves correctly
+                    std::string cdPrefix = std::string("cd /d \"") + outputDir + "\" && ";
+
+                    // 1) colmap2nerf.py with --images images
+                    {
+                        std::string cmd1 = cdPrefix + "python \"" + kColmapScriptPath + "\" --images images --run_colmap --overwrite";
+                        runShellCommand(cmd1);
+                    }
+
+                    // 2) colmap2nerf.py exhaustive matching with aabb scale
+                    {
+                        std::string cmd2 = cdPrefix + "python \"" + kColmapScriptPath + "\" --colmap_matcher exhaustive --run_colmap --aabb_scale 16 --overwrite";
+                        runShellCommand(cmd2);
+                    }
+
+                    // 3) instant-ngp on the video's folder
+                    {
+                        std::string cmd3 = std::string(kInstantNgpCmd) + " \"" + outputDir + "\"";
+                        runShellCommand(cmd3);
+                    }
+
                     removalDone = true;
                     extracting = false;
-                    std::cout << "[FrameExtractor] All background removals done.\n";
+                    std::cout << "[FrameExtractor] All background removals done and automation finished.\n";
 
                     }).detach(); // ✅ Properly close and detach the thread
             }
