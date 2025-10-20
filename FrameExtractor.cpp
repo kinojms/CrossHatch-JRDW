@@ -82,6 +82,18 @@ namespace FrameExtractor {
     static std::atomic<bool> extractionDone{ false };
     static std::atomic<bool> removingBG{ false };
     static std::atomic<bool> removalDone{ false };
+    static std::atomic<bool> showMethodChoice{ false };
+    static std::atomic<bool> runningNeRF{ false };
+    static std::atomic<bool> runningGaussian{ false };
+
+    // OBJ watcher state
+    static std::atomic<bool> watchingObj{ false };
+    static std::atomic<bool> objFound{ false };
+    static std::string foundObjPath;
+    static std::atomic<bool> showImportPrompt{ false };
+    
+    // Import callback function pointer
+    static std::function<void(const std::string&)> importCallback;
 
     static std::atomic<int> savedCount{ 0 };
     static std::atomic<int> totalFrames{ 0 };
@@ -89,6 +101,10 @@ namespace FrameExtractor {
     static int savedFPS = 1;
     static cv::VideoCapture cap;
     static std::atomic<int> originalTotalFrames{ 0 };
+    
+    // Timing and progress tracking
+    static std::chrono::steady_clock::time_point nerfStartTime;
+    static std::atomic<int> nerfProgress{ 0 };
 
     // ----------------------------
     // Helper: Run a shell command and stream output
@@ -107,6 +123,123 @@ namespace FrameExtractor {
         int rc = _pclose(pipe);
         std::cout << "[Shell] Exit code: " << rc << std::endl;
         return rc;
+    }
+
+    // ----------------------------
+    // Helper: Start background OBJ watcher
+    // ----------------------------
+    static void startObjWatcher() {
+        if (watchingObj.load()) return;
+        objFound.store(false);
+        foundObjPath.clear();
+        watchingObj.store(true);
+        std::thread([]() {
+            while (watchingObj.load() && !objFound.load()) {
+                std::error_code ec;
+                if (fs::exists(outputDir, ec)) {
+                    for (fs::directory_iterator it(outputDir, ec); !ec && it != fs::directory_iterator(); it.increment(ec)) {
+                        const auto& entry = *it;
+                        if (entry.is_regular_file(ec) && entry.path().extension() == ".obj") {
+                            foundObjPath = entry.path().string();
+                            objFound.store(true);
+                            watchingObj.store(false);
+                            break;
+                        }
+                    }
+                }
+                if (!objFound.load()) {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(750));
+                }
+            }
+        }).detach();
+    }
+
+    // ----------------------------
+    // Helper: Format elapsed time
+    // ----------------------------
+    static std::string formatElapsedTime(std::chrono::steady_clock::time_point startTime) {
+        auto now = std::chrono::steady_clock::now();
+        auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - startTime);
+        int hours = elapsed.count() / 3600;
+        int minutes = (elapsed.count() % 3600) / 60;
+        int seconds = elapsed.count() % 60;
+        
+        if (hours > 0) {
+            return std::to_string(hours) + "h " + std::to_string(minutes) + "m " + std::to_string(seconds) + "s";
+        } else if (minutes > 0) {
+            return std::to_string(minutes) + "m " + std::to_string(seconds) + "s";
+        } else {
+            return std::to_string(seconds) + "s";
+        }
+    }
+
+    // ----------------------------
+    // Helper: Hide main window
+    // ----------------------------
+    static void hideMainWindow() {
+        HWND hwnd = GetConsoleWindow();
+        if (hwnd) {
+            ShowWindow(hwnd, SW_MINIMIZE);
+        }
+    }
+
+    // ----------------------------
+    // Helper: Import OBJ mesh into editor
+    // ----------------------------
+    static void importMeshToEditor(const std::string& objPath) {
+        if (importCallback) {
+            std::cout << "[FrameExtractor] Calling import callback for: " << objPath << std::endl;
+            importCallback(objPath);
+        } else {
+            std::cout << "[FrameExtractor] No import callback set. Please use File > Import OBJ in the editor to import: " << objPath << std::endl;
+        }
+    }
+
+    // ----------------------------
+    // NeRF Automation Function
+    // ----------------------------
+    static void runNeRFAutomation() {
+        std::thread([]() {
+            nerfStartTime = std::chrono::steady_clock::now();
+            runningNeRF = true;
+            nerfProgress = 0;
+            startObjWatcher();
+            
+            std::cout << "[FrameExtractor] Starting COLMAP/NeRF automation..." << std::endl;
+            std::string cdPrefix = std::string("cd /d \"") + outputDir + "\" && ";
+
+            // 1) colmap2nerf.py with --images images
+            nerfProgress = 25;
+            {
+                std::string cmd1 = cdPrefix + "python \"" + kColmapScriptPath + "\" --images images --run_colmap --overwrite";
+                runShellCommand(cmd1);
+            }
+
+            // 2) colmap2nerf.py exhaustive matching with aabb scale
+            nerfProgress = 50;
+            {
+                std::string cmd2 = cdPrefix + "python \"" + kColmapScriptPath + "\" --colmap_matcher exhaustive --run_colmap --aabb_scale 16 --overwrite";
+                runShellCommand(cmd2);
+            }
+
+            // 3) instant-ngp on the video's folder (hide window first)
+            nerfProgress = 75;
+            {
+                std::cout << "[FrameExtractor] Hiding main window before running instant-ngp..." << std::endl;
+                hideMainWindow();
+                std::string cmd3 = std::string(kInstantNgpCmd) + " \"" + outputDir + "\"";
+                runShellCommand(cmd3);
+            }
+
+            nerfProgress = 100;
+            runningNeRF = false;
+            std::cout << "[FrameExtractor] NeRF automation completed." << std::endl;
+            
+            // Show import prompt if OBJ was found during automation
+            if (objFound.load()) {
+                showImportPrompt.store(true);
+            }
+        }).detach();
     }
 
     // ----------------------------
@@ -319,36 +452,41 @@ namespace FrameExtractor {
                     }
 
                     removingBG = false;
-
-                    // --- Post-extraction automation: COLMAP + instant-ngp ---
-                    std::cout << "[FrameExtractor] Starting COLMAP/NeRF automation..." << std::endl;
-                    // Ensure we execute in the video's folder so --images images resolves correctly
-                    std::string cdPrefix = std::string("cd /d \"") + outputDir + "\" && ";
-
-                    // 1) colmap2nerf.py with --images images
-                    {
-                        std::string cmd1 = cdPrefix + "python \"" + kColmapScriptPath + "\" --images images --run_colmap --overwrite";
-                        runShellCommand(cmd1);
-                    }
-
-                    // 2) colmap2nerf.py exhaustive matching with aabb scale
-                    {
-                        std::string cmd2 = cdPrefix + "python \"" + kColmapScriptPath + "\" --colmap_matcher exhaustive --run_colmap --aabb_scale 16 --overwrite";
-                        runShellCommand(cmd2);
-                    }
-
-                    // 3) instant-ngp on the video's folder
-                    {
-                        std::string cmd3 = std::string(kInstantNgpCmd) + " \"" + outputDir + "\"";
-                        runShellCommand(cmd3);
-                    }
-
+                    showMethodChoice = true;
                     removalDone = true;
                     extracting = false;
-                    std::cout << "[FrameExtractor] All background removals done and automation finished.\n";
+                    std::cout << "[FrameExtractor] All background removals done. Choose reconstruction method.\n";
 
                     }).detach(); // ✅ Properly close and detach the thread
             }
+        }
+
+        // --- Method Choice UI ---
+        if (showMethodChoice && !runningNeRF && !runningGaussian) {
+            CenterLargeText("Choose Reconstruction Method");
+            ImGui::Spacing();
+            
+            if (ImGui::Button("NeRF (Neural Radiance Fields)", ImVec2(300, 40))) {
+                showMethodChoice = false;
+                runNeRFAutomation();
+            }
+            ImGui::Spacing();
+            if (ImGui::Button("Gaussian Splatting (Coming Soon)", ImVec2(300, 40))) {
+                // TODO: Implement Gaussian Splatting
+                ImGui::Text("Gaussian Splatting will be implemented next time.");
+            }
+        }
+
+        // --- NeRF Progress Display ---
+        if (runningNeRF) {
+            std::string statusText = "Running NeRF reconstruction... " + std::to_string(nerfProgress.load()) + "%";
+            CenterLargeText(statusText);
+            
+            std::string elapsedText = "Elapsed time: " + formatElapsedTime(nerfStartTime);
+            ImGui::Text("%s", elapsedText.c_str());
+            
+            float progress = static_cast<float>(nerfProgress.load()) / 100.0f;
+            CenterGreenProgressBar(progress, ImVec2(320, 24));
         }
 
         // --- Progress Display ---
@@ -369,9 +507,34 @@ namespace FrameExtractor {
             else
                 CenterGreenProgressBar(frameProgress, ImVec2(320, 24));
         }
-        else if (!videoPath.empty() && removalDone) {
+        else if (!videoPath.empty() && removalDone && !showMethodChoice && !runningNeRF && !runningGaussian) {
             CenterLargeText("All done!");
             ImGui::Text("Total frames saved: %d", savedCount.load());
+        }
+
+        // --- Import Prompt ---
+        if (showImportPrompt.load()) {
+            ImGui::OpenPopup("Import Mesh?");
+        }
+        if (ImGui::BeginPopupModal("Import Mesh?", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+            ImGui::Text("Mesh reconstruction completed!");
+            ImGui::Text("Mesh saved to: %s", foundObjPath.c_str());
+            ImGui::Spacing();
+            ImGui::Text("Do you want to import the reconstructed mesh?");
+            ImGui::Spacing();
+
+            if (ImGui::Button("Yes, Import Mesh", ImVec2(150, 0))) {
+                importMeshToEditor(foundObjPath);
+                showImportPrompt.store(false);
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("No, Don't Import", ImVec2(150, 0))) {
+                std::cout << "[FrameExtractor] User declined mesh import." << std::endl;
+                showImportPrompt.store(false);
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
         }
 
         ImGui::End();
@@ -379,5 +542,10 @@ namespace FrameExtractor {
 
     void Init() {}
     void Shutdown() {}
+    
+    // Set the import callback function
+    void SetImportCallback(std::function<void(const std::string&)> callback) {
+        importCallback = callback;
+    }
 
 } 

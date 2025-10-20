@@ -2989,6 +2989,82 @@ int main(void)
     std::vector<Instance*> instances;
     instances.reserve(100);
 
+    // Set up FrameExtractor import callback
+    FrameExtractor::SetImportCallback([&instances, &importedObjMap](const std::string& objPath) {
+        std::cout << "[Editor] Auto-importing mesh: " << objPath << std::endl;
+        
+        // Convert to relative path for consistency
+        std::string relPath = GetRelativePath(objPath);
+        std::string normalizedRelPath = ConvertBackslashesToForward(relPath);
+        
+        // Load all meshes using the same logic as the Import OBJ menu
+        std::vector<ImportedMesh> importedMeshes = loadImportedMeshes(normalizedRelPath);
+        std::string fileName = fs::path(normalizedRelPath).stem().string();
+        
+        if (!importedMeshes.empty()) {
+            // Compute overall group center
+            aiVector3D groupCenter(0.0f, 0.0f, 0.0f);
+            for (const auto& impMesh : importedMeshes) {
+                groupCenter.x += impMesh.transform.a4;
+                groupCenter.y += impMesh.transform.b4;
+                groupCenter.z += impMesh.transform.c4;
+            }
+            groupCenter.x /= importedMeshes.size();
+            groupCenter.y /= importedMeshes.size();
+            groupCenter.z /= importedMeshes.size();
+            
+            // Create an empty parent instance at the overall group center
+            Instance* parentInstance = new Instance(instanceCounter++, fileName + "_group", "empty",
+                groupCenter.x, groupCenter.y, groupCenter.z,
+                BGFX_INVALID_HANDLE, BGFX_INVALID_HANDLE);
+            instances.push_back(parentInstance);
+            
+            // For each imported mesh, create buffers and spawn a child instance
+            for (size_t i = 0; i < importedMeshes.size(); ++i) {
+                bgfx::VertexBufferHandle vbh_imported;
+                bgfx::IndexBufferHandle ibh_imported;
+                createMeshBuffers(importedMeshes[i].meshData, vbh_imported, ibh_imported);
+                
+                Instance* childInst = new Instance(instanceCounter++, fileName + "_" + std::to_string(i),
+                    fileName, 0.0f, 0.0f, 0.0f,
+                    vbh_imported, ibh_imported);
+                childInst->meshNumber = i;
+                
+                // Decompose the imported mesh's transform
+                aiVector3D scaling, position;
+                aiQuaternion rotation;
+                importedMeshes[i].transform.Decompose(scaling, rotation, position);
+                
+                // Set the child's position relative to the parent
+                childInst->position[0] = position.x - groupCenter.x;
+                childInst->position[1] = position.y - groupCenter.y;
+                childInst->position[2] = position.z - groupCenter.z;
+                childInst->rotation[0] = childInst->rotation[1] = childInst->rotation[2] = 0.0f;
+                childInst->scale[0] = scaling.x;
+                childInst->scale[1] = scaling.y;
+                childInst->scale[2] = scaling.z;
+                
+                // Assign the diffuse texture from the imported mesh
+                childInst->diffuseTexture = importedMeshes[i].diffuseTexture;
+                
+                // Apply diffuse color if present and no texture
+                if (importedMeshes[i].hasDiffuseColor && !bgfx::isValid(childInst->diffuseTexture)) {
+                    childInst->objectColor[0] = importedMeshes[i].diffuseColor[0];
+                    childInst->objectColor[1] = importedMeshes[i].diffuseColor[1];
+                    childInst->objectColor[2] = importedMeshes[i].diffuseColor[2];
+                    childInst->objectColor[3] = importedMeshes[i].diffuseColor[3];
+                }
+                
+                // Add this mesh as a child of the empty parent
+                parentInstance->addChild(childInst);
+            }
+            
+            std::cout << "[Editor] Auto-imported OBJ with " << importedMeshes.size()
+                << " mesh(es) grouped under " << fileName << "_group" << std::endl;
+            importedObjMap[fileName] = normalizedRelPath;
+        }
+    });
+
     bool modelMovement = false;
 
     float lightColor[4] = { 0.5f, 0.5f, 0.5f, 1.0f };
