@@ -14,6 +14,14 @@
 #include <cstdlib>
 #include <iostream>
 #include <algorithm>
+#include <map>
+#include <memory>
+
+// BGFX includes for texture handling
+#include <bgfx/bgfx.h>
+#include <bgfx/platform.h>
+#include <bx/uint32_t.h>
+#include "stb_image.h"
 
 #define NOMINMAX
 #include <windows.h>
@@ -83,9 +91,11 @@ namespace FrameExtractor {
     static std::atomic<bool> extractionDone{ false };
     static std::atomic<bool> removingBG{ false };
     static std::atomic<bool> removalDone{ false };
+    static std::atomic<bool> showImageSelection{ false };
     static std::atomic<bool> showMethodChoice{ false };
     static std::atomic<bool> runningNeRF{ false };
     static std::atomic<bool> runningGaussian{ false };
+    static std::atomic<bool> reconstructionComplete{ false };
 
     // OBJ watcher state
     static std::atomic<bool> watchingObj{ false };
@@ -109,6 +119,246 @@ namespace FrameExtractor {
     // Timing and progress tracking
     static std::chrono::steady_clock::time_point nerfStartTime;
     static std::atomic<int> nerfProgress{ 0 };
+    
+}
+
+// ======================
+// FrameGallery namespace (based on existing Gallery implementation)
+// ======================
+namespace FrameGallery {
+    static bool galleryOpen = false;
+    static bool fullscreenOpen = false;
+    static int selectedImage = -1;
+    static std::vector<bgfx::TextureHandle> textures;
+    static std::vector<ImVec2> imgSizes;
+    static std::vector<std::string> imagePaths;
+    static std::vector<bool> selectedImages;
+    static int selectedCount = 0;
+    
+    // Call to load images from the images directory
+    void LoadFrameGallery(const std::string& folderPath) {
+        textures.clear();
+        imgSizes.clear();
+        imagePaths.clear();
+        selectedImages.clear();
+        selectedCount = 0;
+        
+        for (auto& entry : std::filesystem::directory_iterator(folderPath)) {
+            if (!entry.is_regular_file()) continue;
+            auto path = entry.path().string();
+            std::string extension = entry.path().extension().string();
+            std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
+            
+            // Only load image files
+            if (extension == ".png" || extension == ".jpg" || extension == ".jpeg") {
+                int w, h, channels;
+                unsigned char* data = stbi_load(path.c_str(), &w, &h, &channels, 4);
+                if (!data) continue;
+                
+                const bgfx::Memory* mem = bgfx::copy(data, w * h * 4);
+                stbi_image_free(data);
+                auto tex = bgfx::createTexture2D((uint16_t)w, (uint16_t)h, false, 1,
+                    bgfx::TextureFormat::RGBA8, 0, mem);
+                if (bgfx::isValid(tex)) {
+                    textures.push_back(tex);
+                    imgSizes.push_back(ImVec2((float)w, (float)h));
+                    imagePaths.push_back(path);
+                    selectedImages.push_back(false);
+                }
+            }
+        }
+        std::cout << "[FrameGallery] Loaded " << textures.size() << " images" << std::endl;
+    }
+    
+    // Delete selected images
+    void DeleteSelectedImages() {
+        int deletedCount = 0;
+        for (size_t i = 0; i < imagePaths.size(); ++i) {
+            if (selectedImages[i]) {
+                std::error_code ec;
+                if (fs::remove(imagePaths[i], ec)) {
+                    deletedCount++;
+                    std::cout << "[FrameGallery] Deleted: " << fs::path(imagePaths[i]).filename().string() << std::endl;
+                } else {
+                    std::cerr << "[FrameGallery] Failed to delete: " << imagePaths[i] << " - " << ec.message() << std::endl;
+                }
+            }
+        }
+        std::cout << "[FrameGallery] Deleted " << deletedCount << " images" << std::endl;
+        
+        // Reload the gallery
+        LoadFrameGallery(fs::path(imagePaths[0]).parent_path().string());
+    }
+    
+    // Draw the frame gallery window
+    void DrawFrameGallery() {
+        if (!galleryOpen) return;
+        
+        ImGui::SetNextWindowSize(ImVec2(1000, 700), ImGuiCond_FirstUseEver);
+        if (ImGui::Begin("Frame Gallery - Select Images to Delete", &galleryOpen, ImGuiWindowFlags_None)) {
+            
+            ImGui::Text("Total images: %d", (int)textures.size());
+            ImGui::Text("Selected for deletion: %d", selectedCount);
+            ImGui::Separator();
+            
+            // Control buttons
+            if (ImGui::Button("Select All", ImVec2(100, 30))) {
+                std::fill(selectedImages.begin(), selectedImages.end(), true);
+                selectedCount = static_cast<int>(selectedImages.size());
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Deselect All", ImVec2(100, 30))) {
+                std::fill(selectedImages.begin(), selectedImages.end(), false);
+                selectedCount = 0;
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Refresh", ImVec2(100, 30))) {
+                if (!imagePaths.empty()) {
+                    LoadFrameGallery(fs::path(imagePaths[0]).parent_path().string());
+                }
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Delete Selected", ImVec2(120, 30))) {
+                if (selectedCount > 0) {
+                    DeleteSelectedImages();
+                }
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Continue to Reconstruction", ImVec2(200, 30))) {
+                galleryOpen = false;
+                FrameExtractor::showImageSelection = false;
+                FrameExtractor::showMethodChoice = true;
+            }
+            
+            ImGui::Separator();
+            
+            // Thumbnail grid
+            ImGui::BeginChild("Thumbnails", ImVec2(0, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
+            
+            const float maxThumbHeight = 150.0f;
+            const float padding = 10.0f;
+            const int imagesPerRow = 6; // Fixed number of images per row for consistent grid
+            
+            // Calculate available width and determine thumbnail size
+            float availableWidth = ImGui::GetContentRegionAvail().x;
+            float thumbWidth = (availableWidth - (imagesPerRow - 1) * padding) / imagesPerRow;
+            float thumbHeight = maxThumbHeight;
+            
+            // Ensure thumbnails don't get too small
+            if (thumbWidth < 80.0f) {
+                thumbWidth = 80.0f;
+            }
+            
+            for (int i = 0; i < (int)textures.size(); i++) {
+                // Start new row every imagesPerRow images
+                if (i % imagesPerRow != 0) {
+                    ImGui::SameLine();
+                }
+                
+                ImGui::PushID(i);
+                
+                // Create a child window for each image to contain both image and text
+                std::string childId = "img_container_" + std::to_string(i);
+                ImGui::BeginChild(childId.c_str(), ImVec2(thumbWidth + padding, thumbHeight + 30), false, ImGuiWindowFlags_NoScrollbar);
+                
+                // Calculate actual thumbnail size maintaining aspect ratio
+                ImVec2 original = imgSizes[i];
+                float ratio = original.x / original.y;
+                ImVec2 thumbSize;
+                
+                if (ratio > 1.0f) {
+                    // Landscape image
+                    thumbSize = ImVec2(thumbWidth, thumbWidth / ratio);
+                } else {
+                    // Portrait or square image
+                    thumbSize = ImVec2(thumbHeight * ratio, thumbHeight);
+                }
+                
+                // Selection border
+                ImVec4 borderColor = selectedImages[i] ? 
+                    ImVec4(1.0f, 0.0f, 0.0f, 1.0f) : // Red when selected
+                    ImVec4(0.5f, 0.5f, 0.5f, 1.0f);  // Gray when not selected
+                
+                ImGui::PushStyleColor(ImGuiCol_Border, borderColor);
+                ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 2.0f);
+                
+                // Image button
+                std::string buttonId = "img_" + std::to_string(i);
+                if (ImGui::ImageButton(buttonId.c_str(), (ImTextureID)(uintptr_t)textures[i].idx, thumbSize, 
+                                     ImVec2(0, 0), ImVec2(1, 1), 
+                                     selectedImages[i] ? ImVec4(1.0f, 0.8f, 0.8f, 0.3f) : ImVec4(0, 0, 0, 0))) {
+                    selectedImages[i] = !selectedImages[i];
+                    selectedCount = static_cast<int>(std::count(selectedImages.begin(), selectedImages.end(), true));
+                }
+                
+                // Right-click for fullscreen view
+                if (ImGui::IsItemClicked(1)) { // Right click
+                    selectedImage = i;
+                    fullscreenOpen = true;
+                }
+                
+                ImGui::PopStyleVar();
+                ImGui::PopStyleColor();
+                
+                // Filename below image
+                std::string filename = fs::path(imagePaths[i]).filename().string();
+                if (filename.length() > 15) {
+                    filename = filename.substr(0, 12) + "...";
+                }
+                ImGui::Text("%s", filename.c_str());
+                
+                ImGui::EndChild();
+                ImGui::PopID();
+            }
+            
+            ImGui::EndChild();
+        }
+        ImGui::End();
+        
+        // Fullscreen image viewer
+        if (fullscreenOpen && selectedImage >= 0 && selectedImage < (int)textures.size()) {
+            ImGuiIO& io = ImGui::GetIO();
+            ImVec2 viewport = io.DisplaySize;
+            ImVec2 imgSize = imgSizes[selectedImage];
+            
+            // Compute scale to fit viewport
+            float scale = 1.0f;
+            if (imgSize.x > viewport.x || imgSize.y > viewport.y) {
+                float sx = viewport.x / imgSize.x;
+                float sy = viewport.y / imgSize.y;
+                scale = (sx < sy) ? sx : sy;
+            }
+            ImVec2 displaySize(imgSize.x * scale, imgSize.y * scale);
+            ImVec2 pos((viewport.x - displaySize.x) * 0.5f, (viewport.y - displaySize.y) * 0.5f);
+            
+            // Draw full-screen black background
+            ImGui::SetNextWindowPos(ImVec2(0, 0));
+            ImGui::SetNextWindowSize(viewport);
+            ImGui::Begin("##BgFull", nullptr,
+                ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoBackground);
+            ImGui::GetWindowDrawList()->AddRectFilled(ImVec2(0, 0), viewport, IM_COL32(0, 0, 0, 255));
+            ImGui::End();
+            
+            // Draw centered image window
+            ImGui::SetNextWindowPos(pos);
+            ImGui::SetNextWindowSize(displaySize);
+            ImGui::Begin("##FullScreen", nullptr,
+                ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs);
+            ImGui::Image((ImTextureID)(uintptr_t)textures[selectedImage].idx, displaySize);
+            ImGui::End();
+            
+            // Click or ESC to close
+            if (ImGui::IsMouseClicked(0) || ImGui::IsKeyPressed(ImGuiKey_Escape)) {
+                fullscreenOpen = false;
+            }
+        }
+    }
+}
+
+// ======================
+// FrameExtractor namespace (continued)
+// ======================
+namespace FrameExtractor {
 
     // ----------------------------
     // Helper: Run a shell command and stream output
@@ -214,6 +464,7 @@ namespace FrameExtractor {
         }
     }
 
+
     // ----------------------------
     // NeRF Automation Function
     // ----------------------------
@@ -256,6 +507,7 @@ namespace FrameExtractor {
 
             nerfProgress = 100;
             runningNeRF = false;
+            reconstructionComplete = true;
             std::cout << "[FrameExtractor] NeRF automation completed." << std::endl;
             
             // Show import prompt if OBJ was found during automation
@@ -349,7 +601,7 @@ namespace FrameExtractor {
         ImGui::Separator();
 
         // --- Start extraction ---
-        if (!extracting && ImGui::Button("Start Extraction")) {
+        if (!extracting && !removalDone && !showImageSelection && !showMethodChoice && !runningNeRF && !runningGaussian && !reconstructionComplete && ImGui::Button("Start Extraction")) {
             if (cap.isOpened()) {
                 extracting = true;
                 extractionDone = false;
@@ -475,12 +727,34 @@ namespace FrameExtractor {
                     }
 
                     removingBG = false;
-                    showMethodChoice = true;
+                    showImageSelection = true;
                     removalDone = true;
                     extracting = false;
-                    std::cout << "[FrameExtractor] All background removals done. Choose reconstruction method.\n";
+                    std::cout << "[FrameExtractor] All background removals done. Loading images for selection.\n";
+                    
+                    // Load images for the frame gallery
+                    FrameGallery::LoadFrameGallery(imagesDir);
 
-                    }).detach(); // ✅ Properly close and detach the thread
+                    }).detach(); // Properly close and detach the thread
+            }
+        }
+
+        // --- Image Selection UI ---
+        if (showImageSelection && !showMethodChoice && !runningNeRF && !runningGaussian) {
+            CenterLargeText("Frame Extraction Complete!");
+            ImGui::Spacing();
+            ImGui::Text("Total images extracted: %d", (int)FrameGallery::textures.size());
+            ImGui::Spacing();
+            ImGui::Text("You can now review and select images to delete before reconstruction.");
+            ImGui::Spacing();
+            
+            if (ImGui::Button("Select Images", ImVec2(200, 50))) {
+                FrameGallery::galleryOpen = true;
+            }
+            ImGui::Spacing();
+            if (ImGui::Button("Skip Image Selection", ImVec2(200, 50))) {
+                showImageSelection = false;
+                showMethodChoice = true;
             }
         }
 
@@ -531,9 +805,47 @@ namespace FrameExtractor {
             else
                 CenterGreenProgressBar(frameProgress, ImVec2(320, 24));
         }
-        else if (!videoPath.empty() && removalDone && !showMethodChoice && !runningNeRF && !runningGaussian) {
+        else if (!videoPath.empty() && removalDone && !showImageSelection && !showMethodChoice && !runningNeRF && !runningGaussian && !reconstructionComplete) {
             CenterLargeText("All done!");
             ImGui::Text("Total frames saved: %d", savedCount.load());
+        }
+        else if (reconstructionComplete) {
+            CenterLargeText("Reconstruction Complete!");
+            ImGui::Text("Total frames processed: %d", savedCount.load());
+            ImGui::Spacing();
+            ImGui::Text("The reconstruction process has finished successfully.");
+            ImGui::Spacing();
+            
+            if (ImGui::Button("Reconstruct Again", ImVec2(200, 50))) {
+                // Reset all states to allow starting over
+                extracting = false;
+                extractionDone = false;
+                removingBG = false;
+                removalDone = false;
+                showImageSelection = false;
+                showMethodChoice = false;
+                runningNeRF = false;
+                runningGaussian = false;
+                reconstructionComplete = false;
+                watchingObj = false;
+                objFound = false;
+                showImportPrompt = false;
+                savedCount = 0;
+                totalFrames = 0;
+                nerfProgress = 0;
+                
+                // Clear the frame gallery
+                FrameGallery::textures.clear();
+                FrameGallery::imgSizes.clear();
+                FrameGallery::imagePaths.clear();
+                FrameGallery::selectedImages.clear();
+                FrameGallery::selectedCount = 0;
+                FrameGallery::galleryOpen = false;
+                FrameGallery::fullscreenOpen = false;
+                FrameGallery::selectedImage = -1;
+                
+                std::cout << "[FrameExtractor] Reset for new reconstruction" << std::endl;
+            }
         }
 
         // --- Import Prompt ---
@@ -562,6 +874,9 @@ namespace FrameExtractor {
         }
 
         ImGui::End();
+        
+        // Draw the frame gallery if it should be shown
+        FrameGallery::DrawFrameGallery();
     } 
 
     void Init() {}
