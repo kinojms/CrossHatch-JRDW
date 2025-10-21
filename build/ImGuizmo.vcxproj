@@ -271,7 +271,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
   <ItemGroup>
     <ClInclude Include="C:\CrossHatch-JRDW\ImGuizmo\ImGuizmo.h" />
     <ClCompile Include="C:\CrossHatch-JRDW\ImGuizmo\ImGuizmo.cpp" />
-    <ClInclude Include="C:\CrossHatch-JRDW\FrameExtractor.h" />
+    <ClInclude Include="C:\CrossHatch-JRDW\Reconstructor.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="C:\CrossHatch-JRDW\build\ZERO_CHECK.vcxproj">

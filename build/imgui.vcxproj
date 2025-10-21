@@ -284,7 +284,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClInclude Include="C:\CrossHatch-JRDW\imgui\imstb_rectpack.h" />
     <ClInclude Include="C:\CrossHatch-JRDW\imgui\imstb_textedit.h" />
     <ClInclude Include="C:\CrossHatch-JRDW\imgui\imstb_truetype.h" />
-    <ClInclude Include="C:\CrossHatch-JRDW\FrameExtractor.h" />
+    <ClInclude Include="C:\CrossHatch-JRDW\Reconstructor.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="C:\CrossHatch-JRDW\build\ZERO_CHECK.vcxproj">

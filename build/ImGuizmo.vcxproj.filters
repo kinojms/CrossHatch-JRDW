@@ -9,7 +9,7 @@
     <ClInclude Include="C:\CrossHatch-JRDW\ImGuizmo\ImGuizmo.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\CrossHatch-JRDW\FrameExtractor.h">
+    <ClInclude Include="C:\CrossHatch-JRDW\Reconstructor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

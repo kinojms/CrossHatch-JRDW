@@ -1,4 +1,4 @@
-﻿#include "FrameExtractor.h"
+﻿#include "Reconstructor.h"
 
 #include <opencv2/opencv.hpp>
 #include <imgui.h>
@@ -72,7 +72,7 @@ static std::string openFileDialog() {
 // ======================
 // FrameExtractor namespace
 // ======================
-namespace FrameExtractor {
+namespace Reconstructor {
     static std::string videoPath;
     static std::string outputDir;
     static std::string imagesDir;
@@ -226,8 +226,8 @@ namespace FrameGallery {
             ImGui::SameLine();
             if (ImGui::Button("Continue to Reconstruction", ImVec2(200, 30))) {
                 galleryOpen = false;
-                FrameExtractor::showImageSelection = false;
-                FrameExtractor::showMethodChoice = true;
+                Reconstructor::showImageSelection = false;
+                Reconstructor::showMethodChoice = true;
             }
             
             ImGui::Separator();
@@ -358,7 +358,7 @@ namespace FrameGallery {
 // ======================
 // FrameExtractor namespace (continued)
 // ======================
-namespace FrameExtractor {
+namespace Reconstructor {
 
     // ----------------------------
     // Helper: Run a shell command and stream output
@@ -559,7 +559,7 @@ namespace FrameExtractor {
             }
         }
 
-        ImGui::Begin("Video Frame Extractor", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Begin("3D Reconstructor", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
         // --- File Picker ---
         if (ImGui::Button("Choose Video File")) {
@@ -732,10 +732,10 @@ namespace FrameExtractor {
                     extracting = false;
                     std::cout << "[FrameExtractor] All background removals done. Loading images for selection.\n";
                     
-                    // Load images for the frame gallery
+                    // load images to frame gallery after bg removal is done
                     FrameGallery::LoadFrameGallery(imagesDir);
 
-                    }).detach(); // Properly close and detach the thread
+                    }).detach();
             }
         }
 
@@ -793,7 +793,6 @@ namespace FrameExtractor {
             float frameProgress = static_cast<float>(savedCount.load()) / std::max(1, totalExpectedFrames);
             float removalProgress = static_cast<float>(savedCount.load()) / std::max(1, totalFrames.load());
 
-            // Large centered text with count
             std::string statusText = removingBG
                 ? "Removing background... " + std::to_string(savedCount.load()) + " / " + std::to_string(totalFrames.load()) + " frames"
                 : "Extracting frames... " + std::to_string(savedCount.load()) + " frames";
@@ -817,7 +816,7 @@ namespace FrameExtractor {
             ImGui::Spacing();
             
             if (ImGui::Button("Reconstruct Again", ImVec2(200, 50))) {
-                // Reset all states to allow starting over
+                // Reset after reconstruction is complete
                 extracting = false;
                 extractionDone = false;
                 removingBG = false;

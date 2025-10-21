@@ -19,7 +19,7 @@
     <ClCompile Include="C:\CrossHatch-JRDW\TextRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\CrossHatch-JRDW\FrameExtractor.cpp">
+    <ClCompile Include="C:\CrossHatch-JRDW\Reconstructor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -54,7 +54,7 @@
     <ClInclude Include="C:\CrossHatch-JRDW\TextRenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\CrossHatch-JRDW\FrameExtractor.h">
+    <ClInclude Include="C:\CrossHatch-JRDW\Reconstructor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

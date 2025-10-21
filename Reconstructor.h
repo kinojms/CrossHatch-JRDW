@@ -5,7 +5,7 @@
 // Forward declaration for GLFW window
 struct GLFWwindow;
 
-namespace FrameExtractor {
+namespace Reconstructor {
     void Draw();
     void Init();
     void Shutdown();

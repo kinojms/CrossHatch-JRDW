@@ -1,7 +1,7 @@
 ﻿// CrossHatchEditor.cpp : Defines the entry point for the application.
 //
 #include "CrossHatchEditor.h"
-#include "FrameExtractor.h"
+#include "Reconstructor.h"
 #include <iostream>
 #include <cstring>
 #include <vector>
@@ -2989,8 +2989,8 @@ int main(void)
     std::vector<Instance*> instances;
     instances.reserve(100);
 
-    // Set up FrameExtractor import callback
-    FrameExtractor::SetImportCallback([&instances, &importedObjMap](const std::string& objPath) {
+    // Set up Reconstructor import callback
+    Reconstructor::SetImportCallback([&instances, &importedObjMap](const std::string& objPath) {
         std::cout << "[Editor] Auto-importing mesh: " << objPath << std::endl;
         
         // Convert to relative path for consistency
@@ -3065,8 +3065,8 @@ int main(void)
         }
     });
     
-    // Set the main window reference for FrameExtractor
-    FrameExtractor::SetMainWindow(window);
+    // Set the main window reference for Reconstructor
+    Reconstructor::SetMainWindow(window);
 
     bool modelMovement = false;
 
@@ -4660,7 +4660,7 @@ int main(void)
 
             ImGui::Begin("Gallery", p_open, window_flags);
            
-            FrameExtractor::Draw();
+            Reconstructor::Draw();
             
             ImGui::End();
 

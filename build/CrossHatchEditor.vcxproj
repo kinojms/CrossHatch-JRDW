@@ -533,8 +533,8 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClInclude Include="C:\CrossHatch-JRDW\VideoPlayer.h" />
     <ClInclude Include="C:\CrossHatch-JRDW\TextRenderer.h" />
     <ClCompile Include="C:\CrossHatch-JRDW\TextRenderer.cpp" />
-    <ClCompile Include="C:\CrossHatch-JRDW\FrameExtractor.cpp" />
-    <ClInclude Include="C:\CrossHatch-JRDW\FrameExtractor.h" />
+    <ClCompile Include="C:\CrossHatch-JRDW\Reconstructor.cpp" />
+    <ClInclude Include="C:\CrossHatch-JRDW\Reconstructor.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="C:\CrossHatch-JRDW\build\ZERO_CHECK.vcxproj">

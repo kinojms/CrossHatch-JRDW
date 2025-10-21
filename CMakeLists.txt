@@ -56,8 +56,8 @@ add_executable(${PROJECT_NAME}
     "VideoPlayer.h"
     "TextRenderer.h"
     "TextRenderer.cpp"
-    "FrameExtractor.cpp"
- "FrameExtractor.h")
+    "Reconstructor.cpp"
+    "Reconstructor.h")
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
 
@@ -105,7 +105,7 @@ file(GLOB IMGUI_SOURCES
     ${IMGUI_PATH}/backends/imgui_impl_opengl3_loader.cpp
 )
 
-add_library(imgui STATIC ${IMGUI_SOURCES} "FrameExtractor.h")
+add_library(imgui STATIC ${IMGUI_SOURCES} "Reconstructor.h")
 target_include_directories(imgui PUBLIC ${IMGUI_PATH})
 target_link_libraries(imgui PRIVATE glfw)
 
@@ -130,7 +130,7 @@ set(IMGUIZMO_PATH "${CMAKE_CURRENT_SOURCE_DIR}/ImGuizmo")
 add_library(ImGuizmo STATIC
     "${IMGUIZMO_PATH}/ImGuizmo.h"
     "${IMGUIZMO_PATH}/ImGuizmo.cpp"
- "FrameExtractor.h")
+    "Reconstructor.h")
 target_include_directories(ImGuizmo PUBLIC
     "${IMGUIZMO_PATH}"
     "${IMGUI_PATH}"
