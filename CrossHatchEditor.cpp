@@ -3064,6 +3064,9 @@ int main(void)
             importedObjMap[fileName] = normalizedRelPath;
         }
     });
+    
+    // Set the main window reference for FrameExtractor
+    FrameExtractor::SetMainWindow(window);
 
     bool modelMovement = false;
 

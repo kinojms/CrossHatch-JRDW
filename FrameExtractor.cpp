@@ -2,6 +2,7 @@
 
 #include <opencv2/opencv.hpp>
 #include <imgui.h>
+#include <GLFW/glfw3.h>
 
 #include <filesystem>
 #include <thread>
@@ -94,6 +95,9 @@ namespace FrameExtractor {
     
     // Import callback function pointer
     static std::function<void(const std::string&)> importCallback;
+    
+    // GLFW main window reference
+    static GLFWwindow* mainWindow = nullptr;
 
     static std::atomic<int> savedCount{ 0 };
     static std::atomic<int> totalFrames{ 0 };
@@ -174,12 +178,27 @@ namespace FrameExtractor {
     }
 
     // ----------------------------
-    // Helper: Hide main window
+    // Helper: Hide main window using GLFW
     // ----------------------------
     static void hideMainWindow() {
-        HWND hwnd = GetConsoleWindow();
-        if (hwnd) {
-            ShowWindow(hwnd, SW_MINIMIZE);
+        if (mainWindow) {
+            glfwHideWindow(mainWindow);
+            std::cout << "[FrameExtractor] Main window completely hidden using GLFW" << std::endl;
+        } else {
+            std::cout << "[FrameExtractor] Warning: Main window not set, cannot hide" << std::endl;
+        }
+    }
+    
+    // ----------------------------
+    // Helper: Restore main window using GLFW
+    // ----------------------------
+    static void restoreMainWindow() {
+        if (mainWindow) {
+            glfwShowWindow(mainWindow);
+            glfwFocusWindow(mainWindow);
+            std::cout << "[FrameExtractor] Main window shown and focused using GLFW" << std::endl;
+        } else {
+            std::cout << "[FrameExtractor] Warning: Main window not set, cannot restore" << std::endl;
         }
     }
 
@@ -229,6 +248,10 @@ namespace FrameExtractor {
                 hideMainWindow();
                 std::string cmd3 = std::string(kInstantNgpCmd) + " \"" + outputDir + "\"";
                 runShellCommand(cmd3);
+                
+                // Restore window after instant-ngp completes
+                std::cout << "[FrameExtractor] Restoring main window after instant-ngp..." << std::endl;
+                restoreMainWindow();
             }
 
             nerfProgress = 100;
@@ -461,7 +484,7 @@ namespace FrameExtractor {
             }
         }
 
-        // --- Method Choice UI ---
+        // --- Choose Reconstruction Method (NeRF or GS) ---
         if (showMethodChoice && !runningNeRF && !runningGaussian) {
             CenterLargeText("Choose Reconstruction Method");
             ImGui::Spacing();
@@ -472,12 +495,13 @@ namespace FrameExtractor {
             }
             ImGui::Spacing();
             if (ImGui::Button("Gaussian Splatting (Coming Soon)", ImVec2(300, 40))) {
-                // TODO: Implement Gaussian Splatting
+				// TODO: Integrate another open source GS implementation
                 ImGui::Text("Gaussian Splatting will be implemented next time.");
             }
         }
 
         // --- NeRF Progress Display ---
+		// TODO: Fix NeRF progress tracking based on actual process output (similar to frame extraction progress tracker)
         if (runningNeRF) {
             std::string statusText = "Running NeRF reconstruction... " + std::to_string(nerfProgress.load()) + "%";
             CenterLargeText(statusText);
@@ -546,6 +570,12 @@ namespace FrameExtractor {
     // Set the import callback function
     void SetImportCallback(std::function<void(const std::string&)> callback) {
         importCallback = callback;
+    }
+    
+    // Set the main GLFW window reference
+    void SetMainWindow(GLFWwindow* window) {
+        mainWindow = window;
+        std::cout << "[FrameExtractor] Main window reference set" << std::endl;
     }
 
 } 
