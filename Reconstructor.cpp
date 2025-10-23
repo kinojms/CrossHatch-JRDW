@@ -26,6 +26,7 @@
 #define NOMINMAX
 #include <windows.h>
 #include <commdlg.h>
+#include <shlobj.h>
 
 namespace fs = std::filesystem;
 
@@ -69,6 +70,20 @@ static std::string openFileDialog() {
     return GetOpenFileNameA(&ofn) ? std::string(filename) : "";
 }
 
+static std::string openFolderDialog() {
+    char folderPath[MAX_PATH] = "";
+    BROWSEINFOA bi{};
+    bi.lpszTitle = "Select Images Folder";
+    bi.ulFlags = BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE;
+    LPITEMIDLIST pidl = SHBrowseForFolderA(&bi);
+    if (pidl != nullptr) {
+        SHGetPathFromIDListA(pidl, folderPath);
+        CoTaskMemFree(pidl);
+        return std::string(folderPath);
+    }
+    return "";
+}
+
 // ======================
 // FrameExtractor namespace
 // ======================
@@ -76,6 +91,7 @@ namespace Reconstructor {
     static std::string videoPath;
     static std::string outputDir;
     static std::string imagesDir;
+    static std::string existingImagesDir;
 
     // Paths/commands for post-extraction automation
     static const char* kColmapScriptPath = "C:\\0_Thesis\\instant-ngp-rtx-3000\\scripts\\colmap2nerf.py";
@@ -93,6 +109,7 @@ namespace Reconstructor {
     static std::atomic<bool> removalDone{ false };
     static std::atomic<bool> showImageSelection{ false };
     static std::atomic<bool> showMethodChoice{ false };
+    static std::atomic<bool> showStartChoice{ false };
     static std::atomic<bool> runningNeRF{ false };
     static std::atomic<bool> runningGaussian{ false };
     static std::atomic<bool> reconstructionComplete{ false };
@@ -466,7 +483,7 @@ namespace Reconstructor {
 
 
     // ----------------------------
-    // NeRF Automation Function
+    // NeRF (Instant-NGP) Automation
     // ----------------------------
     static void runNeRFAutomation() {
         std::thread([]() {
@@ -476,19 +493,29 @@ namespace Reconstructor {
             startObjWatcher();
             
             std::cout << "[FrameExtractor] Starting COLMAP/NeRF automation..." << std::endl;
+            std::cout << "[FrameExtractor] Output directory: " << outputDir << std::endl;
+            std::cout << "[FrameExtractor] Images directory: " << imagesDir << std::endl;
+            
+            // Validate that the images directory exists
+            if (!fs::exists(imagesDir)) {
+                std::cerr << "[FrameExtractor] ERROR: Images directory does not exist: " << imagesDir << std::endl;
+                runningNeRF = false;
+                return;
+            }
+            
             std::string cdPrefix = std::string("cd /d \"") + outputDir + "\" && ";
 
-            // 1) colmap2nerf.py with --images images
+            // 1) colmap2nerf.py with --images pointing to the actual images directory
             nerfProgress = 25;
             {
-                std::string cmd1 = cdPrefix + "python \"" + kColmapScriptPath + "\" --images images --run_colmap --overwrite";
+                std::string cmd1 = cdPrefix + "python \"" + kColmapScriptPath + "\" --images \"" + imagesDir + "\" --run_colmap --overwrite";
                 runShellCommand(cmd1);
             }
 
             // 2) colmap2nerf.py exhaustive matching with aabb scale
             nerfProgress = 50;
             {
-                std::string cmd2 = cdPrefix + "python \"" + kColmapScriptPath + "\" --colmap_matcher exhaustive --run_colmap --aabb_scale 16 --overwrite";
+                std::string cmd2 = cdPrefix + "python \"" + kColmapScriptPath + "\" --images \"" + imagesDir + "\" --colmap_matcher exhaustive --run_colmap --aabb_scale 16 --overwrite";
                 runShellCommand(cmd2);
             }
 
@@ -561,189 +588,244 @@ namespace Reconstructor {
 
         ImGui::Begin("3D Reconstructor", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
-        // --- File Picker ---
-        if (ImGui::Button("Choose Video File")) {
-            std::string chosen = openFileDialog();
-            if (!chosen.empty()) {
-                videoPath = chosen;
-                outputDir = (outputRoot / fs::path(videoPath).stem()).string();
-                imagesDir = (fs::path(outputDir) / "images").string();
-                std::error_code ec;
-                fs::create_directories(imagesDir, ec);
-                cap.open(videoPath);
-
-                if (cap.isOpened()) {
-                    fps = cap.get(cv::CAP_PROP_FPS);
-                    originalTotalFrames = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_COUNT));
-                }
-                else {
-                    std::cerr << "Error: Cannot open video.\n";
+        // --- Start Choice UI ---
+        if (!showStartChoice && !extracting && !removalDone && !showImageSelection && !showMethodChoice && !runningNeRF && !runningGaussian && !reconstructionComplete) {
+            CenterLargeText("Choose Reconstruction Method");
+            ImGui::Spacing();
+            ImGui::Text("How would you like to start the reconstruction?");
+            ImGui::Spacing();
+            
+            if (ImGui::Button("Extract Frames from Video", ImVec2(300, 50))) {
+                showStartChoice = true;
+            }
+            ImGui::Spacing();
+            if (ImGui::Button("Use Existing Image Dataset", ImVec2(300, 50))) {
+                std::string chosen = openFolderDialog();
+                if (!chosen.empty()) {
+                    existingImagesDir = chosen;
+                    imagesDir = existingImagesDir;
+                    outputDir = (fs::path(existingImagesDir).parent_path() / "reconstruction").string();
+                    std::error_code ec;
+                    fs::create_directories(outputDir, ec);
+                    
+                    // Load existing images into frame gallery
+                    FrameGallery::LoadFrameGallery(existingImagesDir);
+                    
+                    // Check if any images were loaded
+                    if (FrameGallery::textures.empty()) {
+                        std::cerr << "[FrameExtractor] No images found in selected folder: " << existingImagesDir << std::endl;
+                        // Reset the selection
+                        existingImagesDir.clear();
+                        imagesDir.clear();
+                    } else {
+                        showImageSelection = true;
+                    }
                 }
             }
         }
 
-        if (!videoPath.empty()) {
-            ImGui::Text("Video: %s", videoPath.c_str());
-            ImGui::Text("FPS: %.2f", fps.load());
-            ImGui::Text("Total Frames: %d", originalTotalFrames.load());
-            ImGui::Text("Images Directory: %s", imagesDir.c_str());
-        }
+        // --- Video File Picker (only shown when extracting from video) ---
+        if (showStartChoice && !extracting && !removalDone && !showImageSelection && !showMethodChoice && !runningNeRF && !runningGaussian && !reconstructionComplete) {
+            if (ImGui::Button("Choose Video File")) {
+                std::string chosen = openFileDialog();
+                if (!chosen.empty()) {
+                    videoPath = chosen;
+                    outputDir = (outputRoot / fs::path(videoPath).stem()).string();
+                    imagesDir = (fs::path(outputDir) / "images").string();
+                    std::error_code ec;
+                    fs::create_directories(imagesDir, ec);
+                    cap.open(videoPath);
 
-        ImGui::Separator();
-
-        ImGui::Text("Frames per second to save:");
-        for (int i = 1; i <= 5; ++i) {
-            char label[2]; snprintf(label, sizeof(label), "%d", i);
-            if (ImGui::RadioButton(label, savedFPS == i)) savedFPS = i;
-            ImGui::SameLine();
-        }
-        ImGui::NewLine();
-        ImGui::Separator();
-
-        // --- Start extraction ---
-        if (!extracting && !removalDone && !showImageSelection && !showMethodChoice && !runningNeRF && !runningGaussian && !reconstructionComplete && ImGui::Button("Start Extraction")) {
-            if (cap.isOpened()) {
-                extracting = true;
-                extractionDone = false;
-                removalDone = false;
-                savedCount = 0;
-
-                // --- Thread 1: Frame extraction ---
-                std::thread([]() {
-                    cv::Mat frame;
-                    int frameIndex = 0;
-                    int savedIndex = 0;
-                    int step = std::max(1, static_cast<int>(fps / savedFPS));
-
-                    while (cap.read(frame)) {
-                        if (frameIndex % step == 0) {
-                            frameQueue.push({ savedIndex++, frame.clone() });
-                        }
-                        frameIndex++;
+                    if (cap.isOpened()) {
+                        fps = cap.get(cv::CAP_PROP_FPS);
+                        originalTotalFrames = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_COUNT));
                     }
-                    extractionDone = true;
-                    cap.release();
-                    }).detach();
-
-                // --- Thread 2: Frame saving + background removal ---
-                std::thread([]() {
-                    int totalExpectedFrames = static_cast<int>((originalTotalFrames / (fps / savedFPS)) + 1);
-
-                    while (!extractionDone || !frameQueue.empty()) {
-                        std::pair<int, cv::Mat> item;
-                        if (frameQueue.pop(item)) {
-                            std::string filename = (fs::path(imagesDir) / ("frame_" + std::to_string(item.first) + ".png")).string();
-                            cv::imwrite(filename, item.second);
-                            savedCount++;
-
-                            // print progress
-                            std::cout << "[FrameExtractor] Extracting " << savedCount.load()
-                                << " / " << totalExpectedFrames << " frames" << std::endl;
-                        }
-                        else {
-                            std::this_thread::sleep_for(std::chrono::milliseconds(5));
-                        }
+                    else {
+                        std::cerr << "Error: Cannot open video.\n";
                     }
+                }
+            }
 
-                    // --- Run background removal ---
-                    totalFrames.store(savedCount);
-                    // After extractionDone = true; and cap.release();
-                    removingBG = true;
-                    std::cout << "[FrameExtractor] Starting parallel background removal..." << std::endl;
+            if (!videoPath.empty()) {
+                ImGui::Text("Video: %s", videoPath.c_str());
+                ImGui::Text("FPS: %.2f", fps.load());
+                ImGui::Text("Total Frames: %d", originalTotalFrames.load());
+                ImGui::Text("Images Directory: %s", imagesDir.c_str());
+            }
 
-                    // Gather all frame files
-                    std::vector<fs::path> frameFiles;
-                    for (const auto& entry : fs::directory_iterator(imagesDir)) {
-                        if (entry.is_regular_file() && entry.path().extension() == ".png") {
-                            frameFiles.push_back(entry.path());
-                        }
-                    }
+            ImGui::Separator();
 
-                    int totalFiles = static_cast<int>(frameFiles.size());
-                    if (totalFiles == 0) {
-                        std::cerr << "[FrameExtractor] No frames found for background removal.\n";
-                        removingBG = false;
-                        removalDone = true;
-                        extracting = false;
-                        return;
-                    }
+            ImGui::Text("Frames per second to save:");
+            for (int i = 1; i <= 5; ++i) {
+                char label[2]; snprintf(label, sizeof(label), "%d", i);
+                if (ImGui::RadioButton(label, savedFPS == i)) savedFPS = i;
+                ImGui::SameLine();
+            }
+            ImGui::NewLine();
+            ImGui::Separator();
 
-                    savedCount.store(0);
-                    totalFrames.store(totalFiles);
+            // --- Start extraction ---
+            if (ImGui::Button("Start Extraction")) {
+                if (cap.isOpened()) {
+                    extracting = true;
+                    extractionDone = false;
+                    removalDone = false;
+                    savedCount = 0;
 
-                    int numThreads = std::min(5, totalFiles);
-                    std::atomic<int> activeThreads = 0;
-                    std::mutex coutMutex;
+                    // --- Thread 1: Frame extraction ---
+                    std::thread([]() {
+                        cv::Mat frame;
+                        int frameIndex = 0;
+                        int savedIndex = 0;
+                        int step = std::max(1, static_cast<int>(fps / savedFPS));
 
-                    auto worker = [&](int id, int startIndex, int step) {
-                        activeThreads++;
-                        for (int i = startIndex; i < totalFiles; i += step) {
-                            const auto& file = frameFiles[i];
-                            std::string command = "python \"" + pythonScript + "\" \"" + outputDir + "\" \"" + file.string() + "\"";
-
-                            std::cout << command;
-                            {
-                                std::lock_guard<std::mutex> lock(coutMutex);
-                                std::cout << "[Thread " << id << "] Running: " << command << std::endl;
+                        while (cap.read(frame)) {
+                            if (frameIndex % step == 0) {
+                                frameQueue.push({ savedIndex++, frame.clone() });
                             }
+                            frameIndex++;
+                        }
+                        extractionDone = true;
+                        cap.release();
+                        }).detach();
 
-                            FILE* pipe = _popen(command.c_str(), "r");
-                            if (pipe) {
-                                char buffer[256];
-                                while (fgets(buffer, sizeof(buffer), pipe)) {
-                                    std::string line(buffer);
-                                    std::lock_guard<std::mutex> lock(coutMutex);
-                                    std::cout << "[Python T" << id << "] " << line;
+                    // --- Thread 2: Frame saving + background removal ---
+                    std::thread([]() {
+                        int totalExpectedFrames = static_cast<int>((originalTotalFrames / (fps / savedFPS)) + 1);
 
-                                    if (line.rfind("PROGRESS", 0) == 0) {
-                                       // int done = 0, total = 0;
-                                       // if (sscanf(line.c_str(), "PROGRESS %d/%d", &done, &total) == 2) {
-                                            savedCount.fetch_add(1);
-                                        // }
-                                    }
-                                    else if (line.rfind("Processed", 0) == 0) {
-                                        savedCount.fetch_add(1);
-                                    }
-                                }
-                                _pclose(pipe);
+                        while (!extractionDone || !frameQueue.empty()) {
+                            std::pair<int, cv::Mat> item;
+                            if (frameQueue.pop(item)) {
+                                std::string filename = (fs::path(imagesDir) / ("frame_" + std::to_string(item.first) + ".png")).string();
+                                cv::imwrite(filename, item.second);
+                                savedCount++;
+
+                                // print progress
+                                std::cout << "[FrameExtractor] Extracting " << savedCount.load()
+                                    << " / " << totalExpectedFrames << " frames" << std::endl;
                             }
                             else {
-                                std::lock_guard<std::mutex> lock(coutMutex);
-                                std::cerr << "[Thread " << id << "] Failed to run script for " << file.filename() << std::endl;
+                                std::this_thread::sleep_for(std::chrono::milliseconds(5));
                             }
                         }
-                        activeThreads--;
-                        };
 
-                    // Launch threads
-                    std::vector<std::thread> threads;
-                    for (int i = 0; i < numThreads; ++i) {
-                        threads.emplace_back(worker, i + 1, i, numThreads);
-                    }
+                        // --- Run background removal ---
+                        totalFrames.store(savedCount);
+                        // After extractionDone = true; and cap.release();
+                        removingBG = true;
+                        std::cout << "[FrameExtractor] Starting parallel background removal..." << std::endl;
 
-                    // Wait for all to complete
-                    for (auto& t : threads) {
-                        if (t.joinable()) t.join();
-                    }
+                        // Gather all frame files
+                        std::vector<fs::path> frameFiles;
+                        for (const auto& entry : fs::directory_iterator(imagesDir)) {
+                            if (entry.is_regular_file() && entry.path().extension() == ".png") {
+                                frameFiles.push_back(entry.path());
+                            }
+                        }
 
-                    removingBG = false;
-                    showImageSelection = true;
-                    removalDone = true;
-                    extracting = false;
-                    std::cout << "[FrameExtractor] All background removals done. Loading images for selection.\n";
-                    
-                    // load images to frame gallery after bg removal is done
-                    FrameGallery::LoadFrameGallery(imagesDir);
+                        int totalFiles = static_cast<int>(frameFiles.size());
+                        if (totalFiles == 0) {
+                            std::cerr << "[FrameExtractor] No frames found for background removal.\n";
+                            removingBG = false;
+                            removalDone = true;
+                            extracting = false;
+                            return;
+                        }
 
-                    }).detach();
+                        savedCount.store(0);
+                        totalFrames.store(totalFiles);
+
+                        int numThreads = std::min(5, totalFiles);
+                        std::atomic<int> activeThreads = 0;
+                        std::mutex coutMutex;
+
+                        auto worker = [&](int id, int startIndex, int step) {
+                            activeThreads++;
+                            for (int i = startIndex; i < totalFiles; i += step) {
+                                const auto& file = frameFiles[i];
+                                std::string command = "python \"" + pythonScript + "\" \"" + outputDir + "\" \"" + file.string() + "\"";
+
+                                std::cout << command;
+                                {
+                                    std::lock_guard<std::mutex> lock(coutMutex);
+                                    std::cout << "[Thread " << id << "] Running: " << command << std::endl;
+                                }
+
+                                FILE* pipe = _popen(command.c_str(), "r");
+                                if (pipe) {
+                                    char buffer[256];
+                                    while (fgets(buffer, sizeof(buffer), pipe)) {
+                                        std::string line(buffer);
+                                        std::lock_guard<std::mutex> lock(coutMutex);
+                                        std::cout << "[Python T" << id << "] " << line;
+
+                                        if (line.rfind("PROGRESS", 0) == 0) {
+                                           // int done = 0, total = 0;
+                                           // if (sscanf(line.c_str(), "PROGRESS %d/%d", &done, &total) == 2) {
+                                                savedCount.fetch_add(1);
+                                            // }
+                                        }
+                                        else if (line.rfind("Processed", 0) == 0) {
+                                            savedCount.fetch_add(1);
+                                        }
+                                    }
+                                    _pclose(pipe);
+                                }
+                                else {
+                                    std::lock_guard<std::mutex> lock(coutMutex);
+                                    std::cerr << "[Thread " << id << "] Failed to run script for " << file.filename() << std::endl;
+                                }
+                            }
+                            activeThreads--;
+                            };
+
+                        // Launch threads
+                        std::vector<std::thread> threads;
+                        for (int i = 0; i < numThreads; ++i) {
+                            threads.emplace_back(worker, i + 1, i, numThreads);
+                        }
+
+                        // Wait for all to complete
+                        for (auto& t : threads) {
+                            if (t.joinable()) t.join();
+                        }
+
+                        removingBG = false;
+                        showImageSelection = true;
+                        removalDone = true;
+                        extracting = false;
+                        std::cout << "[FrameExtractor] All background removals done. Loading images for selection.\n";
+                        
+                        // load images to frame gallery after bg removal is done
+                        FrameGallery::LoadFrameGallery(imagesDir);
+
+                        }).detach();
+                }
+            }
+            
+            // Back button to return to start choice
+            ImGui::Spacing();
+            if (ImGui::Button("Back to Start", ImVec2(150, 30))) {
+                showStartChoice = false;
+                videoPath.clear();
+                cap.release();
             }
         }
 
         // --- Image Selection UI ---
         if (showImageSelection && !showMethodChoice && !runningNeRF && !runningGaussian) {
-            CenterLargeText("Frame Extraction Complete!");
-            ImGui::Spacing();
-            ImGui::Text("Total images extracted: %d", (int)FrameGallery::textures.size());
+            if (removalDone) {
+                CenterLargeText("Frame Extraction Complete!");
+                ImGui::Spacing();
+                ImGui::Text("Total images extracted: %d", (int)FrameGallery::textures.size());
+            } else {
+                CenterLargeText("Image Dataset Loaded!");
+                ImGui::Spacing();
+                ImGui::Text("Total images found: %d", (int)FrameGallery::textures.size());
+                if (!existingImagesDir.empty()) {
+                    ImGui::Text("Dataset folder: %s", existingImagesDir.c_str());
+                }
+            }
             ImGui::Spacing();
             ImGui::Text("You can now review and select images to delete before reconstruction.");
             ImGui::Spacing();
@@ -755,6 +837,26 @@ namespace Reconstructor {
             if (ImGui::Button("Skip Image Selection", ImVec2(200, 50))) {
                 showImageSelection = false;
                 showMethodChoice = true;
+            }
+            
+            // Back button to return to start choice
+            ImGui::Spacing();
+            if (ImGui::Button("Back to Start", ImVec2(150, 30))) {
+                showImageSelection = false;
+                showStartChoice = false;
+                videoPath.clear();
+                existingImagesDir.clear();
+                cap.release();
+                
+                // Clear the frame gallery
+                FrameGallery::textures.clear();
+                FrameGallery::imgSizes.clear();
+                FrameGallery::imagePaths.clear();
+                FrameGallery::selectedImages.clear();
+                FrameGallery::selectedCount = 0;
+                FrameGallery::galleryOpen = false;
+                FrameGallery::fullscreenOpen = false;
+                FrameGallery::selectedImage = -1;
             }
         }
 
@@ -823,6 +925,7 @@ namespace Reconstructor {
                 removalDone = false;
                 showImageSelection = false;
                 showMethodChoice = false;
+                showStartChoice = false;
                 runningNeRF = false;
                 runningGaussian = false;
                 reconstructionComplete = false;
@@ -832,6 +935,11 @@ namespace Reconstructor {
                 savedCount = 0;
                 totalFrames = 0;
                 nerfProgress = 0;
+                
+                // Clear paths
+                videoPath.clear();
+                existingImagesDir.clear();
+                cap.release();
                 
                 // Clear the frame gallery
                 FrameGallery::textures.clear();
