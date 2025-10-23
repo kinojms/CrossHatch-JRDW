@@ -130,6 +130,7 @@ static uint8_t s_pickingBlitData[PICKING_DIM * PICKING_DIM * 4] = { 0 };
 static bgfx::UniformHandle u_id = BGFX_INVALID_HANDLE;
 // Program handle for the picking pass.
 static bgfx::ProgramHandle pickingProgram = BGFX_INVALID_HANDLE;
+static bgfx::ProgramHandle vertexColorProgram = BGFX_INVALID_HANDLE;
 
 struct TextureOption {
     std::string name;
@@ -173,6 +174,8 @@ struct Instance
     float objectColor[4];
     // NEW: optional diffuse texture for the object.
     bgfx::TextureHandle diffuseTexture = BGFX_INVALID_HANDLE;
+    // Flag to indicate if this instance has vertex colors
+    bool hasVertexColors = false;
 
     // NEW: noise texture
     bgfx::TextureHandle noiseTexture = BGFX_INVALID_HANDLE;
@@ -436,7 +439,7 @@ void BuildWorldMatrix(const Instance* inst, float* outMatrix) {
 }
 void BuildMatrixFromInstance_ImGuizmo(const Instance* inst, float* outMatrix)
 {
-    // 1) Copy your instance’s data into the arrays ImGuizmo expects:
+    // 1) Copy your instance's data into the arrays ImGuizmo expects:
     float translation[3] = { inst->position[0], inst->position[1], inst->position[2] };
     float rotationDeg[3] = {
         RadToDeg(inst->rotation[0]),
@@ -752,7 +755,6 @@ std::string openFileDialog(bool save) {
 #endif
     return "";
 }
-
 MeshData loadMesh(const std::string& filePath) {
     Assimp::Importer importer;
     const aiScene* scene = importer.ReadFile(filePath, aiProcess_Triangulate | aiProcess_FlipUVs);
@@ -978,7 +980,7 @@ void createMeshBuffers(const MeshData& meshData, bgfx::VertexBufferHandle& vbh, 
     layout.begin()
         .add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
         .add(bgfx::Attrib::Normal, 3, bgfx::AttribType::Float)
-        .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true, true)
+        .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true, false)
         .add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float) // NEW: UV coordinates
         .end();
 
@@ -1117,7 +1119,7 @@ bgfx::TextureHandle loadTextureFile(const char* filePath)
         // We now have width * height * 4 bytes (RGBA).
         const bgfx::Memory* mem = bgfx::copy(data, width * height * 4);
 
-        // Free stb_image’s data
+        // Free stb_image's data
         stbi_image_free(data);
 
         // Create a 2D texture from that memory
@@ -1309,7 +1311,7 @@ void drawInstance(Instance* instance, bgfx::ProgramHandle defaultProgram, bgfx::
         bgfx::setIndexBuffer(instance->indexBuffer);
         // Decide which texture to use:
         // If the inherited texture (from the parent) is valid, then use it regardless of what the instance may have set.
-        // Otherwise, use the instance’s own texture (if any), or fall back to the default.
+        // Otherwise, use the instance's own texture (if any), or fall back to the default.
         bgfx::TextureHandle textureToUse = defaultWhiteTexture;
         if (inheritedTexture.idx != bgfx::kInvalidHandle)
         {
@@ -1374,7 +1376,33 @@ void drawInstance(Instance* instance, bgfx::ProgramHandle defaultProgram, bgfx::
                 // Use default or debug shader
                 bgfx::setState(BGFX_STATE_DEFAULT);
 
-                bgfx::submit(0, (instance->type == "light") ? lightDebugProgram : defaultProgram);
+                // Use vertex color program for meshes with vertex colors
+                if (instance->hasVertexColors) {
+                    // Clear all color-affecting uniforms for vertex color program
+                    const float whiteColor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+                    const float clearTint[4] = { 1.0f, 1.0f, 1.0f, 0.0f };
+                    const float clearInk[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+                    const float clearParams[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+                    const float clearExtra[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+                    const float clearLayer[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+                    const float clearEpsilon[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+                    
+                    bgfx::setUniform(u_objectColor, whiteColor);
+                    bgfx::setUniform(u_tint, clearTint);
+                    bgfx::setUniform(u_inkColor, clearInk);
+                    bgfx::setUniform(u_e, clearEpsilon);
+                    bgfx::setUniform(u_params, clearParams);
+                    bgfx::setUniform(u_extraParams, clearExtra);
+                    bgfx::setUniform(u_paramsLayer, clearLayer);
+                    
+                    // Don't set any textures for vertex color program
+                    bgfx::setTexture(0, u_noiseTex, defaultWhiteTexture);
+                    bgfx::setTexture(1, u_diffuseTex, defaultWhiteTexture);
+                    
+                    bgfx::submit(0, vertexColorProgram);
+                } else {
+                    bgfx::submit(0, (instance->type == "light") ? lightDebugProgram : defaultProgram);
+                }
             }
         }
     }
@@ -1383,7 +1411,7 @@ void drawInstance(Instance* instance, bgfx::ProgramHandle defaultProgram, bgfx::
     const float* childParentColor = (!IsWhite(effectiveColor)) ? effectiveColor : nullptr;
     // For children, propagate the override:
     // If the inherited texture is already valid, continue propagating that.
-    // Otherwise, use the current instance’s texture as the inherited texture.
+    // Otherwise, use the current instance's texture as the inherited texture.
     bgfx::TextureHandle newInheritedTexture = inheritedTexture;
     if (inheritedTexture.idx == bgfx::kInvalidHandle)
     {
@@ -1780,8 +1808,9 @@ struct ImportedMesh {
     bgfx::TextureHandle diffuseTexture; // Diffuse texture for this mesh, if available.
     float diffuseColor[4]; // To store Kd from MTL
     bool hasDiffuseColor;  // Flag to indicate if diffuseColor was loaded
+    bool hasVertexColors;  // Flag to indicate if mesh has vertex colors
 
-    ImportedMesh() : diffuseTexture(BGFX_INVALID_HANDLE), hasDiffuseColor(false) {
+    ImportedMesh() : diffuseTexture(BGFX_INVALID_HANDLE), hasDiffuseColor(false), hasVertexColors(false) {
         // Initialize diffuseColor to white (or any default)
         diffuseColor[0] = 1.0f; diffuseColor[1] = 1.0f; diffuseColor[2] = 1.0f; diffuseColor[3] = 1.0f;
     }
@@ -1823,13 +1852,19 @@ void processNode(const aiScene* scene, aiNode* node, const aiMatrix4x4& parentTr
                 vertex.u = vertex.v = 0.0f;
             }
             if (mesh->HasVertexColors(0)) {
-                vertex.abgr = ((uint8_t)(mesh->mColors[0][j].r * 255) << 24) |
-                    ((uint8_t)(mesh->mColors[0][j].g * 255) << 16) |
-                    ((uint8_t)(mesh->mColors[0][j].b * 255) << 8) |
-                    (uint8_t)(mesh->mColors[0][j].a * 255);
+                // Correct ABGR packing for BGFX
+                const uint8_t r = uint8_t(mesh->mColors[0][j].r * 255.0f);
+                const uint8_t g = uint8_t(mesh->mColors[0][j].g * 255.0f);
+                const uint8_t b = uint8_t(mesh->mColors[0][j].b * 255.0f);
+                const uint8_t a = uint8_t(mesh->mColors[0][j].a * 255.0f);
+                vertex.abgr = (uint32_t(a) << 24) | (uint32_t(b) << 16) | (uint32_t(g) << 8) | uint32_t(r);
+                std::cout << "[DEBUG] Found vertex color for vertex " << j << ": (" 
+                    << mesh->mColors[0][j].r << ", " << mesh->mColors[0][j].g << ", " 
+                    << mesh->mColors[0][j].b << ", " << mesh->mColors[0][j].a << ")" << std::endl;
             }
             else {
                 vertex.abgr = 0xffffffff;
+                std::cout << "[DEBUG] No vertex colors found for mesh, using default white" << std::endl;
             }
             meshData.vertices.push_back(vertex);
         }
@@ -1856,12 +1891,13 @@ void processNode(const aiScene* scene, aiNode* node, const aiMatrix4x4& parentTr
             computeNormals(meshData.vertices, meshData.indices);
         }
 
-        // Create an ImportedMesh to store this mesh’s data.
+        // Create an ImportedMesh to store this mesh's data.
         ImportedMesh impMesh;
         impMesh.meshData = meshData;
         impMesh.transform = globalTransform;
         impMesh.diffuseTexture = BGFX_INVALID_HANDLE;
         impMesh.hasDiffuseColor = false;          // Initialize
+        impMesh.hasVertexColors = mesh->HasVertexColors(0);  // Set vertex color flag
 
         // --- New: Retrieve diffuse texture from the material ---
         // Attempt to load a texture from the material.
@@ -2005,7 +2041,6 @@ void updateTextTexture(Instance* textInst) {
         textInst->diffuseTexture = newTex;
     }
 }
-
 std::unordered_map<std::string, std::string> loadSceneFromFile(std::vector<Instance*>& instances,
     const std::vector<TextureOption>& availableTextures,
     const std::unordered_map<std::string, std::pair<bgfx::VertexBufferHandle, bgfx::IndexBufferHandle>>& bufferMap)
@@ -2612,7 +2647,6 @@ void ResetCrosshatchSettings()
     }
 
 }
-
 int main(void)
 {
     // Initialize GLFW
@@ -2706,7 +2740,7 @@ int main(void)
     layout.begin()
         .add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
         .add(bgfx::Attrib::Normal, 3, bgfx::AttribType::Float)
-        .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true, true)
+        .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true, false)
         .add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float) // NEW: UV coordinates
         .end();
 
@@ -3043,6 +3077,9 @@ int main(void)
                 childInst->scale[0] = scaling.x;
                 childInst->scale[1] = scaling.y;
                 childInst->scale[2] = scaling.z;
+                
+                // Set vertex color flag from imported mesh
+                childInst->hasVertexColors = importedMeshes[i].hasVertexColors;
                 
                 // Assign the diffuse texture from the imported mesh
                 childInst->diffuseTexture = importedMeshes[i].diffuseTexture;
@@ -3384,12 +3421,15 @@ int main(void)
     bgfx::ShaderHandle debugFsh = loadShader("shaders\\f_lightdebug_out1.bin");
     bgfx::ProgramHandle lightDebugProgram = bgfx::createProgram(debugVsh, debugFsh, true);
 
+    // Load vertex color shader:
+    bgfx::ShaderHandle vsh_vertex_colors = loadShader("shaders\\v_vertex_colors.bin");
+    bgfx::ShaderHandle fsh_vertex_colors = loadShader("shaders\\f_vertex_colors.bin");
+    vertexColorProgram = bgfx::createProgram(vsh_vertex_colors, fsh_vertex_colors, true);
     //spawn plane
     spawnInstance(camera, "plane", "plane", vbh_plane, ibh_plane, instances);
     instances.back()->position[0] = 0.0f;
     instances.back()->position[1] = -4.0f;
     instances.back()->position[2] = 0.0f;
-
     // --- Spawn Cornell Box with Hierarchy ---
     //Instance* cornellBox = new Instance(instanceCounter++, "cornell_box", "empty", 8.0f, 0.0f, -5.0f, BGFX_INVALID_HANDLE, BGFX_INVALID_HANDLE);
     //// Create a walls node (dummy instance without geometry)
@@ -3397,7 +3437,6 @@ int main(void)
     //wallsNode->scale[0] = 0.2f;
     //wallsNode->scale[1] = 0.2f;
     //wallsNode->scale[2] = 0.2f;
-
     //Instance* floorPlane = new Instance(instanceCounter++, "floor", "plane", 0.0f, -6.0f, 0.0f, vbh_plane, ibh_plane);
     //wallsNode->addChild(floorPlane);
     //Instance* ceilingPlane = new Instance(instanceCounter++, "ceiling", "plane", 0.0f, 14.0f, 0.0f, vbh_plane, ibh_plane);
@@ -3946,9 +3985,12 @@ int main(void)
                                 childInst->scale[1] = scaling.y;
                                 childInst->scale[2] = scaling.z;
 
+                                // Set vertex color flag from imported mesh
+                                childInst->hasVertexColors = importedMeshes[i].hasVertexColors;
+
                                 // *** NEW: Assign the diffuse texture from the imported mesh ***
                                 childInst->diffuseTexture = importedMeshes[i].diffuseTexture;
-                                // --- NEW: Apply diffuse color if present and no texture ---
+                                // Apply diffuse color if present and no texture
                                 if (importedMeshes[i].hasDiffuseColor && !bgfx::isValid(childInst->diffuseTexture)) {
                                     childInst->objectColor[0] = importedMeshes[i].diffuseColor[0];
                                     childInst->objectColor[1] = importedMeshes[i].diffuseColor[1];
@@ -4269,9 +4311,12 @@ int main(void)
                                 childInst->scale[1] = scaling.y;
                                 childInst->scale[2] = scaling.z;
 
+                                // Set vertex color flag from imported mesh
+                                childInst->hasVertexColors = importedMeshes[i].hasVertexColors;
+
                                 // *** NEW: Assign the diffuse texture from the imported mesh ***
                                 childInst->diffuseTexture = importedMeshes[i].diffuseTexture;
-                                // --- NEW: Apply diffuse color if present and no texture ---
+                                // Apply diffuse color if present and no texture
                                 if (importedMeshes[i].hasDiffuseColor && !bgfx::isValid(childInst->diffuseTexture)) {
                                     childInst->objectColor[0] = importedMeshes[i].diffuseColor[0];
                                     childInst->objectColor[1] = importedMeshes[i].diffuseColor[1];
@@ -4322,12 +4367,10 @@ int main(void)
                 ImGui::EndMenuBar();
             }
             ImGui::End();
-
             //IMGUI WINDOW FOR CONTROLS
             //FOR REFERENCE USE THIS: https://pthom.github.io/imgui_manual_online/manual/imgui_manual.html
             ImGui::Begin("Inspector", p_open, window_flags);
             ImGui::SetWindowFontScale(0.85f);
-
             // If an instance is selected, show its transform controls.
             if (selectedInstance)
             {
@@ -4790,13 +4833,13 @@ int main(void)
             //        ImGui::SetNextItemWidth(100);
             //        ImGui::DragFloat("Line Smoothness", &epsilonValue, 0.001f, 0.0f, 0.1f);
             //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Hatch Density", &strokeMultiplier, 0.01f, 0.0f, 15.0f);
+            //        ImGui::DragFloat("Hatch Density", &strokeMultiplier, 0.01f, 0.0f, 10.0f);
             //        ImGui::SetNextItemWidth(100);
             //        ImGui::DragFloat("Hatch Angle", &lineAngle1, 0.01f, 0.0f, TAU);
             //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Hatch Scale", &patternScale, 0.01f, 0.0f, 15.0f);
+            //        ImGui::DragFloat("Hatch Scale", &patternScale, 0.01f, 0.0f, 10.0f);
             //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Line Thickness", &lineThickness, 0.01f, -15.0f, 15.0f);
+            //        ImGui::DragFloat("Line Thickness", &lineThickness, 0.01f, -10.0f, 10.0f);
             //        ImGui::SetNextItemWidth(100);
             //        ImGui::DragFloat("Hatch Opacity", &transparencyValue, 0.01f, 0.0f, 1.0f);
             //    }
@@ -4807,22 +4850,22 @@ int main(void)
             //        ImGui::SetNextItemWidth(100);
             //        ImGui::DragFloat("Outer Line Smoothness", &epsilonValue, 0.001f, 0.0f, 0.1f);
             //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Outer Hatch Density", &strokeMultiplier, 0.01f, 0.0f, 15.0f);
+            //        ImGui::DragFloat("Outer Hatch Density", &strokeMultiplier, 0.01f, 0.0f, 10.0f);
             //        ImGui::SetNextItemWidth(100);
             //        ImGui::DragFloat("Outer Hatch Angle", &lineAngle1, 0.01f, 0.0f, TAU);
             //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Outer Hatch Scale", &patternScale, 0.01f, 0.0f, 15.0f);
+            //        ImGui::DragFloat("Outer Hatch Scale", &patternScale, 0.01f, 0.0f, 10.0f);
             //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Outer Hatch Thickness", &lineThickness, 0.01f, -15.0f, 15.0f);
+            //        ImGui::DragFloat("Outer Hatch Thickness", &lineThickness, 0.01f, -10.0f, 10.0f);
             //        ImGui::SetNextItemWidth(100);
             //        // Inner layer settings:
-            //        ImGui::DragFloat("Inner Hatch Scale", &layerPatternScale, 0.01f, 0.0f, 15.0f);
+            //        ImGui::DragFloat("Inner Hatch Scale", &layerPatternScale, 0.01f, 0.0f, 10.0f);
             //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Inner Hatch Density", &layerStrokeMult, 0.01f, 0.0f, 15.0f);
+            //        ImGui::DragFloat("Inner Hatch Density", &layerStrokeMult, 0.01f, 0.0f, 10.0f);
             //        ImGui::SetNextItemWidth(100);
             //        ImGui::DragFloat("Inner Hatch Angle", &layerAngle, 0.01f, 0.0f, TAU);
             //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Inner Hatch Thickness", &layerLineThickness, 0.01f, -15.0f, 15.0f);
+            //        ImGui::DragFloat("Inner Hatch Thickness", &layerLineThickness, 0.01f, -10.0f, 10.0f);
             //        ImGui::SetNextItemWidth(100);
             //        ImGui::DragFloat("Hatch Opacity", &transparencyValue, 0.01f, 0.0f, 1.0f);
             //    }
@@ -4833,22 +4876,22 @@ int main(void)
             //        ImGui::SetNextItemWidth(100);
             //        ImGui::DragFloat("Outer Line Smoothness", &epsilonValue, 0.001f, 0.0f, 0.1f);
             //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Outer Hatch Density", &strokeMultiplier, 0.01f, 0.0f, 15.0f);
+            //        ImGui::DragFloat("Outer Hatch Density", &strokeMultiplier, 0.01f, 0.0f, 10.0f);
             //        ImGui::SetNextItemWidth(100);
             //        ImGui::DragFloat("Outer Hatch Angle", &lineAngle1, 0.01f, 0.0f, TAU);
             //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Outer Hatch Scale", &patternScale, 0.01f, 0.0f, 15.0f);
+            //        ImGui::DragFloat("Outer Hatch Scale", &patternScale, 0.01f, 0.0f, 10.0f);
             //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Outer Hatch Thickness", &lineThickness, 0.01f, -15.0f, 15.0f);
+            //        ImGui::DragFloat("Outer Hatch Thickness", &lineThickness, 0.01f, -10.0f, 10.0f);
             //        ImGui::SetNextItemWidth(100);
             //        // Inner layer settings:
-            //        ImGui::DragFloat("Inner Hatch Scale", &layerPatternScale, 0.01f, 0.0f, 15.0f);
+            //        ImGui::DragFloat("Inner Hatch Scale", &layerPatternScale, 0.01f, 0.0f, 10.0f);
             //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Inner Hatch Density", &layerStrokeMult, 0.01f, 0.0f, 15.0f);
+            //        ImGui::DragFloat("Inner Hatch Density", &layerStrokeMult, 0.01f, 0.0f, 10.0f);
             //        ImGui::SetNextItemWidth(100);
             //        ImGui::DragFloat("Inner Hatch Angle", &layerAngle, 0.01f, 0.0f, TAU);
             //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Inner Hatch Thickness", &layerLineThickness, 0.01f, -15.0f, 15.0f);
+            //        ImGui::DragFloat("Inner Hatch Thickness", &layerLineThickness, 0.01f, -10.0f, 10.0f);
             //        ImGui::SetNextItemWidth(100);
             //        ImGui::DragFloat("Hatch Opacity", &transparencyValue, 0.01f, 0.0f, 1.0f);
             //    }
@@ -5135,7 +5178,7 @@ int main(void)
         //handle inputs
         Camera& activeCamera = cameras[currentCameraIndex];
 
-        //Don’t process movement input unless user is in the actual 3D editor
+        //Don't process movement input unless user is in the actual 3D editor
         if (!showMainMenu && !showCreditsPage)
         {
             InputManager::update(activeCamera, 0.016f);
@@ -5162,7 +5205,7 @@ int main(void)
 
         // --- Object Picking Pass ---
         // Only execute picking when the left mouse button is clicked and ImGui is not capturing the mouse.
-        // Don’t process input unless user is in the actual 3D editor
+        // Don't process input unless user is in the actual 3D editor
         if (!showMainMenu && !showCreditsPage)
         {
             if (InputManager::isMouseClicked(GLFW_MOUSE_BUTTON_LEFT) && !ImGui::GetIO().WantCaptureMouse)
@@ -5410,6 +5453,7 @@ int main(void)
         layout.begin()
             .add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
             .add(bgfx::Attrib::Normal, 3, bgfx::AttribType::Float)
+            .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true, false)
             .add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float) // NEW: UV coordinates
             .end();
 

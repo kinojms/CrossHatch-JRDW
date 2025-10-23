@@ -1,7 +1,7 @@
-prefix=C:/Program Files/CrossHatchEditor
+prefix=C:/Program Files (x86)/CrossHatchEditor
 exec_prefix=${prefix}
-includedir=C:/Program Files/CrossHatchEditor/include
-libdir=C:/Program Files/CrossHatchEditor/lib
+includedir=C:/Program Files (x86)/CrossHatchEditor/include
+libdir=C:/Program Files (x86)/CrossHatchEditor/lib
 
 Name: GLFW
 Description: A multi-platform library for OpenGL, window and input

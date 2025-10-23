@@ -6,6 +6,7 @@ C:/cmake-3.22.6-windows-x86_64/share/cmake-3.22/Modules/BasicConfigVersion-SameM
 C:/cmake-3.22.6-windows-x86_64/share/cmake-3.22/Modules/CMakeDependentOption.cmake
 C:/cmake-3.22.6-windows-x86_64/share/cmake-3.22/Modules/CMakePackageConfigHelpers.cmake
 C:/cmake-3.22.6-windows-x86_64/share/cmake-3.22/Modules/CheckCSourceCompiles.cmake
+C:/cmake-3.22.6-windows-x86_64/share/cmake-3.22/Modules/CheckIncludeFile.c.in
 C:/cmake-3.22.6-windows-x86_64/share/cmake-3.22/Modules/CheckIncludeFile.cmake
 C:/cmake-3.22.6-windows-x86_64/share/cmake-3.22/Modules/CheckLibraryExists.cmake
 C:/cmake-3.22.6-windows-x86_64/share/cmake-3.22/Modules/FindPackageHandleStandardArgs.cmake
