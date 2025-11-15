@@ -14,6 +14,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <algorithm>
+#include <numeric>
 #include <map>
 #include <memory>
 
@@ -120,8 +121,8 @@ namespace Reconstructor {
     static std::string foundObjPath;
     static std::atomic<bool> showImportPrompt{ false };
     
-    // Import callback function pointer
-    static std::function<void(const std::string&)> importCallback;
+    // Import callback function pointer (shared with ModelGallery)
+    std::function<void(const std::string&)> importCallback;
     
     // GLFW main window reference
     static GLFWwindow* mainWindow = nullptr;
@@ -372,6 +373,252 @@ namespace FrameGallery {
     }
 }
 
+// Forward declare Reconstructor::importCallback
+namespace Reconstructor {
+    extern std::function<void(const std::string&)> importCallback;
+}
+
+// ======================
+// ModelGallery namespace - Manages reconstructed 3D models
+// ======================
+namespace ModelGallery {
+    static bool galleryOpen = false;
+    static std::vector<std::string> modelPaths;
+    static std::vector<std::string> modelNames;
+    static std::vector<fs::file_time_type> modelTimestamps;
+    static int selectedModel = -1;
+    static std::string galleryDir;
+    
+    // Get or create the gallery directory
+    static std::string GetGalleryDirectory() {
+        if (galleryDir.empty()) {
+            galleryDir = (fs::path(Reconstructor::buildDir) / "reconstructed_models").string();
+            std::error_code ec;
+            fs::create_directories(galleryDir, ec);
+            if (ec) {
+                std::cerr << "[ModelGallery] Failed to create gallery directory: " << ec.message() << std::endl;
+            }
+        }
+        return galleryDir;
+    }
+    
+    // Load all OBJ files from the gallery directory
+    void LoadModelGallery() {
+        modelPaths.clear();
+        modelNames.clear();
+        modelTimestamps.clear();
+        selectedModel = -1;
+        
+        std::string galleryPath = GetGalleryDirectory();
+        if (!fs::exists(galleryPath)) {
+            std::error_code ec;
+            fs::create_directories(galleryPath, ec);
+            if (ec) {
+                std::cerr << "[ModelGallery] Failed to create gallery directory: " << ec.message() << std::endl;
+                return;
+            }
+        }
+        
+        for (auto& entry : fs::directory_iterator(galleryPath)) {
+            if (!entry.is_regular_file()) continue;
+            auto path = entry.path();
+            std::string extension = path.extension().string();
+            std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
+            
+            // Only load OBJ files
+            if (extension == ".obj") {
+                modelPaths.push_back(path.string());
+                modelNames.push_back(path.stem().string());
+                
+                // Get file timestamp for sorting
+                try {
+                    auto timestamp = fs::last_write_time(path);
+                    modelTimestamps.push_back(timestamp);
+                } catch (...) {
+                    modelTimestamps.push_back(fs::file_time_type::min());
+                }
+            }
+        }
+        
+        // Sort by timestamp (newest first)
+        std::vector<size_t> indices(modelPaths.size());
+        std::iota(indices.begin(), indices.end(), 0);
+        std::sort(indices.begin(), indices.end(), [&](size_t a, size_t b) {
+            return modelTimestamps[a] > modelTimestamps[b];
+        });
+        
+        // Reorder vectors based on sorted indices
+        std::vector<std::string> sortedPaths, sortedNames;
+        std::vector<fs::file_time_type> sortedTimestamps;
+        for (size_t idx : indices) {
+            sortedPaths.push_back(modelPaths[idx]);
+            sortedNames.push_back(modelNames[idx]);
+            sortedTimestamps.push_back(modelTimestamps[idx]);
+        }
+        modelPaths = std::move(sortedPaths);
+        modelNames = std::move(sortedNames);
+        modelTimestamps = std::move(sortedTimestamps);
+        
+        std::cout << "[ModelGallery] Loaded " << modelPaths.size() << " models" << std::endl;
+    }
+    
+    // Copy an OBJ file to the gallery directory
+    void AddModelToGallery(const std::string& objPath) {
+        if (!fs::exists(objPath)) {
+            std::cerr << "[ModelGallery] Model file does not exist: " << objPath << std::endl;
+            return;
+        }
+        
+        std::string galleryPath = GetGalleryDirectory();
+        fs::path sourcePath(objPath);
+        fs::path destPath = fs::path(galleryPath) / sourcePath.filename();
+        
+        // If file with same name exists, add timestamp to avoid overwriting
+        if (fs::exists(destPath)) {
+            auto now = std::chrono::system_clock::now();
+            auto timestamp = std::chrono::duration_cast<std::chrono::seconds>(
+                now.time_since_epoch()).count();
+            std::string newName = sourcePath.stem().string() + "_" + 
+                                  std::to_string(timestamp) + sourcePath.extension().string();
+            destPath = fs::path(galleryPath) / newName;
+        }
+        
+        try {
+            fs::copy_file(sourcePath, destPath, fs::copy_options::overwrite_existing);
+            std::cout << "[ModelGallery] Added model to gallery: " << destPath.filename().string() << std::endl;
+            
+            // Reload gallery to include the new model
+            LoadModelGallery();
+        } catch (const std::exception& e) {
+            std::cerr << "[ModelGallery] Failed to copy model to gallery: " << e.what() << std::endl;
+        }
+    }
+    
+    // Delete selected models from gallery
+    void DeleteSelectedModel(int index) {
+        if (index < 0 || index >= (int)modelPaths.size()) {
+            return;
+        }
+        
+        std::error_code ec;
+        if (fs::remove(modelPaths[index], ec)) {
+            std::cout << "[ModelGallery] Deleted: " << fs::path(modelPaths[index]).filename().string() << std::endl;
+            LoadModelGallery(); // Reload gallery
+        } else {
+            std::cerr << "[ModelGallery] Failed to delete: " << modelPaths[index] << " - " << ec.message() << std::endl;
+        }
+    }
+    
+    // Draw the model gallery window
+    void DrawModelGallery() {
+        if (!galleryOpen) return;
+        
+        ImGui::SetNextWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
+        if (ImGui::Begin("Reconstructed Models Gallery", &galleryOpen, ImGuiWindowFlags_None)) {
+            
+            ImGui::Text("Total models: %d", (int)modelPaths.size());
+            ImGui::Separator();
+            
+            // Control buttons
+            if (ImGui::Button("Refresh", ImVec2(100, 30))) {
+                LoadModelGallery();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Open Gallery Folder", ImVec2(150, 30))) {
+                std::string galleryPath = GetGalleryDirectory();
+                std::string command = "explorer \"" + galleryPath + "\"";
+                system(command.c_str());
+            }
+            ImGui::SameLine();
+            
+            // Import and Delete buttons (disabled if no model selected)
+            bool hasSelection = (selectedModel >= 0 && selectedModel < (int)modelPaths.size());
+            if (!hasSelection) {
+                ImGui::BeginDisabled();
+            }
+            if (ImGui::Button("Import Selected", ImVec2(130, 30))) {
+                if (Reconstructor::importCallback && hasSelection) {
+                    Reconstructor::importCallback(modelPaths[selectedModel]);
+                    std::cout << "[ModelGallery] Importing selected model: " << modelPaths[selectedModel] << std::endl;
+                }
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Delete Selected", ImVec2(130, 30))) {
+                if (hasSelection) {
+                    DeleteSelectedModel(selectedModel);
+                    selectedModel = -1;
+                }
+            }
+            if (!hasSelection) {
+                ImGui::EndDisabled();
+            }
+            
+            ImGui::Separator();
+            
+            // Show selected model info
+            if (hasSelection) {
+                ImGui::Text("Selected: %s", modelNames[selectedModel].c_str());
+            } else {
+                ImGui::Text("No model selected");
+            }
+            ImGui::Separator();
+            
+            // Model list with details
+            ImGui::BeginChild("ModelList", ImVec2(0, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
+            
+            if (modelPaths.empty()) {
+                ImGui::Text("No models in gallery.");
+                ImGui::Text("Reconstructed models will appear here automatically.");
+            } else {
+                for (int i = 0; i < (int)modelPaths.size(); i++) {
+                    ImGui::PushID(i);
+                    
+                    // Create a selectable row for each model
+                    bool isSelected = (selectedModel == i);
+                    if (ImGui::Selectable(("##model_" + std::to_string(i)).c_str(), isSelected, 
+                                         ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, 0))) {
+                        selectedModel = i;
+                    }
+                    
+                    // Model name
+                    ImGui::SameLine(20);
+                    ImGui::Text("%s", modelNames[i].c_str());
+                    
+                    // File path (truncated if too long)
+                    ImGui::SameLine(200);
+                    std::string displayPath = modelPaths[i];
+                    if (displayPath.length() > 50) {
+                        displayPath = "..." + displayPath.substr(displayPath.length() - 47);
+                    }
+                    ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.7f, 1.0f), "%s", displayPath.c_str());
+                    
+                    // File size
+                    ImGui::SameLine(450);
+                    try {
+                        auto fileSize = fs::file_size(modelPaths[i]);
+                        std::string sizeStr;
+                        if (fileSize < 1024) {
+                            sizeStr = std::to_string(fileSize) + " B";
+                        } else if (fileSize < 1024 * 1024) {
+                            sizeStr = std::to_string(fileSize / 1024) + " KB";
+                        } else {
+                            sizeStr = std::to_string(fileSize / (1024 * 1024)) + " MB";
+                        }
+                        ImGui::Text("%s", sizeStr.c_str());
+                    } catch (...) {
+                        ImGui::Text("?");
+                    }
+                    
+                    ImGui::PopID();
+                }
+            }
+            
+            ImGui::EndChild();
+        }
+        ImGui::End();
+    }
+}
+
 // ======================
 // FrameExtractor namespace (continued)
 // ======================
@@ -539,6 +786,8 @@ namespace Reconstructor {
             
             // Show import prompt if OBJ was found during automation
             if (objFound.load()) {
+                // Copy the reconstructed model to the gallery
+                ModelGallery::AddModelToGallery(foundObjPath);
                 showImportPrompt.store(true);
             }
         }).detach();
@@ -621,6 +870,11 @@ namespace Reconstructor {
                         showImageSelection = true;
                     }
                 }
+            }
+            ImGui::Spacing();
+            if (ImGui::Button("Open Model Gallery", ImVec2(300, 50))) {
+                ModelGallery::galleryOpen = true;
+                ModelGallery::LoadModelGallery();
             }
         }
 
@@ -977,6 +1231,14 @@ namespace Reconstructor {
                 showImportPrompt.store(false);
                 ImGui::CloseCurrentPopup();
             }
+            ImGui::Spacing();
+            ImGui::Text("The model has been saved to the gallery. You can access it later from the Model Gallery.");
+            if (ImGui::Button("Open Model Gallery", ImVec2(200, 0))) {
+                ModelGallery::galleryOpen = true;
+                ModelGallery::LoadModelGallery();
+                showImportPrompt.store(false);
+                ImGui::CloseCurrentPopup();
+            }
             ImGui::EndPopup();
         }
 
@@ -984,6 +1246,9 @@ namespace Reconstructor {
         
         // Draw the frame gallery if it should be shown
         FrameGallery::DrawFrameGallery();
+        
+        // Draw the model gallery if it should be shown
+        ModelGallery::DrawModelGallery();
     } 
 
     void Init() {}
