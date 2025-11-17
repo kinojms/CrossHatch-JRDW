@@ -4,6 +4,8 @@
 #include <unordered_map>
 #include <iostream>
 #include <array>
+#include <algorithm>
+#include <cmath>
 
 struct Vec2 {
     float x, y;
@@ -12,6 +14,28 @@ struct Vec2 {
 struct Vec3 {
     float x, y, z;
 };
+
+struct Vec4 {
+    float x, y, z, w;
+};
+
+// Helper function to convert RGB float values (0.0-1.0) to ABGR uint32_t format
+static uint32_t rgbToAbgr(float r, float g, float b, float a = 1.0f) {
+    // Clamp values to [0, 1] range
+    r = std::max(0.0f, std::min(1.0f, r));
+    g = std::max(0.0f, std::min(1.0f, g));
+    b = std::max(0.0f, std::min(1.0f, b));
+    a = std::max(0.0f, std::min(1.0f, a));
+    
+    // Convert to 0-255 range and pack as ABGR
+    uint8_t r8 = static_cast<uint8_t>(r * 255.0f);
+    uint8_t g8 = static_cast<uint8_t>(g * 255.0f);
+    uint8_t b8 = static_cast<uint8_t>(b * 255.0f);
+    uint8_t a8 = static_cast<uint8_t>(a * 255.0f);
+    
+    return (static_cast<uint32_t>(a8) << 24) | (static_cast<uint32_t>(b8) << 16) | 
+           (static_cast<uint32_t>(g8) << 8) | static_cast<uint32_t>(r8);
+}
 
 bool ObjLoader::loadObj(const std::string& filepath,
     std::vector<Vertex>& vertices,
@@ -25,7 +49,9 @@ bool ObjLoader::loadObj(const std::string& filepath,
     std::vector<Vec3> positions;
     std::vector<Vec3> normals;
     std::vector<Vec2> texCoords;
+    std::vector<Vec4> colors; // Store vertex colors (r, g, b, a)
     std::unordered_map<std::string, uint16_t> uniqueVertices;
+    bool hasVertexColors = false;
 
     std::string line;
     while (std::getline(file, line)) {
@@ -37,6 +63,22 @@ bool ObjLoader::loadObj(const std::string& filepath,
             Vec3 pos;
             iss >> pos.x >> pos.y >> pos.z;
             positions.push_back(pos);
+            
+            // Check if vertex color data follows (r g b or r g b a)
+            // OBJ format: "v x y z [r g b] [a]"
+            float r, g, b, a = 1.0f;
+            if (iss >> r >> g >> b) {
+                // Successfully read r, g, b - this is a colored vertex
+                // Try to read alpha, but it's optional
+                if (!(iss >> a)) {
+                    a = 1.0f; // Default alpha to 1.0 if not provided
+                }
+                colors.push_back({r, g, b, a});
+                hasVertexColors = true;
+            } else {
+                // No color data, add default white
+                colors.push_back({1.0f, 1.0f, 1.0f, 1.0f});
+            }
         }
         else if (type == "vn") {
             Vec3 normal;
@@ -88,6 +130,16 @@ bool ObjLoader::loadObj(const std::string& filepath,
                         vertex.nx = 0.0f;
                         vertex.ny = 1.0f;
                         vertex.nz = 0.0f;
+                    }
+
+                    // Set vertex color
+                    if (indices[0] < colors.size()) {
+                        Vec4 color = colors[indices[0]];
+                        vertex.abgr = rgbToAbgr(color.x, color.y, color.z, color.w);
+                    }
+                    else {
+                        // Default to white if no color available
+                        vertex.abgr = rgbToAbgr(1.0f, 1.0f, 1.0f, 1.0f);
                     }
 
                     uniqueVertices[vertexData] = static_cast<uint16_t>(vertices.size());
@@ -157,6 +209,7 @@ bgfx::VertexBufferHandle ObjLoader::createVertexBuffer(const std::vector<Vertex>
     layout.begin()
         .add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
         .add(bgfx::Attrib::Normal, 3, bgfx::AttribType::Float)
+        .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true, true) // ABGR format, normalized
         .add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float)
         .end();
 

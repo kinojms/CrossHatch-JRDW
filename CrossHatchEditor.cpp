@@ -755,7 +755,11 @@ std::string openFileDialog(bool save) {
 
 MeshData loadMesh(const std::string& filePath) {
     Assimp::Importer importer;
-    const aiScene* scene = importer.ReadFile(filePath, aiProcess_Triangulate | aiProcess_FlipUVs);
+    // Ensure vertex colors are loaded - OBJ files may have vertex colors
+    unsigned int flags = aiProcess_Triangulate | aiProcess_FlipUVs;
+    const aiScene* scene = importer.ReadFile(filePath, flags);
+    
+    std::cout << "[DEBUG loadMesh] Assimp import flags: Triangulate | FlipUVs" << std::endl;
 
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
         std::cerr << "Error: Assimp - " << importer.GetErrorString() << std::endl;
@@ -772,10 +776,20 @@ MeshData loadMesh(const std::string& filePath) {
     float globalMaxX = -FLT_MAX, globalMaxY = -FLT_MAX, globalMaxZ = -FLT_MAX;
 
     // Iterate through all meshes in the scene
+    std::cout << "[DEBUG loadMesh] Loading mesh file: " << filePath << std::endl;
+    std::cout << "[DEBUG loadMesh] Total meshes in scene: " << scene->mNumMeshes << std::endl;
+    
     for (unsigned int meshIndex = 0; meshIndex < scene->mNumMeshes; ++meshIndex) {
         aiMesh* mesh = scene->mMeshes[meshIndex];
         size_t baseIndex = vertices.size();
         std::unordered_map<std::string, uint16_t> uniqueVertices;
+
+        std::cout << "[DEBUG loadMesh] Processing mesh " << meshIndex 
+                  << ": " << mesh->mNumVertices << " vertices, " 
+                  << mesh->mNumFaces << " faces" << std::endl;
+        std::cout << "[DEBUG loadMesh] HasVertexColors(0): " << (mesh->HasVertexColors(0) ? "YES" : "NO") << std::endl;
+        std::cout << "[DEBUG loadMesh] HasNormals: " << (mesh->HasNormals() ? "YES" : "NO") << std::endl;
+        std::cout << "[DEBUG loadMesh] HasTextureCoords(0): " << (mesh->HasTextureCoords(0) ? "YES" : "NO") << std::endl;
 
         for (unsigned int i = 0; i < mesh->mNumVertices; i++) {
             PosColorVertex vertex;
@@ -815,13 +829,28 @@ MeshData loadMesh(const std::string& filePath) {
             }
 
             if (mesh->HasVertexColors(0)) {
-                vertex.abgr = ((uint8_t)(mesh->mColors[0][i].r * 255) << 24) |
-                    ((uint8_t)(mesh->mColors[0][i].g * 255) << 16) |
-                    ((uint8_t)(mesh->mColors[0][i].b * 255) << 8) |
-                    (uint8_t)(mesh->mColors[0][i].a * 255);
+                // Convert RGBA to ABGR format (A in bits 24-31, B in 16-23, G in 8-15, R in 0-7)
+                float r = mesh->mColors[0][i].r;
+                float g = mesh->mColors[0][i].g;
+                float b = mesh->mColors[0][i].b;
+                float a = mesh->mColors[0][i].a;
+                vertex.abgr = ((uint8_t)(a * 255) << 24) |
+                    ((uint8_t)(b * 255) << 16) |
+                    ((uint8_t)(g * 255) << 8) |
+                    (uint8_t)(r * 255);
+                
+                // Debug: Log first few vertices with colors
+                if (i < 3) {
+                    std::cout << "[DEBUG loadMesh] Vertex " << i << " has color: RGBA(" 
+                              << r << ", " << g << ", " << b << ", " << a 
+                              << ") -> ABGR(0x" << std::hex << vertex.abgr << std::dec << ")" << std::endl;
+                }
             }
             else {
-                vertex.abgr = 0xffffffff; // Default color
+                vertex.abgr = 0xffffffff; // Default color (white)
+                if (i == 0) {
+                    std::cout << "[DEBUG loadMesh] Mesh has NO vertex colors, using default white (0xFFFFFFFF)" << std::endl;
+                }
             }
 
             vertices.push_back(vertex);
@@ -869,7 +898,11 @@ MeshData loadMesh(const std::string& filePath) {
 
 MeshData loadMesh2(const std::string& filePath) {
     Assimp::Importer importer;
-    const aiScene* scene = importer.ReadFile(filePath, aiProcess_Triangulate | aiProcess_FlipUVs);
+    // Ensure vertex colors are loaded - OBJ files may have vertex colors
+    unsigned int flags = aiProcess_Triangulate | aiProcess_FlipUVs;
+    const aiScene* scene = importer.ReadFile(filePath, flags);
+    
+    std::cout << "[DEBUG loadMesh2] Assimp import flags: Triangulate | FlipUVs" << std::endl;
 
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
         std::cerr << "Error: Assimp - " << importer.GetErrorString() << std::endl;
@@ -886,10 +919,18 @@ MeshData loadMesh2(const std::string& filePath) {
     float globalMaxX = -FLT_MAX, globalMaxY = -FLT_MAX, globalMaxZ = -FLT_MAX;
 
     // Iterate through all meshes in the scene
+    std::cout << "[DEBUG loadMesh2] Loading mesh file: " << filePath << std::endl;
+    std::cout << "[DEBUG loadMesh2] Total meshes in scene: " << scene->mNumMeshes << std::endl;
+    
     for (unsigned int meshIndex = 0; meshIndex < scene->mNumMeshes; ++meshIndex) {
         aiMesh* mesh = scene->mMeshes[meshIndex];
         size_t baseIndex = vertices.size();
         std::unordered_map<std::string, uint16_t> uniqueVertices;
+
+        std::cout << "[DEBUG loadMesh2] Processing mesh " << meshIndex 
+                  << ": " << mesh->mNumVertices << " vertices, " 
+                  << mesh->mNumFaces << " faces" << std::endl;
+        std::cout << "[DEBUG loadMesh2] HasVertexColors(0): " << (mesh->HasVertexColors(0) ? "YES" : "NO") << std::endl;
 
         for (unsigned int i = 0; i < mesh->mNumVertices; i++) {
             PosColorVertex vertex;
@@ -929,13 +970,28 @@ MeshData loadMesh2(const std::string& filePath) {
             }
 
             if (mesh->HasVertexColors(0)) {
-                vertex.abgr = ((uint8_t)(mesh->mColors[0][i].r * 255) << 24) |
-                    ((uint8_t)(mesh->mColors[0][i].g * 255) << 16) |
-                    ((uint8_t)(mesh->mColors[0][i].b * 255) << 8) |
-                    (uint8_t)(mesh->mColors[0][i].a * 255);
+                // Convert RGBA to ABGR format (A in bits 24-31, B in 16-23, G in 8-15, R in 0-7)
+                float r = mesh->mColors[0][i].r;
+                float g = mesh->mColors[0][i].g;
+                float b = mesh->mColors[0][i].b;
+                float a = mesh->mColors[0][i].a;
+                vertex.abgr = ((uint8_t)(a * 255) << 24) |
+                    ((uint8_t)(b * 255) << 16) |
+                    ((uint8_t)(g * 255) << 8) |
+                    (uint8_t)(r * 255);
+                
+                // Debug: Log first few vertices with colors
+                if (i < 3) {
+                    std::cout << "[DEBUG loadMesh2] Vertex " << i << " has color: RGBA(" 
+                              << r << ", " << g << ", " << b << ", " << a 
+                              << ") -> ABGR(0x" << std::hex << vertex.abgr << std::dec << ")" << std::endl;
+                }
             }
             else {
-                vertex.abgr = 0xffffffff; // Default color
+                vertex.abgr = 0xffffffff; // Default color (white)
+                if (i == 0) {
+                    std::cout << "[DEBUG loadMesh2] Mesh has NO vertex colors, using default white (0xFFFFFFFF)" << std::endl;
+                }
             }
 
             vertices.push_back(vertex);
@@ -974,6 +1030,19 @@ MeshData loadMesh2(const std::string& filePath) {
 }
 
 void createMeshBuffers(const MeshData& meshData, bgfx::VertexBufferHandle& vbh, bgfx::IndexBufferHandle& ibh) {
+    std::cout << "[DEBUG createMeshBuffers] Creating buffers for " << meshData.vertices.size() 
+              << " vertices, " << meshData.indices.size() << " indices" << std::endl;
+    
+    // Debug: Check first few vertex colors
+    if (meshData.vertices.size() > 0) {
+        std::cout << "[DEBUG createMeshBuffers] First vertex color: 0x" << std::hex 
+                  << meshData.vertices[0].abgr << std::dec << std::endl;
+        if (meshData.vertices.size() > 1) {
+            std::cout << "[DEBUG createMeshBuffers] Second vertex color: 0x" << std::hex 
+                      << meshData.vertices[1].abgr << std::dec << std::endl;
+        }
+    }
+    
     bgfx::VertexLayout layout;
     layout.begin()
         .add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
@@ -981,6 +1050,8 @@ void createMeshBuffers(const MeshData& meshData, bgfx::VertexBufferHandle& vbh, 
         .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true, true)
         .add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float) // NEW: UV coordinates
         .end();
+    
+    std::cout << "[DEBUG createMeshBuffers] Vertex layout includes Color0 attribute" << std::endl;
 
     vbh = bgfx::createVertexBuffer(
         bgfx::copy(meshData.vertices.data(), sizeof(PosColorVertex) * meshData.vertices.size()),
@@ -1795,11 +1866,18 @@ void processNode(const aiScene* scene, aiNode* node, const aiMatrix4x4& parentTr
     aiMatrix4x4 globalTransform = parentTransform * node->mTransformation;
 
     // Process each mesh referenced by this node.
+    std::cout << "[DEBUG processNode] Processing node with " << node->mNumMeshes << " meshes" << std::endl;
+    
     for (unsigned int i = 0; i < node->mNumMeshes; i++) {
         unsigned int meshIndex = node->mMeshes[i];
         aiMesh* mesh = scene->mMeshes[meshIndex];
         MeshData meshData;
         size_t baseIndex = meshData.vertices.size();
+        
+        std::cout << "[DEBUG processNode] Mesh " << meshIndex 
+                  << ": " << mesh->mNumVertices << " vertices, " 
+                  << mesh->mNumFaces << " faces" << std::endl;
+        std::cout << "[DEBUG processNode] HasVertexColors(0): " << (mesh->HasVertexColors(0) ? "YES" : "NO") << std::endl;
 
         // Process vertices.
         for (unsigned int j = 0; j < mesh->mNumVertices; j++) {
@@ -1823,13 +1901,28 @@ void processNode(const aiScene* scene, aiNode* node, const aiMatrix4x4& parentTr
                 vertex.u = vertex.v = 0.0f;
             }
             if (mesh->HasVertexColors(0)) {
-                vertex.abgr = ((uint8_t)(mesh->mColors[0][j].r * 255) << 24) |
-                    ((uint8_t)(mesh->mColors[0][j].g * 255) << 16) |
-                    ((uint8_t)(mesh->mColors[0][j].b * 255) << 8) |
-                    (uint8_t)(mesh->mColors[0][j].a * 255);
+                // Convert RGBA to ABGR format (A in bits 24-31, B in 16-23, G in 8-15, R in 0-7)
+                float r = mesh->mColors[0][j].r;
+                float g = mesh->mColors[0][j].g;
+                float b = mesh->mColors[0][j].b;
+                float a = mesh->mColors[0][j].a;
+                vertex.abgr = ((uint8_t)(a * 255) << 24) |
+                    ((uint8_t)(b * 255) << 16) |
+                    ((uint8_t)(g * 255) << 8) |
+                    (uint8_t)(r * 255);
+                
+                // Debug: Log first few vertices with colors
+                if (j < 3) {
+                    std::cout << "[DEBUG processNode] Vertex " << j << " has color: RGBA(" 
+                              << r << ", " << g << ", " << b << ", " << a 
+                              << ") -> ABGR(0x" << std::hex << vertex.abgr << std::dec << ")" << std::endl;
+                }
             }
             else {
-                vertex.abgr = 0xffffffff;
+                vertex.abgr = 0xffffffff; // Default color (white)
+                if (j == 0) {
+                    std::cout << "[DEBUG processNode] Mesh has NO vertex colors, using default white (0xFFFFFFFF)" << std::endl;
+                }
             }
             meshData.vertices.push_back(vertex);
         }
@@ -1940,12 +2033,20 @@ void processNode(const aiScene* scene, aiNode* node, const aiMatrix4x4& parentTr
 // Load the file and extract all meshes, their transforms, and diffuse textures.
 // The baseDir is computed from the model file path.
 std::vector<ImportedMesh> loadImportedMeshes(const std::string& filePath) {
+    std::cout << "[DEBUG loadImportedMeshes] Loading file: " << filePath << std::endl;
+    
     Assimp::Importer importer;
-    const aiScene* scene = importer.ReadFile(filePath, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_PreTransformVertices);
+    // Ensure vertex colors are loaded - OBJ files may have vertex colors
+    unsigned int flags = aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_PreTransformVertices;
+    const aiScene* scene = importer.ReadFile(filePath, flags);
+    
+    std::cout << "[DEBUG loadImportedMeshes] Assimp import flags: Triangulate | FlipUVs | PreTransformVertices" << std::endl;
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
         std::cerr << "Error: Assimp - " << importer.GetErrorString() << std::endl;
         return {};
     }
+    
+    std::cout << "[DEBUG loadImportedMeshes] Scene loaded successfully. Total meshes: " << scene->mNumMeshes << std::endl;
 
     std::vector<ImportedMesh> importedMeshes;
     aiMatrix4x4 identity; // Identity matrix
@@ -2997,8 +3098,12 @@ int main(void)
         std::string relPath = GetRelativePath(objPath);
         std::string normalizedRelPath = ConvertBackslashesToForward(relPath);
         
+        std::cout << "[DEBUG Import Callback] Loading mesh from: " << normalizedRelPath << std::endl;
+        
         // Load all meshes using the same logic as the Import OBJ menu
         std::vector<ImportedMesh> importedMeshes = loadImportedMeshes(normalizedRelPath);
+        
+        std::cout << "[DEBUG Import Callback] Loaded " << importedMeshes.size() << " meshes" << std::endl;
         std::string fileName = fs::path(normalizedRelPath).stem().string();
         
         if (!importedMeshes.empty()) {
