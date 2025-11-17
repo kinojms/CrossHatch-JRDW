@@ -85,6 +85,10 @@ bgfx::UniformHandle u_lightDir;
 bgfx::UniformHandle u_lightColor;
 bgfx::UniformHandle u_viewPos;
 //bgfx::UniformHandle u_scale;
+// Global toggle: when true, render using unlit vertex colors (Attribute mode).
+static bool useAttributeMode = false;
+// Program for unlit vertex-color rendering (Attribute mode).
+static bgfx::ProgramHandle unlitColorProgram = BGFX_INVALID_HANDLE;
 // Define the picking render target dimensions.
 #define PICKING_DIM 128
 
@@ -1037,6 +1041,14 @@ void createMeshBuffers(const MeshData& meshData, bgfx::VertexBufferHandle& vbh, 
     if (meshData.vertices.size() > 0) {
         std::cout << "[DEBUG createMeshBuffers] First vertex color: 0x" << std::hex 
                   << meshData.vertices[0].abgr << std::dec << std::endl;
+#ifdef _WIN32
+        {
+            char dbg[128];
+            sprintf_s(dbg, "[AttributeMode] First vertex color CPU-side: 0x%08x\n",
+                meshData.vertices[0].abgr);
+            OutputDebugStringA(dbg);
+        }
+#endif
         if (meshData.vertices.size() > 1) {
             std::cout << "[DEBUG createMeshBuffers] Second vertex color: 0x" << std::hex 
                       << meshData.vertices[1].abgr << std::dec << std::endl;
@@ -1375,77 +1387,116 @@ void drawInstance(Instance* instance, bgfx::ProgramHandle defaultProgram, bgfx::
     if (instance->vertexBuffer.idx != invalidVbh.idx &&
         instance->indexBuffer.idx != invalidIbh.idx)
     {
-        bgfx::setTransform(world);
-        bgfx::setVertexBuffer(0, instance->vertexBuffer);
-        bgfx::setIndexBuffer(instance->indexBuffer);
-        // Decide which texture to use:
-        // If the inherited texture (from the parent) is valid, then use it regardless of what the instance may have set.
-        // Otherwise, use the instance’s own texture (if any), or fall back to the default.
-        bgfx::TextureHandle textureToUse = defaultWhiteTexture;
-        if (inheritedTexture.idx != bgfx::kInvalidHandle)
+        // Attribute (unlit vertex color) mode: bypass all lighting and materials.
+        if (useAttributeMode &&
+            instance->type != "light" &&
+            instance->type != "text" &&
+            instance->type != "comicborder" &&
+            instance->type != "comicbubble")
         {
-            textureToUse = inheritedTexture;
-        }
-        else if (instance->diffuseTexture.idx != bgfx::kInvalidHandle)
-        {
-            textureToUse = instance->diffuseTexture;
-        }
-        else
-        {
-            textureToUse = defaultWhiteTexture;
-        }
-        bgfx::setTexture(1, u_diffuseTex, textureToUse);
+#ifdef _WIN32
+            char dbg[256];
+            sprintf_s(dbg,
+                "[AttributeMode] Drawing instance '%s' (id=%d, type=%s) with unlit vertex colors. Program valid: %s\n",
+                instance->name.c_str(),
+                instance->id,
+                instance->type.c_str(),
+                bgfx::isValid(unlitColorProgram) ? "YES" : "NO");
+            OutputDebugStringA(dbg);
+#endif
+            bgfx::setTransform(world);
+            bgfx::setVertexBuffer(0, instance->vertexBuffer);
+            bgfx::setIndexBuffer(instance->indexBuffer);
+            bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_DEPTH_TEST_LESS);
 
-        // Decide which noise tex to use
-        bgfx::TextureHandle noiseTextureToUse;
-        if (useGlobalCrosshatchSettings) {
-            noiseTextureToUse = noiseTexture;
-        }
-        else if (inheritedNoiseTex.idx != bgfx::kInvalidHandle) {
-            noiseTextureToUse = inheritedNoiseTex;
-        }
-        else if (instance->noiseTexture.idx != bgfx::kInvalidHandle)
-        {
-            noiseTextureToUse = instance->noiseTexture;
-        }
-        else
-        {
-            noiseTextureToUse = availableNoiseTextures[0].handle;
-        }
-        bgfx::setTexture(0, u_noiseTex, noiseTextureToUse);
-
-        // If the instance is a light and its debug visual is turned off,
-        // skip drawing the sphere representation.
-        if (instance->type == "light" && !instance->showDebugVisual)
-        {
-            // Do nothing (or optionally draw a minimal indicator)
-        }
-        else
-        {
-            // Choose appropriate shader based on instance type
-            if (instance->type == "text")
+            if (bgfx::isValid(unlitColorProgram))
             {
-                // Set the comic color uniform (see below for how it's updated via ImGui).
-                bgfx::setUniform(u_comicColor, comicColor);
-
-                // Enable alpha blending for text rendering
-                bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A |
-                    BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_SRC_ALPHA, BGFX_STATE_BLEND_INV_SRC_ALPHA));
-                bgfx::submit(0, textProgram);
-            }
-            else if (instance->type == "comicborder" || instance->type == "comicbubble") {
-                bgfx::setState(BGFX_STATE_DEFAULT);
-
-                // Set the comic color uniform (see below for how it's updated via ImGui).
-                bgfx::setUniform(u_comicColor, comicColor);
-                bgfx::submit(0, comicProgram);
+                bgfx::submit(0, unlitColorProgram);
             }
             else
             {
-                // Use default or debug shader
+#ifdef _WIN32
+                OutputDebugStringA("[AttributeMode] unlitColorProgram is invalid, falling back to defaultProgram.\n");
+#endif
                 bgfx::setState(BGFX_STATE_DEFAULT);
+                bgfx::submit(0, defaultProgram);
+            }
+        }
+        else
+        {
+            bgfx::setTransform(world);
+            bgfx::setVertexBuffer(0, instance->vertexBuffer);
+            bgfx::setIndexBuffer(instance->indexBuffer);
 
-                bgfx::submit(0, (instance->type == "light") ? lightDebugProgram : defaultProgram);
+            // Decide which texture to use:
+            // If the inherited texture (from the parent) is valid, then use it regardless of what the instance may have set.
+            // Otherwise, use the instance’s own texture (if any), or fall back to the default.
+            bgfx::TextureHandle textureToUse = defaultWhiteTexture;
+            if (inheritedTexture.idx != bgfx::kInvalidHandle)
+            {
+                textureToUse = inheritedTexture;
+            }
+            else if (instance->diffuseTexture.idx != bgfx::kInvalidHandle)
+            {
+                textureToUse = instance->diffuseTexture;
+            }
+            else
+            {
+                textureToUse = defaultWhiteTexture;
+            }
+            bgfx::setTexture(1, u_diffuseTex, textureToUse);
+
+            // Decide which noise tex to use
+            bgfx::TextureHandle noiseTextureToUse;
+            if (useGlobalCrosshatchSettings) {
+                noiseTextureToUse = noiseTexture;
+            }
+            else if (inheritedNoiseTex.idx != bgfx::kInvalidHandle) {
+                noiseTextureToUse = inheritedNoiseTex;
+            }
+            else if (instance->noiseTexture.idx != bgfx::kInvalidHandle)
+            {
+                noiseTextureToUse = instance->noiseTexture;
+            }
+            else
+            {
+                noiseTextureToUse = availableNoiseTextures[0].handle;
+            }
+            bgfx::setTexture(0, u_noiseTex, noiseTextureToUse);
+
+            // If the instance is a light and its debug visual is turned off,
+            // skip drawing the sphere representation.
+            if (instance->type == "light" && !instance->showDebugVisual)
+            {
+                // Do nothing (or optionally draw a minimal indicator)
+            }
+            else
+            {
+                // Choose appropriate shader based on instance type
+                if (instance->type == "text")
+                {
+                    // Set the comic color uniform (see below for how it's updated via ImGui).
+                    bgfx::setUniform(u_comicColor, comicColor);
+
+                    // Enable alpha blending for text rendering
+                    bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A |
+                        BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_SRC_ALPHA, BGFX_STATE_BLEND_INV_SRC_ALPHA));
+                    bgfx::submit(0, textProgram);
+                }
+                else if (instance->type == "comicborder" || instance->type == "comicbubble") {
+                    bgfx::setState(BGFX_STATE_DEFAULT);
+
+                    // Set the comic color uniform (see below for how it's updated via ImGui).
+                    bgfx::setUniform(u_comicColor, comicColor);
+                    bgfx::submit(0, comicProgram);
+                }
+                else
+                {
+                    // Use default or debug shader
+                    bgfx::setState(BGFX_STATE_DEFAULT);
+
+                    bgfx::submit(0, (instance->type == "light") ? lightDebugProgram : defaultProgram);
+                }
             }
         }
     }
@@ -3484,6 +3535,23 @@ int main(void)
 
     bgfx::ProgramHandle defaultProgram = bgfx::createProgram(vsh, fsh, true);
 
+    // Load unlit vertex-color shaders for Attribute mode
+    bgfx::ShaderHandle vsh_unlit = loadShader("shaders\\v_unlit_color.bin");
+    bgfx::ShaderHandle fsh_unlit = loadShader("shaders\\f_unlit_color.bin");
+    if (bgfx::isValid(vsh_unlit) && bgfx::isValid(fsh_unlit))
+    {
+        unlitColorProgram = bgfx::createProgram(vsh_unlit, fsh_unlit, true);
+#ifdef _WIN32
+        OutputDebugStringA("[AttributeMode] Unlit vertex-color program created.\n");
+#endif
+    }
+    else
+    {
+#ifdef _WIN32
+        OutputDebugStringA("[AttributeMode] Failed to load v_unlit_color.bin or f_unlit_color.bin.\n");
+#endif
+    }
+
     // Load the debug light shader:
     bgfx::ShaderHandle debugVsh = loadShader("shaders\\v_lightdebug_out1.bin");
     bgfx::ShaderHandle debugFsh = loadShader("shaders\\f_lightdebug_out1.bin");
@@ -4600,6 +4668,20 @@ int main(void)
                         //Object color Selection
                         ImGui::Separator();
                         ImGui::Spacing(); ImGui::Spacing();
+
+                        // Per-object shading options
+                        ImGui::Text("Shading");
+                        if (ImGui::Checkbox("Attribute (Unlit Vertex Color) Mode", &useAttributeMode))
+                        {
+#ifdef _WIN32
+                            char dbg[128];
+                            sprintf_s(dbg, "[AttributeMode] Checkbox toggled. Now %s.\n",
+                                useAttributeMode ? "ON" : "OFF");
+                            OutputDebugStringA(dbg);
+#endif
+                        }
+                        ImGui::Spacing(); ImGui::Spacing();
+
                         ImGui::ColorEdit3("Object Color", selectedInstance->objectColor);
                         ImGui::Spacing(); ImGui::Spacing();
                         ImGui::Separator();
