@@ -130,6 +130,7 @@ static uint8_t s_pickingBlitData[PICKING_DIM * PICKING_DIM * 4] = { 0 };
 static bgfx::UniformHandle u_id = BGFX_INVALID_HANDLE;
 // Program handle for the picking pass.
 static bgfx::ProgramHandle pickingProgram = BGFX_INVALID_HANDLE;
+static bgfx::ProgramHandle vertexColorProgram = BGFX_INVALID_HANDLE;
 
 struct TextureOption {
     std::string name;
@@ -173,6 +174,9 @@ struct Instance
     float objectColor[4];
     // NEW: optional diffuse texture for the object.
     bgfx::TextureHandle diffuseTexture = BGFX_INVALID_HANDLE;
+
+    // Flag to indicate if mesh has vertex colors
+    bool hasVertexColors = false;
 
     // NEW: noise texture
     bgfx::TextureHandle noiseTexture = BGFX_INVALID_HANDLE;
@@ -978,7 +982,7 @@ void createMeshBuffers(const MeshData& meshData, bgfx::VertexBufferHandle& vbh, 
     layout.begin()
         .add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
         .add(bgfx::Attrib::Normal, 3, bgfx::AttribType::Float)
-        .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true, true)
+        .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true, false) // second bool param set to false
         .add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float) // NEW: UV coordinates
         .end();
 
@@ -1374,7 +1378,34 @@ void drawInstance(Instance* instance, bgfx::ProgramHandle defaultProgram, bgfx::
                 // Use default or debug shader
                 bgfx::setState(BGFX_STATE_DEFAULT);
 
-                bgfx::submit(0, (instance->type == "light") ? lightDebugProgram : defaultProgram);
+                // Use vertex color program for meshes with vertex colors
+                if (instance->hasVertexColors) {
+                    // Clear all color-affecting uniforms for vertex color program
+                    const float whiteColor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
+                    const float clearTint[4] = { 1.0f, 1.0f, 1.0f, 0.0f };
+                    const float clearInk[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+                    const float clearParams[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+                    const float clearExtra[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+                    const float clearLayer[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+                    const float clearEpsilon[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+
+                    bgfx::setUniform(u_objectColor, whiteColor);
+                    bgfx::setUniform(u_tint, clearTint);
+                    bgfx::setUniform(u_inkColor, clearInk);
+                    bgfx::setUniform(u_e, clearEpsilon);
+                    bgfx::setUniform(u_params, clearParams);
+                    bgfx::setUniform(u_extraParams, clearExtra);
+                    bgfx::setUniform(u_paramsLayer, clearLayer);
+
+                    // Don't set any textures for vertex color program
+                    bgfx::setTexture(0, u_noiseTex, defaultWhiteTexture);
+                    bgfx::setTexture(1, u_diffuseTex, defaultWhiteTexture);
+
+                    bgfx::submit(0, vertexColorProgram);
+                }
+                else {
+                    bgfx::submit(0, (instance->type == "light") ? lightDebugProgram : defaultProgram);
+                }
             }
         }
     }
@@ -1780,8 +1811,9 @@ struct ImportedMesh {
     bgfx::TextureHandle diffuseTexture; // Diffuse texture for this mesh, if available.
     float diffuseColor[4]; // To store Kd from MTL
     bool hasDiffuseColor;  // Flag to indicate if diffuseColor was loaded
+	bool hasVertexColors; // Flag to indicate if the mesh has vertex colors
 
-    ImportedMesh() : diffuseTexture(BGFX_INVALID_HANDLE), hasDiffuseColor(false) {
+    ImportedMesh() : diffuseTexture(BGFX_INVALID_HANDLE), hasDiffuseColor(false), hasVertexColors(false) {
         // Initialize diffuseColor to white (or any default)
         diffuseColor[0] = 1.0f; diffuseColor[1] = 1.0f; diffuseColor[2] = 1.0f; diffuseColor[3] = 1.0f;
     }
@@ -1823,13 +1855,23 @@ void processNode(const aiScene* scene, aiNode* node, const aiMatrix4x4& parentTr
                 vertex.u = vertex.v = 0.0f;
             }
             if (mesh->HasVertexColors(0)) {
-                vertex.abgr = ((uint8_t)(mesh->mColors[0][j].r * 255) << 24) |
+                /*vertex.abgr = ((uint8_t)(mesh->mColors[0][j].r * 255) << 24) |
                     ((uint8_t)(mesh->mColors[0][j].g * 255) << 16) |
                     ((uint8_t)(mesh->mColors[0][j].b * 255) << 8) |
-                    (uint8_t)(mesh->mColors[0][j].a * 255);
+                    (uint8_t)(mesh->mColors[0][j].a * 255);*/
+                    // Correct ABGR packing for BGFX
+                const uint8_t r = uint8_t(mesh->mColors[0][j].r * 255.0f);
+                const uint8_t g = uint8_t(mesh->mColors[0][j].g * 255.0f);
+                const uint8_t b = uint8_t(mesh->mColors[0][j].b * 255.0f);
+                const uint8_t a = uint8_t(mesh->mColors[0][j].a * 255.0f);
+                vertex.abgr = (uint32_t(a) << 24) | (uint32_t(b) << 16) | (uint32_t(g) << 8) | uint32_t(r);
+                std::cout << "[DEBUG] Found vertex color for vertex " << j << ": ("
+                    << mesh->mColors[0][j].r << ", " << mesh->mColors[0][j].g << ", "
+                    << mesh->mColors[0][j].b << ", " << mesh->mColors[0][j].a << ")" << std::endl;
             }
             else {
                 vertex.abgr = 0xffffffff;
+                std::cout << "[DEBUG] No vertex colors found for mesh, using default white" << std::endl;
             }
             meshData.vertices.push_back(vertex);
         }
@@ -1862,6 +1904,7 @@ void processNode(const aiScene* scene, aiNode* node, const aiMatrix4x4& parentTr
         impMesh.transform = globalTransform;
         impMesh.diffuseTexture = BGFX_INVALID_HANDLE;
         impMesh.hasDiffuseColor = false;          // Initialize
+        impMesh.hasVertexColors = mesh->HasVertexColors(0);  // Set vertex color flag
 
         // --- New: Retrieve diffuse texture from the material ---
         // Attempt to load a texture from the material.
@@ -2706,7 +2749,7 @@ int main(void)
     layout.begin()
         .add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
         .add(bgfx::Attrib::Normal, 3, bgfx::AttribType::Float)
-        .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true, true)
+		.add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true, false) // Vertex color
         .add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float) // NEW: UV coordinates
         .end();
 
@@ -3043,6 +3086,9 @@ int main(void)
                 childInst->scale[0] = scaling.x;
                 childInst->scale[1] = scaling.y;
                 childInst->scale[2] = scaling.z;
+
+                // Set vertex color flag from imported mesh
+                childInst->hasVertexColors = importedMeshes[i].hasVertexColors;
                 
                 // Assign the diffuse texture from the imported mesh
                 childInst->diffuseTexture = importedMeshes[i].diffuseTexture;
@@ -3383,6 +3429,11 @@ int main(void)
     bgfx::ShaderHandle debugVsh = loadShader("shaders\\v_lightdebug_out1.bin");
     bgfx::ShaderHandle debugFsh = loadShader("shaders\\f_lightdebug_out1.bin");
     bgfx::ProgramHandle lightDebugProgram = bgfx::createProgram(debugVsh, debugFsh, true);
+
+    // Load vertex color shader:
+    bgfx::ShaderHandle vsh_vertex_colors = loadShader("shaders\\v_vertex_colors.bin");
+    bgfx::ShaderHandle fsh_vertex_colors = loadShader("shaders\\f_vertex_colors.bin");
+    vertexColorProgram = bgfx::createProgram(vsh_vertex_colors, fsh_vertex_colors, true);
 
     //spawn plane
     spawnInstance(camera, "plane", "plane", vbh_plane, ibh_plane, instances);
@@ -3946,6 +3997,9 @@ int main(void)
                                 childInst->scale[1] = scaling.y;
                                 childInst->scale[2] = scaling.z;
 
+                                // Set vertex color flag from imported mesh
+                                childInst->hasVertexColors = importedMeshes[i].hasVertexColors;
+
                                 // *** NEW: Assign the diffuse texture from the imported mesh ***
                                 childInst->diffuseTexture = importedMeshes[i].diffuseTexture;
                                 // --- NEW: Apply diffuse color if present and no texture ---
@@ -4268,6 +4322,9 @@ int main(void)
                                 childInst->scale[0] = scaling.x;
                                 childInst->scale[1] = scaling.y;
                                 childInst->scale[2] = scaling.z;
+
+                                // Set vertex color flag from imported mesh
+                                childInst->hasVertexColors = importedMeshes[i].hasVertexColors;
 
                                 // *** NEW: Assign the diffuse texture from the imported mesh ***
                                 childInst->diffuseTexture = importedMeshes[i].diffuseTexture;
@@ -5410,6 +5467,7 @@ int main(void)
         layout.begin()
             .add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
             .add(bgfx::Attrib::Normal, 3, bgfx::AttribType::Float)
+            .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true, false)
             .add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float) // NEW: UV coordinates
             .end();
 
