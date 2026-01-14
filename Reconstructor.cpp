@@ -839,7 +839,7 @@ namespace Reconstructor {
 
         // --- Start Choice UI ---
         if (!showStartChoice && !extracting && !removalDone && !showImageSelection && !showMethodChoice && !runningNeRF && !runningGaussian && !reconstructionComplete) {
-            CenterLargeText("Choose Reconstruction Method");
+            ImGui::Text("Choose Input Method");
             ImGui::Spacing();
             ImGui::Text("How would you like to start the reconstruction?");
             ImGui::Spacing();
@@ -1116,7 +1116,7 @@ namespace Reconstructor {
 
         // --- Choose Reconstruction Method (NeRF or GS) ---
         if (showMethodChoice && !runningNeRF && !runningGaussian) {
-            CenterLargeText("Choose Reconstruction Method");
+            ImGui::Text("Choose Reconstruction Method");
             ImGui::Spacing();
             
             if (ImGui::Button("NeRF (Neural Radiance Fields)", ImVec2(300, 40))) {
