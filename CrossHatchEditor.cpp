@@ -1378,22 +1378,16 @@ void drawInstance(Instance* instance, bgfx::ProgramHandle defaultProgram, bgfx::
 
                 // Use vertex color program for meshes with vertex colors
                 if (instance->hasVertexColors) {
-                    // Clear all color-affecting uniforms for vertex color program
+                    // Vertex color program should receive lighting uniforms
+                    // Note: Lighting uniforms (u_lights, u_numLights) are set globally 
+                    // and should be available to this shader
+                    
+                    // Set only essential uniforms for vertex colors
                     const float whiteColor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
                     const float clearTint[4] = { 1.0f, 1.0f, 1.0f, 0.0f };
-                    const float clearInk[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-                    const float clearParams[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-                    const float clearExtra[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-                    const float clearLayer[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-                    const float clearEpsilon[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
                     
                     bgfx::setUniform(u_objectColor, whiteColor);
                     bgfx::setUniform(u_tint, clearTint);
-                    bgfx::setUniform(u_inkColor, clearInk);
-                    bgfx::setUniform(u_e, clearEpsilon);
-                    bgfx::setUniform(u_params, clearParams);
-                    bgfx::setUniform(u_extraParams, clearExtra);
-                    bgfx::setUniform(u_paramsLayer, clearLayer);
                     
                     // Don't set any textures for vertex color program
                     bgfx::setTexture(0, u_noiseTex, defaultWhiteTexture);
@@ -2654,7 +2648,7 @@ int main(void)
         std::cerr << "Failed to initialize GLFW" << std::endl;
         return false;
     }
-    GLFWwindow* window = glfwCreateWindow(WNDW_WIDTH, WNDW_HEIGHT, "Anito GeoForge", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(WNDW_WIDTH, WNDW_HEIGHT, "AnitoScan", NULL, NULL);
     if (!window) {
         std::cerr << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
@@ -2695,7 +2689,7 @@ int main(void)
 
     glfwSetKeyCallback(window, glfw_keyCallback);
 
-    Gallery::LoadGallery("./screenshots");
+    // Gallery::LoadGallery("./screenshots");
 
     /*ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
@@ -3629,14 +3623,14 @@ int main(void)
                 ImGui::SetWindowFontScale(3.0f);
 
                 // Measure text at correct scale
-                ImVec2 titleSize = ImGui::CalcTextSize("Anito GeoForge");
+                ImVec2 titleSize = ImGui::CalcTextSize("AnitoScan");
 
                 // Center position
                 float titleX = (windowWidth - titleSize.x) * 0.5f;
                 float titleY = (windowHeight * 0.3f) - (titleSize.y * 0.5f);
 
                 ImGui::SetCursorPos(ImVec2(titleX, titleY));
-                ImGui::Text("Anito GeoForge");
+                ImGui::Text("AnitoScan");
 
                 // Restore font scale
                 ImGui::SetWindowFontScale(2.0f);
@@ -5334,10 +5328,6 @@ int main(void)
                 break;
             collectLights(inst, lightsData, numLights);
         }
-        // Set u_lights uniform with (numLights * 4) vec4's.
-        bgfx::setUniform(u_lights, lightsData, numLights * 4);
-        float numLightsArr[4] = { static_cast<float>(numLights), 0, 0, 0 };
-        bgfx::setUniform(u_numLights, numLightsArr);
 
         bgfx::reset(width, height, BGFX_RESET_VSYNC);
         bgfx::setViewRect(0, 0, 0, uint16_t(width), uint16_t(height));
@@ -5358,6 +5348,10 @@ int main(void)
 
         bgfx::touch(0);
 
+        // Set lighting uniforms AFTER bgfx::reset() to ensure they are not cleared
+        bgfx::setUniform(u_lights, lightsData, numLights * 4);
+        float numLightsArr[4] = { static_cast<float>(numLights), 0, 0, 0 };
+        bgfx::setUniform(u_numLights, numLightsArr);
 
         float viewPos[4] = { camera.position.x, camera.position.y, camera.position.z, 1.0f };
 

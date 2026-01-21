@@ -2,10 +2,12 @@
 precision mediump float;
 varying vec3 v_normal;
 varying vec3 v_pos;
+varying vec4 v_color;
 varying vec2 v_texcoord0;
 #else
 in vec3 v_normal;
 in vec3 v_pos;
+in vec4 v_color;
 in vec2 v_texcoord0;
 #endif
 
@@ -158,10 +160,9 @@ void main()
     // 2. Sample the diffuse texture with that transformed UV:
     vec4 texSample = texture2D(u_diffuseTex, uvScaled);
 
-    // 3. Apply the color tint:
-    //    multiply the texture color by the albedoFactor.rgb
-    //    (optionally also multiply alpha if you want)
-    vec3 tintedBase = texSample.rgb * u_albedoFactor.rgb;
+    // 3. Apply the color tint and vertex colors:
+    //    multiply the texture color by the albedoFactor.rgb and vertex color
+    vec3 tintedBase = texSample.rgb * u_albedoFactor.rgb * v_color.rgb;
 
     // 4 Combine tintedBase with your crosshatch logic:
     //    e.g., litColor = tintedBase * lighting, then crosshatching...
