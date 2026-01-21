@@ -3,7 +3,32 @@ cmake_minimum_required(VERSION 3.12)
 # ---------------------------------------------------------------------------
 # VCPKG Setup (must be defined before project())
 # ---------------------------------------------------------------------------
-set(CMAKE_TOOLCHAIN_FILE "${CMAKE_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake"
+set(VCPKG_ROOT "${CMAKE_SOURCE_DIR}/vcpkg")
+set(VCPKG_TOOLCHAIN "${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
+
+# Check if vcpkg exists, if not provide helpful error message
+if(NOT EXISTS "${VCPKG_TOOLCHAIN}")
+    message(FATAL_ERROR "\n"
+        "===================================================================\n"
+        "ERROR: vcpkg not found!\n"
+        "===================================================================\n"
+        "The project requires vcpkg to be set up in the project directory.\n"
+        "Please follow these steps:\n\n"
+        "1. Clone vcpkg into the project root:\n"
+        "   git clone https://github.com/Microsoft/vcpkg.git\n\n"
+        "2. Bootstrap vcpkg:\n"
+        "   cd vcpkg\n"
+        "   .\\bootstrap-vcpkg.bat\n\n"
+        "3. Install OpenCV (required dependency):\n"
+        "   .\\vcpkg install opencv4:x64-windows\n\n"
+        "4. Re-run CMake configuration.\n"
+        "===================================================================\n"
+        "Expected vcpkg location: ${VCPKG_TOOLCHAIN}\n"
+        "===================================================================\n"
+    )
+endif()
+
+set(CMAKE_TOOLCHAIN_FILE "${VCPKG_TOOLCHAIN}"
     CACHE STRING "Vcpkg toolchain file")
 
 # ---------------------------------------------------------------------------
@@ -114,12 +139,12 @@ target_link_libraries(imgui PRIVATE glfw)
 # ---------------------------------------------------------------------------
 set(ASSIMP_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR}/assimp)
 target_include_directories(${PROJECT_NAME} PRIVATE ${ASSIMP_ROOT_DIR}/include)
-target_link_directories(${PROJECT_NAME} PRIVATE ${ASSIMP_ROOT_DIR}/lib/Debug)
+target_link_directories(CrossHatchEditor PRIVATE ${ASSIMP_ROOT_DIR}/lib/Debug)
 target_link_libraries(${PROJECT_NAME} PRIVATE assimp-vc143-mtd)
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${ASSIMP_ROOT_DIR}/bin/Debug/assimp-vc143-mtd.dll"
+        "${ASSIMP_ROOT_DIR}/bin/Debug/assimp-vc143-mtd.dll"  # Replace with the actual path to assimp.dll
         $<TARGET_FILE_DIR:${PROJECT_NAME}>
 )
 
@@ -169,48 +194,30 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
         $<TARGET_FILE_DIR:${PROJECT_NAME}>
 )
 
-# Copy OpenCV DLLs and dependencies
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/opencv_calib3d4.dll"
-        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/opencv_core4.dll"
-        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/opencv_dnn4.dll"
-        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/opencv_features2d4.dll"
-        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/opencv_flann4.dll"
-        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/opencv_highgui4.dll"
-        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/opencv_imgcodecs4.dll"
-        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/opencv_imgproc4.dll"
-        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/opencv_ml4.dll"
-        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/opencv_objdetect4.dll"
-        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/opencv_photo4.dll"
-        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/opencv_stitching4.dll"
-        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/opencv_video4.dll"
-        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/opencv_videoio4.dll"
-        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/abseil_dll.dll"
-        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/libprotobuf-lite.dll"
-        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/libprotobuf.dll"
-        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/libprotoc.dll"
-        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/turbojpeg.dll"
-        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/jpeg62.dll"
-        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/liblzma.dll"
-        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/libpng16.dll"
-        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/libsharpyuv.dll"
-        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/libwebp.dll"
-        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/libwebpdecoder.dll"
-        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/libwebpdemux.dll"
-        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/libwebpmux.dll"
-        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/tiff.dll"
-        "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin/zlib1.dll"
-        $<TARGET_FILE_DIR:${PROJECT_NAME}>
-)
+# Copy OpenCV DLLs and dependencies based on build configuration
+# For Debug builds: copy from debug/bin with 'd' suffix DLLs (e.g., opencv_videoio4d.dll)
+# For Release builds: copy from bin without 'd' suffix DLLs (e.g., opencv_videoio4.dll)
+# For Visual Studio (multi-config), copy both directories so the correct DLLs are available at runtime
 
-# Also copy the entire vcpkg x64-windows bin directory to ensure any additional runtime deps are present
-set(VCPKG_BIN_DIR "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin")
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${VCPKG_BIN_DIR}"
-        $<TARGET_FILE_DIR:${PROJECT_NAME}>
-)
+# Copy Debug DLLs (needed for Debug configuration)
+if(EXISTS "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/debug/bin")
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/debug/bin"
+            $<TARGET_FILE_DIR:${PROJECT_NAME}>
+        COMMENT "Copying Debug DLLs from vcpkg"
+    )
+endif()
+
+# Copy Release DLLs (needed for Release configuration)
+if(EXISTS "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin")
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_SOURCE_DIR}/vcpkg/installed/x64-windows/bin"
+            $<TARGET_FILE_DIR:${PROJECT_NAME}>
+        COMMENT "Copying Release DLLs from vcpkg"
+    )
+endif()
 
 # ---------------------------------------------------------------------------
 # OpenCV + OpenGL (for FrameExtractor)

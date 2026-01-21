@@ -276,3 +276,5 @@ static const uint8_t vs_ocornut_imgui_mtl[855] =
 };
 extern const uint8_t* vs_ocornut_imgui_pssl;
 extern const uint32_t vs_ocornut_imgui_pssl_size;
+// WGSL stub required by BGFX_EMBEDDED_SHADER macro
+static const uint8_t vs_ocornut_imgui_wgsl[10] = { 0x56, 0x53, 0x48, 0x0b, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
