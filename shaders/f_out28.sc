@@ -104,12 +104,30 @@ void main()
     // --- Lighting Calculation ---
     vec3 N = normalize(v_normal);
     
+    // Try inverting normals if they point the wrong direction
+    N = -N;
+    
+    // DEBUG: Visualize normals if needed (check if normals are correct)
+    // Uncomment next line to see normals as colors (mostly blue = pointing away)
+    // gl_FragColor = vec4(N * 0.5 + 0.5, 1.0); return;
+    
+    // DEBUG: Visualize v_pos if needed (should show gradient based on position)
+    // Uncomment next line to verify v_pos is being passed correctly
+    // gl_FragColor = vec4(abs(v_pos) * 0.1, 1.0); return;
+    
     // Debug: Check if vertex color is being received
     // If v_color is white (1,1,1,1), it means no vertex color data
     // If v_color has actual colors, use them
     
     vec3 lighting = vec3(0.0);
     int numLights = int(u_numLights.x);
+    
+    // DEBUG: If no lights, output red warning
+    if (numLights == 0)
+    {
+        // gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0); // RED = NO LIGHTS
+        // return;
+    }
     for (int i = 0; i < numLights; i++) {
         int offset = i * 4;
         float lightType = u_lights[offset].x; // 0: directional, 1: point, 2: spot.
@@ -159,6 +177,10 @@ void main()
     vec3 ambient = vec3(0.2, 0.2, 0.2); // Minimum ambient light
     lighting = max(lighting, ambient);
     
+    // DEBUG: Visualize the calculated lighting value
+    // Uncomment to see raw lighting contribution (red = no light, green/white = bright)
+    // gl_FragColor = vec4(lighting, 1.0); return;
+    
     // --- Texture/Material ---
     // 1. Tiling & offset:
     //    scale = (tilingU, tilingV), offset = (offsetU, offsetV)
@@ -204,6 +226,9 @@ void main()
         // Add ambient to lighting to ensure colors are always visible
         vec3 finalLighting = max(lighting, ambient);
         litColor = tintedBase * finalLighting;
+        
+        // DEBUG: Show vertex color being used
+        // gl_FragColor = vec4(tintedBase, 1.0); return;
     } else {
         // For textures, use normal lighting with ambient
         litColor = tintedBase * max(lighting, ambient);

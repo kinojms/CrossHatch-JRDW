@@ -259,6 +259,22 @@ file(COPY ${TEXTURES_DIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 file(COPY ${SAVES_DIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 # ---------------------------------------------------------------------------
+# Shader Compilation Custom Target
+# ---------------------------------------------------------------------------
+# Find the shaderc compiler in bgfx.cmake
+set(SHADERC_PATH "${CMAKE_SOURCE_DIR}/bgfx.cmake/bgfx/tools/bin/windows/shaderc.exe")
+
+# Add a custom target to compile all shaders
+add_custom_target(CompileShaders ALL
+    COMMAND ${CMAKE_COMMAND} -P "${CMAKE_SOURCE_DIR}/cmake/CompileShaders.cmake"
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMENT "Compiling BGFX shaders from .sc to .bin format..."
+)
+
+# Make the main project depend on shader compilation
+add_dependencies(${PROJECT_NAME} CompileShaders)
+
+# ---------------------------------------------------------------------------
 # Packaging Configuration
 # ---------------------------------------------------------------------------
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)

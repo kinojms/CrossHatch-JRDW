@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\CrossHatch-JRDW\build\CMakeFiles\1f1a2610ee1ac78695249fdf40e33eeb\CompileShaders.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\CrossHatch-JRDW\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="C:\CrossHatch-JRDW\build\CMakeFiles\CompileShaders" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{56ABA782-A7F0-344A-BFD7-6F54E9678EED}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

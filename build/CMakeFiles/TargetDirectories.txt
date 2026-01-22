@@ -1,6 +1,7 @@
 C:/CrossHatch-JRDW/build/CMakeFiles/CrossHatchEditor.dir
 C:/CrossHatch-JRDW/build/CMakeFiles/imgui.dir
 C:/CrossHatch-JRDW/build/CMakeFiles/ImGuizmo.dir
+C:/CrossHatch-JRDW/build/CMakeFiles/CompileShaders.dir
 C:/CrossHatch-JRDW/build/CMakeFiles/PACKAGE.dir
 C:/CrossHatch-JRDW/build/CMakeFiles/INSTALL.dir
 C:/CrossHatch-JRDW/build/CMakeFiles/ALL_BUILD.dir

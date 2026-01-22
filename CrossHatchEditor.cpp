@@ -1119,7 +1119,10 @@ bgfx::ShaderHandle loadShader(const char* shaderPath)
     std::ifstream file(shaderPath, std::ios::binary);
     if (!file)
     {
-        std::cerr << "Failed to load shader: " << shaderPath << std::endl;
+        std::cerr << "❌ SHADER LOAD ERROR: Failed to load shader: " << shaderPath << std::endl;
+        #ifdef _WIN32
+        OutputDebugStringA(("❌ SHADER LOAD ERROR: " + std::string(shaderPath) + "\n").c_str());
+        #endif
         return BGFX_INVALID_HANDLE;
     }
 
@@ -1131,7 +1134,14 @@ bgfx::ShaderHandle loadShader(const char* shaderPath)
     file.read(buffer.data(), fileSize);
 
     const bgfx::Memory* mem = bgfx::copy(buffer.data(), static_cast<uint32_t>(fileSize));
-    //std::cout << "Shader loaded: " << shaderPath << std::endl;
+    
+    // DEBUG: Log shader loading success
+    std::string debugMsg = "[SHADER LOAD] " + std::string(shaderPath) + " (" + std::to_string(fileSize) + " bytes)\n";
+    std::cerr << debugMsg;
+    #ifdef _WIN32
+    OutputDebugStringA(debugMsg.c_str());
+    #endif
+    
     return bgfx::createShader(mem);
 }
 
@@ -2813,7 +2823,7 @@ int main(void)
 
     glfwSetKeyCallback(window, glfw_keyCallback);
 
-    Gallery::LoadGallery("./screenshots");
+    // Gallery::LoadGallery("./screenshots");
 
     /*ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
@@ -3534,6 +3544,18 @@ int main(void)
     bgfx::ShaderHandle fsh = loadShader("shaders\\f_out28.bin");
 
     bgfx::ProgramHandle defaultProgram = bgfx::createProgram(vsh, fsh, true);
+    
+    // DEBUG: Verify shader handles are valid
+    std::string vshDebug = "[SHADER PROGRAM] v_out21 handle: " + std::to_string(vsh.idx) + " (valid: " + (bgfx::isValid(vsh) ? "YES" : "NO") + ")\n";
+    std::string fshDebug = "[SHADER PROGRAM] f_out28 handle: " + std::to_string(fsh.idx) + " (valid: " + (bgfx::isValid(fsh) ? "YES" : "NO") + ")\n";
+    std::string progDebug = "[SHADER PROGRAM] defaultProgram handle: " + std::to_string(defaultProgram.idx) + " (valid: " + (bgfx::isValid(defaultProgram) ? "YES" : "NO") + ")\n";
+    
+    std::cerr << vshDebug << fshDebug << progDebug;
+    #ifdef _WIN32
+    OutputDebugStringA(vshDebug.c_str());
+    OutputDebugStringA(fshDebug.c_str());
+    OutputDebugStringA(progDebug.c_str());
+    #endif
 
     // Load unlit vertex-color shaders for Attribute mode
     bgfx::ShaderHandle vsh_unlit = loadShader("shaders\\v_unlit_color.bin");
@@ -5482,6 +5504,40 @@ int main(void)
         bgfx::setUniform(u_lights, lightsData, numLights * 4);
         float numLightsArr[4] = { static_cast<float>(numLights), 0, 0, 0 };
         bgfx::setUniform(u_numLights, numLightsArr);
+        
+        // DEBUG: Log number of lights
+        if (numLights > 0)
+        {
+            std::string lightDebug = "[LIGHTING] Active lights: " + std::to_string(numLights) + "\n";
+            std::cerr << lightDebug;
+            #ifdef _WIN32
+            OutputDebugStringA(lightDebug.c_str());
+            #endif
+            // Log first light details if available
+            if (numLights > 0)
+            {
+                float lightType = lightsData[0];
+                float intensity = lightsData[1];
+                float lightPosX = lightsData[4];
+                float lightPosY = lightsData[5];
+                float lightPosZ = lightsData[6];
+                std::string lightDetail = "[LIGHTING] Light 0 - Type: " + std::to_string((int)lightType) + 
+                                         ", Intensity: " + std::to_string(intensity) +
+                                         ", Pos: (" + std::to_string(lightPosX) + ", " + std::to_string(lightPosY) + ", " + std::to_string(lightPosZ) + ")\n";
+                std::cerr << lightDetail;
+                #ifdef _WIN32
+                OutputDebugStringA(lightDetail.c_str());
+                #endif
+            }
+        }
+        else
+        {
+            std::string lightDebug = "[LIGHTING] ⚠️ WARNING: No lights found in scene!\n";
+            std::cerr << lightDebug;
+            #ifdef _WIN32
+            OutputDebugStringA(lightDebug.c_str());
+            #endif
+        }
 
         bgfx::reset(width, height, BGFX_RESET_VSYNC);
         bgfx::setViewRect(0, 0, 0, uint16_t(width), uint16_t(height));

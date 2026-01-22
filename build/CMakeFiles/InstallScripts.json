@@ -1,14 +1,14 @@
 {
 	"InstallScripts" : 
 	[
-		"C:/Users/Renee Khan/source/repos/CrossHatch-JRDW/build/cmake_install.cmake",
-		"C:/Users/Renee Khan/source/repos/CrossHatch-JRDW/build/bgfx.cmake/cmake_install.cmake",
-		"C:/Users/Renee Khan/source/repos/CrossHatch-JRDW/build/bgfx.cmake/cmake/bx/cmake_install.cmake",
-		"C:/Users/Renee Khan/source/repos/CrossHatch-JRDW/build/bgfx.cmake/cmake/bimg/cmake_install.cmake",
-		"C:/Users/Renee Khan/source/repos/CrossHatch-JRDW/build/bgfx.cmake/cmake/bgfx/cmake_install.cmake",
-		"C:/Users/Renee Khan/source/repos/CrossHatch-JRDW/build/glfw/cmake_install.cmake",
-		"C:/Users/Renee Khan/source/repos/CrossHatch-JRDW/build/glfw/src/cmake_install.cmake",
-		"C:/Users/Renee Khan/source/repos/CrossHatch-JRDW/build/glfw/docs/cmake_install.cmake"
+		"C:/CrossHatch-JRDW/build/cmake_install.cmake",
+		"C:/CrossHatch-JRDW/build/bgfx.cmake/cmake_install.cmake",
+		"C:/CrossHatch-JRDW/build/bgfx.cmake/cmake/bx/cmake_install.cmake",
+		"C:/CrossHatch-JRDW/build/bgfx.cmake/cmake/bimg/cmake_install.cmake",
+		"C:/CrossHatch-JRDW/build/bgfx.cmake/cmake/bgfx/cmake_install.cmake",
+		"C:/CrossHatch-JRDW/build/glfw/cmake_install.cmake",
+		"C:/CrossHatch-JRDW/build/glfw/src/cmake_install.cmake",
+		"C:/CrossHatch-JRDW/build/glfw/docs/cmake_install.cmake"
 	],
 	"Parallel" : false
 }
