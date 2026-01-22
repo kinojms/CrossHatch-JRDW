@@ -1527,6 +1527,7 @@ void drawInstance(Instance* instance, bgfx::ProgramHandle defaultProgram, bgfx::
         drawInstance(child, defaultProgram, lightDebugProgram, textProgram, comicProgram, u_comicColor, u_noiseTex, u_diffuseTex, u_objectColor, u_tint, u_inkColor, u_e, u_params, u_extraParams, u_paramsLayer, defaultWhiteTexture, inheritedNoiseTex, newInheritedTexture, childParentColor, world);
     }
 }
+Instance* g_PendingDelete = nullptr;
 // Recursive deletion for hierarchy.
 void deleteInstance(Instance* instance)
 {
@@ -1536,146 +1537,165 @@ void deleteInstance(Instance* instance)
     }
     delete instance;
 }
-// Recursive function to show the instance hierarchy in a tree view.
-void ShowInstanceTree(Instance* instance, Instance*& selectedInstance, std::vector<Instance*>& instances)
+
+void ShowInstanceTree(
+    Instance* instance,
+    Instance*& selectedInstance,
+    std::vector<Instance*>& instances
+)
 {
-    // Set up flags for the tree node.
-    ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow;
+    // ---------- Shared UI state ----------
+    static Instance* renamingInstance = nullptr;
+    static char renameBuffer[256] = {};
+
+    // g_PendingDelete must be declared at file scope
+     //Instance* g_PendingDelete = nullptr;
+
+    // ---------- Tree flags ----------
+    ImGuiTreeNodeFlags flags =
+        ImGuiTreeNodeFlags_OpenOnArrow |
+        ImGuiTreeNodeFlags_SpanFullWidth;
+
     if (instance->children.empty())
-    {
         flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
-    }
+
     if (selectedInstance == instance)
-    {
         flags |= ImGuiTreeNodeFlags_Selected;
-    }
 
-    // Use the instance pointer as the unique ID.
-    bool nodeOpen = ImGui::TreeNodeEx((void*)instance, flags, "%s", instance->name.c_str());
+    // ---------- Tree node ----------
+    bool nodeOpen = ImGui::TreeNodeEx(
+        (void*)instance,
+        flags,
+        "%s",
+        instance->name.c_str()
+    );
+
+    // ---------- Selection ----------
     if (ImGui::IsItemClicked())
-    {
-        if (selectedInstance == instance)
-            selectedInstance = nullptr;
-        else
-            selectedInstance = instance;
-    }
-
-    if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
-    {
-        // 1) Select the instance
         selectedInstance = instance;
 
-        // 2) Pan/zoom camera to look at the instance
+    // ---------- Double-click → focus camera ----------
+    if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
+    {
+        selectedInstance = instance;
+
         Camera& cam = cameras[currentCameraIndex];
+        const float distance = 5.0f;
 
-        // How far from the object you want to sit (tweak as needed)
-        const float desiredDistance = 5.0f;
+        cam.position.x = instance->worldPosition[0] - cam.front.x * distance;
+        cam.position.y = instance->worldPosition[1] - cam.front.y * distance;
+        cam.position.z = instance->worldPosition[2] - cam.front.z * distance;
 
-        // Compute new camera position: back off along the current forward vector
-        cam.position.x = instance->worldPosition[0] - cam.front.x * desiredDistance;
-        cam.position.y = instance->worldPosition[1] - cam.front.y * desiredDistance;
-        cam.position.z = instance->worldPosition[2] - cam.front.z * desiredDistance;
+        float dx = instance->worldPosition[0] - cam.position.x;
+        float dy = instance->worldPosition[1] - cam.position.y;
+        float dz = instance->worldPosition[2] - cam.position.z;
+        float len = std::sqrt(dx * dx + dy * dy + dz * dz);
 
-        // Recompute the forward vector so the camera looks directly at the object
+        if (len > 0.0001f)
         {
-            float dx = instance->worldPosition[0] - cam.position.x;
-            float dy = instance->worldPosition[1] - cam.position.y;
-            float dz = instance->worldPosition[2] - cam.position.z;
-            float len = std::sqrt(dx * dx + dy * dy + dz * dz);
-            if (len > 0.0001f)
-            {
-                cam.front.x = dx / len;
-                cam.front.y = dy / len;
-                cam.front.z = dz / len;
-            }
+            cam.front.x = dx / len;
+            cam.front.y = dy / len;
+            cam.front.z = dz / len;
         }
 
-        // If your Camera also tracks yaw/pitch, recompute those to match the new front vector:
-        cam.yaw = std::atan2(cam.front.z, cam.front.x) * (180.0f / 3.14159265f);
-        cam.pitch = std::asin(cam.front.y) * (180.0f / 3.14159265f);
+        cam.yaw = std::atan2(cam.front.z, cam.front.x) * 180.0f / 3.14159265f;
+        cam.pitch = std::asin(cam.front.y) * 180.0f / 3.14159265f;
     }
 
-    // Add right-click context menu for renaming
+    // ---------- Context menu ----------
     if (ImGui::BeginPopupContextItem())
     {
-        static char nameBuffer[256];
-        if (ImGui::IsWindowAppearing())
+        if (ImGui::MenuItem("Rename"))
         {
-            // Copy the instance name to the buffer when the popup first appears
-            strncpy(nameBuffer, instance->name.c_str(), sizeof(nameBuffer) - 1);
-            nameBuffer[sizeof(nameBuffer) - 1] = '\0';  // Ensure null termination
+            renamingInstance = instance;
+            strncpy(renameBuffer, instance->name.c_str(), sizeof(renameBuffer));
+            renameBuffer[sizeof(renameBuffer) - 1] = '\0';
         }
 
-        ImGui::Text("Rename %s", instance->name.c_str());
         ImGui::Separator();
 
-        ImGui::SetNextItemWidth(200);
-        if (ImGui::InputText("##rename", nameBuffer, sizeof(nameBuffer), ImGuiInputTextFlags_EnterReturnsTrue))
+        if (ImGui::MenuItem("Delete"))
         {
-            instance->name = std::string(nameBuffer);
-            ImGui::CloseCurrentPopup();
-        }
-
-        if (ImGui::Button("Apply"))
-        {
-            instance->name = std::string(nameBuffer);
-            ImGui::CloseCurrentPopup();
-        }
-        ImGui::SameLine();
-        if (ImGui::Button("Cancel"))
-        {
-            ImGui::CloseCurrentPopup();
+            g_PendingDelete = instance;
+            ImGui::OpenPopup("##ConfirmDelete");
         }
 
         ImGui::EndPopup();
     }
 
-    // Begin drag source
+    // ---------- Inline rename ----------
+    if (renamingInstance == instance)
+    {
+        ImGui::SameLine();
+
+        ImGui::PushID(instance); // 🔴 IMPORTANT: avoid ID collision
+        ImGui::SetNextItemWidth(160);
+        ImGui::SetKeyboardFocusHere();
+
+        if (ImGui::InputText(
+            "##rename",
+            renameBuffer,
+            sizeof(renameBuffer),
+            ImGuiInputTextFlags_EnterReturnsTrue |
+            ImGuiInputTextFlags_AutoSelectAll
+        ))
+        {
+            instance->name = renameBuffer;
+            renamingInstance = nullptr;
+        }
+
+        // Click outside → cancel
+        if (!ImGui::IsItemActive() && ImGui::IsMouseClicked(0))
+            renamingInstance = nullptr;
+
+        ImGui::PopID();
+    }
+
+    // ---------- Drag source ----------
     if (ImGui::BeginDragDropSource())
     {
-        // Set the payload: the pointer to the instance
-        Instance* dragInstance = instance;
-        ImGui::SetDragDropPayload("DND_INSTANCE", &dragInstance, sizeof(Instance*));
+        Instance* payload = instance;
+        ImGui::SetDragDropPayload("DND_INSTANCE", &payload, sizeof(Instance*));
         ImGui::Text("%s", instance->name.c_str());
         ImGui::EndDragDropSource();
     }
-    // Make this node a drag drop target
+
+    // ---------- Drag target ----------
     if (ImGui::BeginDragDropTarget())
     {
         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_INSTANCE"))
         {
-            // Get the instance being dragged
             Instance* dropped = *(Instance**)payload->Data;
-            if (dropped != instance)
+            if (dropped && dropped != instance)
             {
-                // Remove the dropped instance from its current parent's children list
                 if (dropped->parent)
                 {
-                    auto it = std::find(dropped->parent->children.begin(),
-                        dropped->parent->children.end(), dropped);
-                    if (it != dropped->parent->children.end())
-                        dropped->parent->children.erase(it);
+                    auto& siblings = dropped->parent->children;
+                    siblings.erase(
+                        std::remove(siblings.begin(), siblings.end(), dropped),
+                        siblings.end()
+                    );
                 }
                 else
                 {
-                    // If it's top-level, remove it from the global instances vector.
-                    auto it = std::find(instances.begin(), instances.end(), dropped);
-                    if (it != instances.end())
-                        instances.erase(it);
+                    instances.erase(
+                        std::remove(instances.begin(), instances.end(), dropped),
+                        instances.end()
+                    );
                 }
-                // Add the dropped instance as a child of the current node.
+
                 instance->addChild(dropped);
             }
         }
         ImGui::EndDragDropTarget();
     }
-    // If the node is open (and it's not a leaf that doesn't push), display its children.
+
+    // ---------- Children ----------
     if (nodeOpen && !(flags & ImGuiTreeNodeFlags_NoTreePushOnOpen))
     {
         for (Instance* child : instance->children)
-        {
             ShowInstanceTree(child, selectedInstance, instances);
-        }
+
         ImGui::TreePop();
     }
 }
