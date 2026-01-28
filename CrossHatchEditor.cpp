@@ -2943,8 +2943,8 @@ void SyncGPU(Instance* inst, const std::vector<PosColorVertex>& vertices, const 
 }
 
 // --- MAIN MODULE FUNCTION ---
-void UpdateModelingModule(Instance* selected, std::vector<PosColorVertex>& currentVerts, std::vector<uint32_t>& currentIndices) {
-    if (!selected) return;
+void ModelingModule(Instance* selected, std::vector<PosColorVertex>& currentVerts, std::vector<uint32_t>& currentIndices) {
+    //if (!selected) return;
 
     ImGuiIO& io = ImGui::GetIO();
     bool meshChanged = false;
@@ -3984,7 +3984,8 @@ int main(void)
         style.Colors[ImGuiCol_TabUnfocused] = ImVec4(0.15f, 0.15f, 0.15f, 1.0f);   // unfocused inactive
         style.Colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0, 0, 0, 1.0f); // unfocused active
 
-
+        static std::vector<PosColorVertex> currentVerts;
+        static std::vector<uint32_t> currentIndices;
 
         ImGui_ImplGlfw_NewFrame();
         ImGui_Implbgfx_NewFrame();
@@ -4000,6 +4001,10 @@ int main(void)
             if (ImGui::IsKeyPressed(ImGuiKey_3) && !selectedInstance->isLight) {
                 currentGizmoOperation = ImGuizmo::SCALE;
             }
+        }
+        if (selectedInstance)
+        {
+            ModelingModule(selectedInstance, currentVerts, currentIndices);
         }
         if (showMainMenu)
         {
