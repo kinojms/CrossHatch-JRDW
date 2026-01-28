@@ -762,7 +762,7 @@ MeshData loadMesh(const std::string& filePath) {
     // Ensure vertex colors are loaded - OBJ files may have vertex colors
     unsigned int flags = aiProcess_Triangulate | aiProcess_FlipUVs;
     const aiScene* scene = importer.ReadFile(filePath, flags);
-    
+
     std::cout << "[DEBUG loadMesh] Assimp import flags: Triangulate | FlipUVs" << std::endl;
 
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
@@ -782,15 +782,15 @@ MeshData loadMesh(const std::string& filePath) {
     // Iterate through all meshes in the scene
     std::cout << "[DEBUG loadMesh] Loading mesh file: " << filePath << std::endl;
     std::cout << "[DEBUG loadMesh] Total meshes in scene: " << scene->mNumMeshes << std::endl;
-    
+
     for (unsigned int meshIndex = 0; meshIndex < scene->mNumMeshes; ++meshIndex) {
         aiMesh* mesh = scene->mMeshes[meshIndex];
         size_t baseIndex = vertices.size();
         std::unordered_map<std::string, uint16_t> uniqueVertices;
 
-        std::cout << "[DEBUG loadMesh] Processing mesh " << meshIndex 
-                  << ": " << mesh->mNumVertices << " vertices, " 
-                  << mesh->mNumFaces << " faces" << std::endl;
+        std::cout << "[DEBUG loadMesh] Processing mesh " << meshIndex
+            << ": " << mesh->mNumVertices << " vertices, "
+            << mesh->mNumFaces << " faces" << std::endl;
         std::cout << "[DEBUG loadMesh] HasVertexColors(0): " << (mesh->HasVertexColors(0) ? "YES" : "NO") << std::endl;
         std::cout << "[DEBUG loadMesh] HasNormals: " << (mesh->HasNormals() ? "YES" : "NO") << std::endl;
         std::cout << "[DEBUG loadMesh] HasTextureCoords(0): " << (mesh->HasTextureCoords(0) ? "YES" : "NO") << std::endl;
@@ -842,12 +842,12 @@ MeshData loadMesh(const std::string& filePath) {
                     ((uint8_t)(b * 255) << 16) |
                     ((uint8_t)(g * 255) << 8) |
                     (uint8_t)(r * 255);
-                
+
                 // Debug: Log first few vertices with colors
                 if (i < 3) {
-                    std::cout << "[DEBUG loadMesh] Vertex " << i << " has color: RGBA(" 
-                              << r << ", " << g << ", " << b << ", " << a 
-                              << ") -> ABGR(0x" << std::hex << vertex.abgr << std::dec << ")" << std::endl;
+                    std::cout << "[DEBUG loadMesh] Vertex " << i << " has color: RGBA("
+                        << r << ", " << g << ", " << b << ", " << a
+                        << ") -> ABGR(0x" << std::hex << vertex.abgr << std::dec << ")" << std::endl;
                 }
             }
             else {
@@ -905,7 +905,7 @@ MeshData loadMesh2(const std::string& filePath) {
     // Ensure vertex colors are loaded - OBJ files may have vertex colors
     unsigned int flags = aiProcess_Triangulate | aiProcess_FlipUVs;
     const aiScene* scene = importer.ReadFile(filePath, flags);
-    
+
     std::cout << "[DEBUG loadMesh2] Assimp import flags: Triangulate | FlipUVs" << std::endl;
 
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
@@ -925,15 +925,15 @@ MeshData loadMesh2(const std::string& filePath) {
     // Iterate through all meshes in the scene
     std::cout << "[DEBUG loadMesh2] Loading mesh file: " << filePath << std::endl;
     std::cout << "[DEBUG loadMesh2] Total meshes in scene: " << scene->mNumMeshes << std::endl;
-    
+
     for (unsigned int meshIndex = 0; meshIndex < scene->mNumMeshes; ++meshIndex) {
         aiMesh* mesh = scene->mMeshes[meshIndex];
         size_t baseIndex = vertices.size();
         std::unordered_map<std::string, uint16_t> uniqueVertices;
 
-        std::cout << "[DEBUG loadMesh2] Processing mesh " << meshIndex 
-                  << ": " << mesh->mNumVertices << " vertices, " 
-                  << mesh->mNumFaces << " faces" << std::endl;
+        std::cout << "[DEBUG loadMesh2] Processing mesh " << meshIndex
+            << ": " << mesh->mNumVertices << " vertices, "
+            << mesh->mNumFaces << " faces" << std::endl;
         std::cout << "[DEBUG loadMesh2] HasVertexColors(0): " << (mesh->HasVertexColors(0) ? "YES" : "NO") << std::endl;
 
         for (unsigned int i = 0; i < mesh->mNumVertices; i++) {
@@ -983,12 +983,12 @@ MeshData loadMesh2(const std::string& filePath) {
                     ((uint8_t)(b * 255) << 16) |
                     ((uint8_t)(g * 255) << 8) |
                     (uint8_t)(r * 255);
-                
+
                 // Debug: Log first few vertices with colors
                 if (i < 3) {
-                    std::cout << "[DEBUG loadMesh2] Vertex " << i << " has color: RGBA(" 
-                              << r << ", " << g << ", " << b << ", " << a 
-                              << ") -> ABGR(0x" << std::hex << vertex.abgr << std::dec << ")" << std::endl;
+                    std::cout << "[DEBUG loadMesh2] Vertex " << i << " has color: RGBA("
+                        << r << ", " << g << ", " << b << ", " << a
+                        << ") -> ABGR(0x" << std::hex << vertex.abgr << std::dec << ")" << std::endl;
                 }
             }
             else {
@@ -1034,13 +1034,13 @@ MeshData loadMesh2(const std::string& filePath) {
 }
 
 void createMeshBuffers(const MeshData& meshData, bgfx::VertexBufferHandle& vbh, bgfx::IndexBufferHandle& ibh) {
-    std::cout << "[DEBUG createMeshBuffers] Creating buffers for " << meshData.vertices.size() 
-              << " vertices, " << meshData.indices.size() << " indices" << std::endl;
-    
+    std::cout << "[DEBUG createMeshBuffers] Creating buffers for " << meshData.vertices.size()
+        << " vertices, " << meshData.indices.size() << " indices" << std::endl;
+
     // Debug: Check first few vertex colors
     if (meshData.vertices.size() > 0) {
-        std::cout << "[DEBUG createMeshBuffers] First vertex color: 0x" << std::hex 
-                  << meshData.vertices[0].abgr << std::dec << std::endl;
+        std::cout << "[DEBUG createMeshBuffers] First vertex color: 0x" << std::hex
+            << meshData.vertices[0].abgr << std::dec << std::endl;
 #ifdef _WIN32
         {
             char dbg[128];
@@ -1050,11 +1050,11 @@ void createMeshBuffers(const MeshData& meshData, bgfx::VertexBufferHandle& vbh, 
         }
 #endif
         if (meshData.vertices.size() > 1) {
-            std::cout << "[DEBUG createMeshBuffers] Second vertex color: 0x" << std::hex 
-                      << meshData.vertices[1].abgr << std::dec << std::endl;
+            std::cout << "[DEBUG createMeshBuffers] Second vertex color: 0x" << std::hex
+                << meshData.vertices[1].abgr << std::dec << std::endl;
         }
     }
-    
+
     bgfx::VertexLayout layout;
     layout.begin()
         .add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
@@ -1062,7 +1062,7 @@ void createMeshBuffers(const MeshData& meshData, bgfx::VertexBufferHandle& vbh, 
         .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true, true)
         .add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float) // NEW: UV coordinates
         .end();
-    
+
     std::cout << "[DEBUG createMeshBuffers] Vertex layout includes Color0 attribute" << std::endl;
 
     vbh = bgfx::createVertexBuffer(
@@ -1348,45 +1348,47 @@ void drawInstance(Instance* instance, bgfx::ProgramHandle defaultProgram, bgfx::
         std::memcpy(comicColor, instance->objectColor, sizeof(comicColor));
     }
 
-    // Set the object override color uniform.
-    bgfx::setUniform(u_objectColor, effectiveColor);
-    bgfx::setUniform(u_albedoFactor, instance->material.albedo);
-    const float tintBasic[4] = { 1.0f, 1.0f, 1.0f, 0.0f };
-    const float tintHighlighted[4] = { 0.3f, 0.3f, 2.0f, 0.1f };
-    if (selectedInstance == instance && highlightVisible) {
-        bgfx::setUniform(u_tint, tintHighlighted);
-    }
-    else {
-        bgfx::setUniform(u_tint, tintBasic);
-    }
-    if (!useGlobalCrosshatchSettings) {
-        bgfx::setUniform(u_inkColor, instance->inkColor);
-        // Set epsilon uniform:
-        float epsilonUniform[4] = { instance->epsilonValue, 0.0f, 0.0f, 0.0f };
-        bgfx::setUniform(u_e, epsilonUniform);
-
-        // Prepare an array of 4 floats.
-        // Set u_params uniform:
-        float paramsUniform[4] = { 0.0f, instance->strokeMultiplier, instance->lineAngle1, instance->lineAngle2 };
-        bgfx::setUniform(u_params, paramsUniform);
-
-        // Prepare an array of 4 floats.
-        float extraParamsUniform[4] = { instance->patternScale, instance->lineThickness, instance->transparencyValue, float(instance->crosshatchMode) };
-        // Set the uniform for extra parameters.
-        bgfx::setUniform(u_extraParams, extraParamsUniform);
-
-
-        // Prepare an array of 4 floats.
-        float paramsLayerUniform[4] = { instance->layerPatternScale, instance->layerStrokeMult, instance->layerAngle, instance->layerLineThickness };
-        // Set the uniform for extra parameters.
-        bgfx::setUniform(u_paramsLayer, paramsLayerUniform);
-    }
+    // Set uniforms only if we're actually going to draw something
     const bgfx::VertexBufferHandle invalidVbh = BGFX_INVALID_HANDLE;
     const bgfx::IndexBufferHandle invalidIbh = BGFX_INVALID_HANDLE;
     // Draw geometry if valid.
     if (instance->vertexBuffer.idx != invalidVbh.idx &&
         instance->indexBuffer.idx != invalidIbh.idx)
     {
+        // Set the object override color uniform (only set right before we submit).
+        bgfx::setUniform(u_objectColor, effectiveColor);
+        bgfx::setUniform(u_albedoFactor, instance->material.albedo);
+        const float tintBasic[4] = { 1.0f, 1.0f, 1.0f, 0.0f };
+        const float tintHighlighted[4] = { 0.3f, 0.3f, 2.0f, 0.1f };
+        if (selectedInstance == instance && highlightVisible) {
+            bgfx::setUniform(u_tint, tintHighlighted);
+        }
+        else {
+            bgfx::setUniform(u_tint, tintBasic);
+        }
+        if (!useGlobalCrosshatchSettings) {
+            bgfx::setUniform(u_inkColor, instance->inkColor);
+            // Set epsilon uniform:
+            float epsilonUniform[4] = { instance->epsilonValue, 0.0f, 0.0f, 0.0f };
+            bgfx::setUniform(u_e, epsilonUniform);
+
+            // Prepare an array of 4 floats.
+            // Set u_params uniform:
+            float paramsUniform[4] = { 0.0f, instance->strokeMultiplier, instance->lineAngle1, instance->lineAngle2 };
+            bgfx::setUniform(u_params, paramsUniform);
+
+            // Prepare an array of 4 floats.
+            float extraParamsUniform[4] = { instance->patternScale, instance->lineThickness, instance->transparencyValue, float(instance->crosshatchMode) };
+            // Set the uniform for extra parameters.
+            bgfx::setUniform(u_extraParams, extraParamsUniform);
+
+
+            // Prepare an array of 4 floats.
+            float paramsLayerUniform[4] = { instance->layerPatternScale, instance->layerStrokeMult, instance->layerAngle, instance->layerLineThickness };
+            // Set the uniform for extra parameters.
+            bgfx::setUniform(u_paramsLayer, paramsLayerUniform);
+        }
+
         // Attribute (unlit vertex color) mode: bypass all lighting and materials.
         if (useAttributeMode &&
             instance->type != "light" &&
@@ -1430,7 +1432,7 @@ void drawInstance(Instance* instance, bgfx::ProgramHandle defaultProgram, bgfx::
 
             // Decide which texture to use:
             // If the inherited texture (from the parent) is valid, then use it regardless of what the instance may have set.
-            // Otherwise, use the instance’s own texture (if any), or fall back to the default.
+            // Otherwise, use the instance's own texture (if any), or fall back to the default.
             bgfx::TextureHandle textureToUse = defaultWhiteTexture;
             if (inheritedTexture.idx != bgfx::kInvalidHandle)
             {
@@ -1918,16 +1920,16 @@ void processNode(const aiScene* scene, aiNode* node, const aiMatrix4x4& parentTr
 
     // Process each mesh referenced by this node.
     std::cout << "[DEBUG processNode] Processing node with " << node->mNumMeshes << " meshes" << std::endl;
-    
+
     for (unsigned int i = 0; i < node->mNumMeshes; i++) {
         unsigned int meshIndex = node->mMeshes[i];
         aiMesh* mesh = scene->mMeshes[meshIndex];
         MeshData meshData;
         size_t baseIndex = meshData.vertices.size();
-        
-        std::cout << "[DEBUG processNode] Mesh " << meshIndex 
-                  << ": " << mesh->mNumVertices << " vertices, " 
-                  << mesh->mNumFaces << " faces" << std::endl;
+
+        std::cout << "[DEBUG processNode] Mesh " << meshIndex
+            << ": " << mesh->mNumVertices << " vertices, "
+            << mesh->mNumFaces << " faces" << std::endl;
         std::cout << "[DEBUG processNode] HasVertexColors(0): " << (mesh->HasVertexColors(0) ? "YES" : "NO") << std::endl;
 
         // Process vertices.
@@ -1961,12 +1963,12 @@ void processNode(const aiScene* scene, aiNode* node, const aiMatrix4x4& parentTr
                     ((uint8_t)(b * 255) << 16) |
                     ((uint8_t)(g * 255) << 8) |
                     (uint8_t)(r * 255);
-                
+
                 // Debug: Log first few vertices with colors
                 if (j < 3) {
-                    std::cout << "[DEBUG processNode] Vertex " << j << " has color: RGBA(" 
-                              << r << ", " << g << ", " << b << ", " << a 
-                              << ") -> ABGR(0x" << std::hex << vertex.abgr << std::dec << ")" << std::endl;
+                    std::cout << "[DEBUG processNode] Vertex " << j << " has color: RGBA("
+                        << r << ", " << g << ", " << b << ", " << a
+                        << ") -> ABGR(0x" << std::hex << vertex.abgr << std::dec << ")" << std::endl;
                 }
             }
             else {
@@ -2085,18 +2087,18 @@ void processNode(const aiScene* scene, aiNode* node, const aiMatrix4x4& parentTr
 // The baseDir is computed from the model file path.
 std::vector<ImportedMesh> loadImportedMeshes(const std::string& filePath) {
     std::cout << "[DEBUG loadImportedMeshes] Loading file: " << filePath << std::endl;
-    
+
     Assimp::Importer importer;
     // Ensure vertex colors are loaded - OBJ files may have vertex colors
     unsigned int flags = aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_PreTransformVertices;
     const aiScene* scene = importer.ReadFile(filePath, flags);
-    
+
     std::cout << "[DEBUG loadImportedMeshes] Assimp import flags: Triangulate | FlipUVs | PreTransformVertices" << std::endl;
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
         std::cerr << "Error: Assimp - " << importer.GetErrorString() << std::endl;
         return {};
     }
-    
+
     std::cout << "[DEBUG loadImportedMeshes] Scene loaded successfully. Total meshes: " << scene->mNumMeshes << std::endl;
 
     std::vector<ImportedMesh> importedMeshes;
@@ -2430,9 +2432,20 @@ std::string OpenFileDialog(HWND owner, const char* filter)
 
 std::string GetRelativePath(const std::string& absolutePath, const std::string& base = fs::current_path().string())
 {
+    // Use the error_code overload to avoid throwing filesystem_error if paths
+    // are on different roots or other issues occur. Fall back to the absolute
+    // path on failure.
     fs::path absPath(absolutePath);
     fs::path basePath(base);
-    fs::path relPath = fs::relative(absPath, basePath);
+    std::error_code ec;
+    fs::path relPath = fs::relative(absPath, basePath, ec);
+    if (ec)
+    {
+        std::cerr << "[GetRelativePath] Warning: failed to compute relative path from '"
+            << absPath.string() << "' to base '" << basePath.string()
+            << "': " << ec.message() << ". Using absolute path instead.\n";
+        return absolutePath;
+    }
     return relPath.string();
 }
 
@@ -2473,16 +2486,6 @@ void renderInstancePickingRecursive(const Instance* instance, const float* paren
 
     bgfx::setTransform(world);
 
-    // Encode the instance's unique ID into a color.
-    uint32_t id = instance->id;
-    float idColor[4] = {
-        ((id >> 16) & 0xFF) / 255.0f,
-        ((id >> 8) & 0xFF) / 255.0f,
-        (id & 0xFF) / 255.0f,
-        1.0f
-    };
-    bgfx::setUniform(u_id, idColor);
-
     // Submit the geometry if valid.
     const bgfx::VertexBufferHandle invalidVbh = BGFX_INVALID_HANDLE;
     const bgfx::IndexBufferHandle invalidIbh = BGFX_INVALID_HANDLE;
@@ -2490,6 +2493,18 @@ void renderInstancePickingRecursive(const Instance* instance, const float* paren
     if (instance->vertexBuffer.idx != invalidVbh.idx &&
         instance->indexBuffer.idx != invalidIbh.idx)
     {
+        // Encode the instance's unique ID into a color and set the picking uniform
+        // only when we're actually going to submit geometry. This avoids setting
+        // u_id multiple times without an intervening submit, which BGFX asserts on.
+        uint32_t id = instance->id;
+        float idColor[4] = {
+            ((id >> 16) & 0xFF) / 255.0f,
+            ((id >> 8) & 0xFF) / 255.0f,
+            (id & 0xFF) / 255.0f,
+            1.0f
+        };
+        bgfx::setUniform(u_id, idColor);
+
         bgfx::setVertexBuffer(0, instance->vertexBuffer);
         bgfx::setIndexBuffer(instance->indexBuffer);
         bgfx::submit(viewID, pickingProgram);
@@ -2653,25 +2668,50 @@ namespace Gallery {
     void LoadGallery(const std::string& folderPath) {
         textures.clear();
         imgSizes.clear();
-        for (auto& entry : std::filesystem::directory_iterator(folderPath)) {
-            if (!entry.is_regular_file()) continue;
-            auto path = entry.path().string();
-            int w, h, channels;
-            unsigned char* data = stbi_load(path.c_str(), &w, &h, &channels, 4);
-            if (!data) continue;
-            const bgfx::Memory* mem = bgfx::copy(data, w * h * 4);
-            stbi_image_free(data);
-            auto tex = bgfx::createTexture2D((uint16_t)w, (uint16_t)h, false, 1,
-                bgfx::TextureFormat::RGBA8, 0, mem);
-            if (bgfx::isValid(tex)) {
-                textures.push_back(tex);
-                imgSizes.push_back(ImVec2((float)w, (float)h));
+        try
+        {
+            if (!std::filesystem::exists(folderPath))
+            {
+                std::cerr << "[Gallery::LoadGallery] Folder does not exist: " << folderPath << std::endl;
+                return;
             }
+            if (!std::filesystem::is_directory(folderPath))
+            {
+                std::cerr << "[Gallery::LoadGallery] Path is not a directory: " << folderPath << std::endl;
+                return;
+            }
+
+            for (auto& entry : std::filesystem::directory_iterator(folderPath)) {
+                if (!entry.is_regular_file()) continue;
+                auto path = entry.path().string();
+                int w, h, channels;
+                unsigned char* data = stbi_load(path.c_str(), &w, &h, &channels, 4);
+                if (!data) continue;
+                const bgfx::Memory* mem = bgfx::copy(data, w * h * 4);
+                stbi_image_free(data);
+                auto tex = bgfx::createTexture2D((uint16_t)w, (uint16_t)h, false, 1,
+                    bgfx::TextureFormat::RGBA8, 0, mem);
+                if (bgfx::isValid(tex)) {
+                    textures.push_back(tex);
+                    imgSizes.push_back(ImVec2((float)w, (float)h));
+                }
+            }
+        }
+        catch (const std::filesystem::filesystem_error& e)
+        {
+            std::cerr << "[Gallery::LoadGallery] filesystem_error: " << e.what() << std::endl;
         }
     }
 }
 void takeScreenshotAsPng(bgfx::FrameBufferHandle fb, const std::string& baseName) {
-    std::filesystem::create_directory("screenshots");
+    // Use non-throwing overload to avoid terminating if directory can't be created.
+    std::error_code dirEc;
+    std::filesystem::create_directory("screenshots", dirEc);
+    if (dirEc)
+    {
+        std::cerr << "[Screenshot] Warning: failed to create 'screenshots' directory: "
+            << dirEc.message() << std::endl;
+    }
 
     std::string normalPath = "screenshots/" + baseName;
     std::string tgaPath = "screenshots/" + baseName + ".tga";
@@ -3144,19 +3184,39 @@ int main(void)
     // Set up Reconstructor import callback
     Reconstructor::SetImportCallback([&instances, &importedObjMap](const std::string& objPath) {
         std::cout << "[Editor] Auto-importing mesh: " << objPath << std::endl;
-        
-        // Convert to relative path for consistency
-        std::string relPath = GetRelativePath(objPath);
-        std::string normalizedRelPath = ConvertBackslashesToForward(relPath);
-        
-        std::cout << "[DEBUG Import Callback] Loading mesh from: " << normalizedRelPath << std::endl;
-        
+
+        // Check if path is absolute or relative
+        fs::path pathObj(objPath);
+        std::string absPath;
+        if (pathObj.is_absolute()) {
+            absPath = objPath;
+        }
+        else {
+            // Convert relative path to absolute
+            absPath = (fs::current_path() / pathObj).string();
+        }
+
+        // Normalize path separators
+        std::string normalizedAbsPath = ConvertBackslashesToForward(absPath);
+        std::cout << "[DEBUG Import Callback] Loading mesh from absolute path: " << normalizedAbsPath << std::endl;
+
+        // Check if file exists
+        if (!fs::exists(absPath)) {
+            std::cerr << "[Editor] ERROR: Auto-import file does not exist: " << absPath << std::endl;
+            return;
+        }
+
         // Load all meshes using the same logic as the Import OBJ menu
-        std::vector<ImportedMesh> importedMeshes = loadImportedMeshes(normalizedRelPath);
-        
+        // Pass absolute path to Assimp
+        std::vector<ImportedMesh> importedMeshes = loadImportedMeshes(normalizedAbsPath);
+
+        // Get relative path for scene file storage
+        std::string relPath = GetRelativePath(absPath);
+        std::string normalizedRelPath = ConvertBackslashesToForward(relPath);
+
         std::cout << "[DEBUG Import Callback] Loaded " << importedMeshes.size() << " meshes" << std::endl;
         std::string fileName = fs::path(normalizedRelPath).stem().string();
-        
+
         if (!importedMeshes.empty()) {
             // Compute overall group center
             aiVector3D groupCenter(0.0f, 0.0f, 0.0f);
@@ -3168,29 +3228,29 @@ int main(void)
             groupCenter.x /= importedMeshes.size();
             groupCenter.y /= importedMeshes.size();
             groupCenter.z /= importedMeshes.size();
-            
+
             // Create an empty parent instance at the overall group center
             Instance* parentInstance = new Instance(instanceCounter++, fileName + "_group", "empty",
                 groupCenter.x, groupCenter.y, groupCenter.z,
                 BGFX_INVALID_HANDLE, BGFX_INVALID_HANDLE);
             instances.push_back(parentInstance);
-            
+
             // For each imported mesh, create buffers and spawn a child instance
             for (size_t i = 0; i < importedMeshes.size(); ++i) {
                 bgfx::VertexBufferHandle vbh_imported;
                 bgfx::IndexBufferHandle ibh_imported;
                 createMeshBuffers(importedMeshes[i].meshData, vbh_imported, ibh_imported);
-                
+
                 Instance* childInst = new Instance(instanceCounter++, fileName + "_" + std::to_string(i),
                     fileName, 0.0f, 0.0f, 0.0f,
                     vbh_imported, ibh_imported);
                 childInst->meshNumber = i;
-                
+
                 // Decompose the imported mesh's transform
                 aiVector3D scaling, position;
                 aiQuaternion rotation;
                 importedMeshes[i].transform.Decompose(scaling, rotation, position);
-                
+
                 // Set the child's position relative to the parent
                 childInst->position[0] = position.x - groupCenter.x;
                 childInst->position[1] = position.y - groupCenter.y;
@@ -3199,10 +3259,10 @@ int main(void)
                 childInst->scale[0] = scaling.x;
                 childInst->scale[1] = scaling.y;
                 childInst->scale[2] = scaling.z;
-                
+
                 // Assign the diffuse texture from the imported mesh
                 childInst->diffuseTexture = importedMeshes[i].diffuseTexture;
-                
+
                 // Apply diffuse color if present and no texture
                 if (importedMeshes[i].hasDiffuseColor && !bgfx::isValid(childInst->diffuseTexture)) {
                     childInst->objectColor[0] = importedMeshes[i].diffuseColor[0];
@@ -3210,17 +3270,17 @@ int main(void)
                     childInst->objectColor[2] = importedMeshes[i].diffuseColor[2];
                     childInst->objectColor[3] = importedMeshes[i].diffuseColor[3];
                 }
-                
+
                 // Add this mesh as a child of the empty parent
                 parentInstance->addChild(childInst);
             }
-            
+
             std::cout << "[Editor] Auto-imported OBJ with " << importedMeshes.size()
                 << " mesh(es) grouped under " << fileName << "_group" << std::endl;
             importedObjMap[fileName] = normalizedRelPath;
         }
-    });
-    
+        });
+
     // Set the main window reference for Reconstructor
     Reconstructor::SetMainWindow(window);
 
@@ -3685,7 +3745,7 @@ int main(void)
         // Optional: Tabs
         style.Colors[ImGuiCol_Tab] = ImVec4(0.20f, 0.3f, 0.0f, 0.75f); // unfocused
         style.Colors[ImGuiCol_TabActive] = ImVec4(0.20f, 0.60f, 0.0f, 0.75f); // active
-        style.Colors[ImGuiCol_TabHovered] = ImVec4(0.10f, 0.10f, 0.10f, 1.0f); 
+        style.Colors[ImGuiCol_TabHovered] = ImVec4(0.10f, 0.10f, 0.10f, 1.0f);
 
         style.Colors[ImGuiCol_TabUnfocused] = ImVec4(0.15f, 0.15f, 0.15f, 1.0f);   // unfocused inactive
         style.Colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0, 0, 0, 1.0f); // unfocused active
@@ -3869,10 +3929,10 @@ int main(void)
             // Names and roles
             ImGui::Text("Developed by:");
             ImGui::Separator();
-           /* DELA CRUZ, DIEGO J.
-                KHAN, RENEE ALTHEA F.
-                NGO, WAY WE P.
-                SACDALAN, JUSTIN MORRIE E.*/
+            /* DELA CRUZ, DIEGO J.
+                 KHAN, RENEE ALTHEA F.
+                 NGO, WAY WE P.
+                 SACDALAN, JUSTIN MORRIE E.*/
 
             ImGui::BulletText("SACDALAN, JUSTIN MORRIE E - Developer");
             ImGui::BulletText("DELA CRUZ, DIEGO J. - Developer");
@@ -3926,7 +3986,7 @@ int main(void)
                 if (ImGui::IsItemClicked()) {
                     Gallery::selectedImage = i;
                     Gallery::fullscreenOpen = true;
-					showGallery = false; // Hide gallery when image is selected
+                    showGallery = false; // Hide gallery when image is selected
                 }
                 ImGui::PopID();
                 x += thumbSize.x + padding;
@@ -3968,7 +4028,7 @@ int main(void)
             // Click or ESC to close
             if (ImGui::IsMouseClicked(0)) {
                 Gallery::fullscreenOpen = false;
-				showGallery = true; // Show gallery again
+                showGallery = true; // Show gallery again
             }
         }
         else if (!takingScreenshot)
@@ -4065,77 +4125,107 @@ int main(void)
                             "All Files (*.*)\0*.*\0";
 
                         std::string absPath = OpenFileDialog(glfwGetWin32Window(window), modelFilter);
-                        std::string relPath = GetRelativePath(absPath);
-                        std::string normalizedRelPath = ConvertBackslashesToForward(relPath);
-                        std::cout << "filePath: " << normalizedRelPath << std::endl;
 
-                        if (!normalizedRelPath.empty())
+                        if (absPath.empty())
                         {
-                            // Load all meshes (with textures) using the updated importer.
-                            std::vector<ImportedMesh> importedMeshes = loadImportedMeshes(normalizedRelPath);
-                            std::string fileName = fs::path(normalizedRelPath).stem().string();
+                            std::cout << "[Import OBJ] File dialog was cancelled or failed." << std::endl;
+                        }
+                        else
+                        {
+                            std::cout << "[Import OBJ] Selected absolute path: " << absPath << std::endl;
 
-                            // Compute overall group center by averaging each mesh's global translation.
-                            aiVector3D groupCenter(0.0f, 0.0f, 0.0f);
-                            for (const auto& impMesh : importedMeshes) {
-                                groupCenter.x += impMesh.transform.a4;
-                                groupCenter.y += impMesh.transform.b4;
-                                groupCenter.z += impMesh.transform.c4;
-                            }
-                            if (!importedMeshes.empty()) {
-                                groupCenter.x /= importedMeshes.size();
-                                groupCenter.y /= importedMeshes.size();
-                                groupCenter.z /= importedMeshes.size();
-                            }
-
-                            // Create an empty parent instance at the overall group center.
-                            Instance* parentInstance = new Instance(instanceCounter++, fileName + "_group", "empty",
-                                groupCenter.x, groupCenter.y, groupCenter.z,
-                                BGFX_INVALID_HANDLE, BGFX_INVALID_HANDLE);
-                            instances.push_back(parentInstance);
-
-                            // For each imported mesh, create buffers and spawn a child instance.
-                            for (size_t i = 0; i < importedMeshes.size(); ++i)
+                            // Check if file exists
+                            if (!fs::exists(absPath))
                             {
-                                bgfx::VertexBufferHandle vbh_imported;
-                                bgfx::IndexBufferHandle ibh_imported;
-                                createMeshBuffers(importedMeshes[i].meshData, vbh_imported, ibh_imported);
-
-                                Instance* childInst = new Instance(instanceCounter++, fileName + "_" + std::to_string(i),
-                                    fileName, 0.0f, 0.0f, 0.0f,
-                                    vbh_imported, ibh_imported);
-                                childInst->meshNumber = i;
-                                // Decompose the imported mesh's transform.
-                                aiVector3D scaling, position;
-                                aiQuaternion rotation;
-                                importedMeshes[i].transform.Decompose(scaling, rotation, position);
-                                // Set the child's position relative to the parent (group center).
-                                childInst->position[0] = position.x - groupCenter.x;
-                                childInst->position[1] = position.y - groupCenter.y;
-                                childInst->position[2] = position.z - groupCenter.z;
-                                // For simplicity, we leave rotation at zero or convert the quaternion if desired.
-                                childInst->rotation[0] = childInst->rotation[1] = childInst->rotation[2] = 0.0f;
-                                childInst->scale[0] = scaling.x;
-                                childInst->scale[1] = scaling.y;
-                                childInst->scale[2] = scaling.z;
-
-                                // *** NEW: Assign the diffuse texture from the imported mesh ***
-                                childInst->diffuseTexture = importedMeshes[i].diffuseTexture;
-                                // --- NEW: Apply diffuse color if present and no texture ---
-                                if (importedMeshes[i].hasDiffuseColor && !bgfx::isValid(childInst->diffuseTexture)) {
-                                    childInst->objectColor[0] = importedMeshes[i].diffuseColor[0];
-                                    childInst->objectColor[1] = importedMeshes[i].diffuseColor[1];
-                                    childInst->objectColor[2] = importedMeshes[i].diffuseColor[2];
-                                    childInst->objectColor[3] = importedMeshes[i].diffuseColor[3];
-                                    std::cout << "[INFO] Applied MTL diffuse color to: " << childInst->name << std::endl;
-                                }
-                                // Add this mesh as a child of the empty parent.
-                                parentInstance->addChild(childInst);
+                                std::cerr << "[Import OBJ] ERROR: File does not exist: " << absPath << std::endl;
                             }
+                            else
+                            {
+                                // Convert to absolute path with forward slashes for consistency
+                                fs::path absPathObj(absPath);
+                                std::string normalizedAbsPath = ConvertBackslashesToForward(absPathObj.string());
+                                std::cout << "[Import OBJ] Normalized absolute path: " << normalizedAbsPath << std::endl;
 
-                            std::cout << "Imported OBJ spawned with " << importedMeshes.size()
-                                << " mesh(es) grouped under " << fileName << "_group" << std::endl;
-                            importedObjMap[fileName] = normalizedRelPath;
+                                // Load all meshes (with textures) using the updated importer.
+                                // Pass absolute path to Assimp, but store relative path for scene saving
+                                std::vector<ImportedMesh> importedMeshes = loadImportedMeshes(normalizedAbsPath);
+
+                                // Get relative path for scene file storage
+                                std::string relPath = GetRelativePath(absPath);
+                                std::string normalizedRelPath = ConvertBackslashesToForward(relPath);
+                                std::cout << "[Import OBJ] Relative path (for scene file): " << normalizedRelPath << std::endl;
+
+                                std::string fileName = fs::path(normalizedRelPath).stem().string();
+
+                                if (importedMeshes.empty())
+                                {
+                                    std::cerr << "[Import OBJ] ERROR: Failed to load any meshes from file. Check console for Assimp errors." << std::endl;
+                                }
+                                else
+                                {
+                                    // Compute overall group center by averaging each mesh's global translation.
+                                    aiVector3D groupCenter(0.0f, 0.0f, 0.0f);
+                                    for (const auto& impMesh : importedMeshes) {
+                                        groupCenter.x += impMesh.transform.a4;
+                                        groupCenter.y += impMesh.transform.b4;
+                                        groupCenter.z += impMesh.transform.c4;
+                                    }
+                                    if (!importedMeshes.empty()) {
+                                        groupCenter.x /= importedMeshes.size();
+                                        groupCenter.y /= importedMeshes.size();
+                                        groupCenter.z /= importedMeshes.size();
+                                    }
+
+                                    // Create an empty parent instance at the overall group center.
+                                    Instance* parentInstance = new Instance(instanceCounter++, fileName + "_group", "empty",
+                                        groupCenter.x, groupCenter.y, groupCenter.z,
+                                        BGFX_INVALID_HANDLE, BGFX_INVALID_HANDLE);
+                                    instances.push_back(parentInstance);
+
+                                    // For each imported mesh, create buffers and spawn a child instance.
+                                    for (size_t i = 0; i < importedMeshes.size(); ++i)
+                                    {
+                                        bgfx::VertexBufferHandle vbh_imported;
+                                        bgfx::IndexBufferHandle ibh_imported;
+                                        createMeshBuffers(importedMeshes[i].meshData, vbh_imported, ibh_imported);
+
+                                        Instance* childInst = new Instance(instanceCounter++, fileName + "_" + std::to_string(i),
+                                            fileName, 0.0f, 0.0f, 0.0f,
+                                            vbh_imported, ibh_imported);
+                                        childInst->meshNumber = i;
+                                        // Decompose the imported mesh's transform.
+                                        aiVector3D scaling, position;
+                                        aiQuaternion rotation;
+                                        importedMeshes[i].transform.Decompose(scaling, rotation, position);
+                                        // Set the child's position relative to the parent (group center).
+                                        childInst->position[0] = position.x - groupCenter.x;
+                                        childInst->position[1] = position.y - groupCenter.y;
+                                        childInst->position[2] = position.z - groupCenter.z;
+                                        // For simplicity, we leave rotation at zero or convert the quaternion if desired.
+                                        childInst->rotation[0] = childInst->rotation[1] = childInst->rotation[2] = 0.0f;
+                                        childInst->scale[0] = scaling.x;
+                                        childInst->scale[1] = scaling.y;
+                                        childInst->scale[2] = scaling.z;
+
+                                        // *** NEW: Assign the diffuse texture from the imported mesh ***
+                                        childInst->diffuseTexture = importedMeshes[i].diffuseTexture;
+                                        // --- NEW: Apply diffuse color if present and no texture ---
+                                        if (importedMeshes[i].hasDiffuseColor && !bgfx::isValid(childInst->diffuseTexture)) {
+                                            childInst->objectColor[0] = importedMeshes[i].diffuseColor[0];
+                                            childInst->objectColor[1] = importedMeshes[i].diffuseColor[1];
+                                            childInst->objectColor[2] = importedMeshes[i].diffuseColor[2];
+                                            childInst->objectColor[3] = importedMeshes[i].diffuseColor[3];
+                                            std::cout << "[INFO] Applied MTL diffuse color to: " << childInst->name << std::endl;
+                                        }
+                                        // Add this mesh as a child of the empty parent.
+                                        parentInstance->addChild(childInst);
+                                    }
+
+                                    std::cout << "[Import OBJ] Successfully imported " << importedMeshes.size()
+                                        << " mesh(es) grouped under " << fileName << "_group" << std::endl;
+                                    importedObjMap[fileName] = normalizedRelPath;
+                                }
+                            }
                         }
                     }
                     if (ImGui::MenuItem("Import Texture"))
@@ -4388,77 +4478,107 @@ int main(void)
                             "All Files (*.*)\0*.*\0";
 
                         std::string absPath = OpenFileDialog(glfwGetWin32Window(window), modelFilter);
-                        std::string relPath = GetRelativePath(absPath);
-                        std::string normalizedRelPath = ConvertBackslashesToForward(relPath);
-                        std::cout << "filePath: " << normalizedRelPath << std::endl;
 
-                        if (!normalizedRelPath.empty())
+                        if (absPath.empty())
                         {
-                            // Load all meshes (with textures) using the updated importer.
-                            std::vector<ImportedMesh> importedMeshes = loadImportedMeshes(normalizedRelPath);
-                            std::string fileName = fs::path(normalizedRelPath).stem().string();
+                            std::cout << "[Import OBJ] File dialog was cancelled or failed." << std::endl;
+                        }
+                        else
+                        {
+                            std::cout << "[Import OBJ] Selected absolute path: " << absPath << std::endl;
 
-                            // Compute overall group center by averaging each mesh's global translation.
-                            aiVector3D groupCenter(0.0f, 0.0f, 0.0f);
-                            for (const auto& impMesh : importedMeshes) {
-                                groupCenter.x += impMesh.transform.a4;
-                                groupCenter.y += impMesh.transform.b4;
-                                groupCenter.z += impMesh.transform.c4;
-                            }
-                            if (!importedMeshes.empty()) {
-                                groupCenter.x /= importedMeshes.size();
-                                groupCenter.y /= importedMeshes.size();
-                                groupCenter.z /= importedMeshes.size();
-                            }
-
-                            // Create an empty parent instance at the overall group center.
-                            Instance* parentInstance = new Instance(instanceCounter++, fileName + "_group", "empty",
-                                groupCenter.x, groupCenter.y, groupCenter.z,
-                                BGFX_INVALID_HANDLE, BGFX_INVALID_HANDLE);
-                            instances.push_back(parentInstance);
-
-                            // For each imported mesh, create buffers and spawn a child instance.
-                            for (size_t i = 0; i < importedMeshes.size(); ++i)
+                            // Check if file exists
+                            if (!fs::exists(absPath))
                             {
-                                bgfx::VertexBufferHandle vbh_imported;
-                                bgfx::IndexBufferHandle ibh_imported;
-                                createMeshBuffers(importedMeshes[i].meshData, vbh_imported, ibh_imported);
-
-                                Instance* childInst = new Instance(instanceCounter++, fileName + "_" + std::to_string(i),
-                                    fileName, 0.0f, 0.0f, 0.0f,
-                                    vbh_imported, ibh_imported);
-                                childInst->meshNumber = i;
-                                // Decompose the imported mesh's transform.
-                                aiVector3D scaling, position;
-                                aiQuaternion rotation;
-                                importedMeshes[i].transform.Decompose(scaling, rotation, position);
-                                // Set the child's position relative to the parent (group center).
-                                childInst->position[0] = position.x - groupCenter.x;
-                                childInst->position[1] = position.y - groupCenter.y;
-                                childInst->position[2] = position.z - groupCenter.z;
-                                // For simplicity, we leave rotation at zero or convert the quaternion if desired.
-                                childInst->rotation[0] = childInst->rotation[1] = childInst->rotation[2] = 0.0f;
-                                childInst->scale[0] = scaling.x;
-                                childInst->scale[1] = scaling.y;
-                                childInst->scale[2] = scaling.z;
-
-                                // *** NEW: Assign the diffuse texture from the imported mesh ***
-                                childInst->diffuseTexture = importedMeshes[i].diffuseTexture;
-                                // --- NEW: Apply diffuse color if present and no texture ---
-                                if (importedMeshes[i].hasDiffuseColor && !bgfx::isValid(childInst->diffuseTexture)) {
-                                    childInst->objectColor[0] = importedMeshes[i].diffuseColor[0];
-                                    childInst->objectColor[1] = importedMeshes[i].diffuseColor[1];
-                                    childInst->objectColor[2] = importedMeshes[i].diffuseColor[2];
-                                    childInst->objectColor[3] = importedMeshes[i].diffuseColor[3];
-                                    std::cout << "[INFO] Applied MTL diffuse color to: " << childInst->name << std::endl;
-                                }
-                                // Add this mesh as a child of the empty parent.
-                                parentInstance->addChild(childInst);
+                                std::cerr << "[Import OBJ] ERROR: File does not exist: " << absPath << std::endl;
                             }
+                            else
+                            {
+                                // Convert to absolute path with forward slashes for consistency
+                                fs::path absPathObj(absPath);
+                                std::string normalizedAbsPath = ConvertBackslashesToForward(absPathObj.string());
+                                std::cout << "[Import OBJ] Normalized absolute path: " << normalizedAbsPath << std::endl;
 
-                            std::cout << "Imported OBJ spawned with " << importedMeshes.size()
-                                << " mesh(es) grouped under " << fileName << "_group" << std::endl;
-                            importedObjMap[fileName] = normalizedRelPath;
+                                // Load all meshes (with textures) using the updated importer.
+                                // Pass absolute path to Assimp, but store relative path for scene saving
+                                std::vector<ImportedMesh> importedMeshes = loadImportedMeshes(normalizedAbsPath);
+
+                                // Get relative path for scene file storage
+                                std::string relPath = GetRelativePath(absPath);
+                                std::string normalizedRelPath = ConvertBackslashesToForward(relPath);
+                                std::cout << "[Import OBJ] Relative path (for scene file): " << normalizedRelPath << std::endl;
+
+                                std::string fileName = fs::path(normalizedRelPath).stem().string();
+
+                                if (importedMeshes.empty())
+                                {
+                                    std::cerr << "[Import OBJ] ERROR: Failed to load any meshes from file. Check console for Assimp errors." << std::endl;
+                                }
+                                else
+                                {
+                                    // Compute overall group center by averaging each mesh's global translation.
+                                    aiVector3D groupCenter(0.0f, 0.0f, 0.0f);
+                                    for (const auto& impMesh : importedMeshes) {
+                                        groupCenter.x += impMesh.transform.a4;
+                                        groupCenter.y += impMesh.transform.b4;
+                                        groupCenter.z += impMesh.transform.c4;
+                                    }
+                                    if (!importedMeshes.empty()) {
+                                        groupCenter.x /= importedMeshes.size();
+                                        groupCenter.y /= importedMeshes.size();
+                                        groupCenter.z /= importedMeshes.size();
+                                    }
+
+                                    // Create an empty parent instance at the overall group center.
+                                    Instance* parentInstance = new Instance(instanceCounter++, fileName + "_group", "empty",
+                                        groupCenter.x, groupCenter.y, groupCenter.z,
+                                        BGFX_INVALID_HANDLE, BGFX_INVALID_HANDLE);
+                                    instances.push_back(parentInstance);
+
+                                    // For each imported mesh, create buffers and spawn a child instance.
+                                    for (size_t i = 0; i < importedMeshes.size(); ++i)
+                                    {
+                                        bgfx::VertexBufferHandle vbh_imported;
+                                        bgfx::IndexBufferHandle ibh_imported;
+                                        createMeshBuffers(importedMeshes[i].meshData, vbh_imported, ibh_imported);
+
+                                        Instance* childInst = new Instance(instanceCounter++, fileName + "_" + std::to_string(i),
+                                            fileName, 0.0f, 0.0f, 0.0f,
+                                            vbh_imported, ibh_imported);
+                                        childInst->meshNumber = i;
+                                        // Decompose the imported mesh's transform.
+                                        aiVector3D scaling, position;
+                                        aiQuaternion rotation;
+                                        importedMeshes[i].transform.Decompose(scaling, rotation, position);
+                                        // Set the child's position relative to the parent (group center).
+                                        childInst->position[0] = position.x - groupCenter.x;
+                                        childInst->position[1] = position.y - groupCenter.y;
+                                        childInst->position[2] = position.z - groupCenter.z;
+                                        // For simplicity, we leave rotation at zero or convert the quaternion if desired.
+                                        childInst->rotation[0] = childInst->rotation[1] = childInst->rotation[2] = 0.0f;
+                                        childInst->scale[0] = scaling.x;
+                                        childInst->scale[1] = scaling.y;
+                                        childInst->scale[2] = scaling.z;
+
+                                        // *** NEW: Assign the diffuse texture from the imported mesh ***
+                                        childInst->diffuseTexture = importedMeshes[i].diffuseTexture;
+                                        // --- NEW: Apply diffuse color if present and no texture ---
+                                        if (importedMeshes[i].hasDiffuseColor && !bgfx::isValid(childInst->diffuseTexture)) {
+                                            childInst->objectColor[0] = importedMeshes[i].diffuseColor[0];
+                                            childInst->objectColor[1] = importedMeshes[i].diffuseColor[1];
+                                            childInst->objectColor[2] = importedMeshes[i].diffuseColor[2];
+                                            childInst->objectColor[3] = importedMeshes[i].diffuseColor[3];
+                                            std::cout << "[INFO] Applied MTL diffuse color to: " << childInst->name << std::endl;
+                                        }
+                                        // Add this mesh as a child of the empty parent.
+                                        parentInstance->addChild(childInst);
+                                    }
+
+                                    std::cout << "[Import OBJ] Successfully imported " << importedMeshes.size()
+                                        << " mesh(es) grouped under " << fileName << "_group" << std::endl;
+                                    importedObjMap[fileName] = normalizedRelPath;
+                                }
+                            }
                         }
                     }
 
@@ -4846,9 +4966,9 @@ int main(void)
             Logger::GetInstance().DrawImGuiLogger();
 
             ImGui::Begin("Gallery", p_open, window_flags);
-           
+
             Reconstructor::Draw();
-            
+
             ImGui::End();
 
             /*-------------------------------------------------------------------------------------*/
@@ -5251,7 +5371,7 @@ int main(void)
             //    }
             //}
             //ImGui::End();
-			//ImGui::Begin("Crosshatch Shader Settings");
+            //ImGui::Begin("Crosshatch Shader Settings");
             // Add a new window for camera settings
             ImGui::Begin("Camera Settings", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
             ImGui::SetWindowFontScale(0.85f);
@@ -5578,7 +5698,7 @@ int main(void)
 
             // 2) Albedo factor
             //    (r, g, b, a)
-            bgfx::setUniform(u_albedoFactor, instance->material.albedo);
+            // bgfx::setUniform(u_albedoFactor, instance->material.albedo);
 
             if (instance->isLight && instance->lightAnim.enabled) {
                 float time = static_cast<float>(glfwGetTime());
@@ -5650,4 +5770,4 @@ int main(void)
     glfwTerminate();
 
     return 0;
-} 
+}
