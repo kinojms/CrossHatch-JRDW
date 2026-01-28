@@ -2812,7 +2812,7 @@ int main(void)
         std::cerr << "Failed to initialize GLFW" << std::endl;
         return false;
     }
-    GLFWwindow* window = glfwCreateWindow(WNDW_WIDTH, WNDW_HEIGHT, "Anito GeoForge", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(WNDW_WIDTH, WNDW_HEIGHT, "AnitoScan", NULL, NULL);
     if (!window) {
         std::cerr << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
@@ -3823,14 +3823,14 @@ int main(void)
                 ImGui::SetWindowFontScale(3.0f);
 
                 // Measure text at correct scale
-                ImVec2 titleSize = ImGui::CalcTextSize("Anito GeoForge");
+                ImVec2 titleSize = ImGui::CalcTextSize("AnitoScan");
 
                 // Center position
                 float titleX = (windowWidth - titleSize.x) * 0.5f;
                 float titleY = (windowHeight * 0.3f) - (titleSize.y * 0.5f);
 
                 ImGui::SetCursorPos(ImVec2(titleX, titleY));
-                ImGui::Text("Anito GeoForge");
+                ImGui::Text("AnitoScan");
 
                 // Restore font scale
                 ImGui::SetWindowFontScale(2.0f);
