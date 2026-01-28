@@ -417,6 +417,19 @@ struct Vec3 {
     float x, y, z;
 };
 
+// This tells bgfx exactly where each piece of data is in your struct
+bgfx::VertexLayout PosColorVertex::ms_layout;
+
+void InitVertexLayout() {
+    PosColorVertex::ms_layout
+        .begin()
+        .add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
+        .add(bgfx::Attrib::Normal, 3, bgfx::AttribType::Float)
+        .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true) // ABGR
+        .add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float)
+        .end();
+}
+
 void BuildWorldMatrix(const Instance* inst, float* outMatrix) {
     float local[16];
     float translation[3] = { inst->position[0], inst->position[1], inst->position[2] };
@@ -2760,49 +2773,270 @@ void takeScreenshotAsPng(bgfx::FrameBufferHandle fb, const std::string& baseName
         }).detach(); // Detach the thread so it runs independently
 }
 
-void ResetCrosshatchSettings()
-{
-    if (crosshatchMode == 0 || crosshatchMode == 1 || crosshatchMode == 3) {
-        // default color (RGBA)
-        inkColor[0] = 0.0f; inkColor[1] = 0.0f;
-        inkColor[2] = 0.0f; inkColor[3] = 1.0f;
+//void ResetCrosshatchSettings()
+//{
+//    if (crosshatchMode == 0 || crosshatchMode == 1 || crosshatchMode == 3) {
+//        // default color (RGBA)
+//        inkColor[0] = 0.0f; inkColor[1] = 0.0f;
+//        inkColor[2] = 0.0f; inkColor[3] = 1.0f;
+//
+//        // default floats
+//        epsilonValue = 0.02f;
+//        strokeMultiplier = 1.0f;
+//        lineAngle1 = TAU / 8.0f;
+//        lineAngle2 = TAU / 16.0f;
+//        patternScale = 0.4f;
+//        lineThickness = 0.3f;
+//        transparencyValue = 1.0f;
+//
+//        // inner-layer defaults
+//        layerPatternScale = 0.5f;
+//        layerStrokeMult = 0.250f;
+//        layerAngle = 2.983f;
+//        layerLineThickness = 10.0f;
+//    }
+//    else if (crosshatchMode == 2) {
+//        // default color (RGBA)
+//        inkColor[0] = 0.0f; inkColor[1] = 0.0f;
+//        inkColor[2] = 0.0f; inkColor[3] = 1.0f;
+//
+//        // default floats
+//        epsilonValue = 0.02f;
+//        strokeMultiplier = 1.0f;
+//        lineAngle1 = TAU / 8.0f;
+//        lineAngle2 = TAU / 16.0f;
+//        patternScale = 3.0f;
+//        lineThickness = 0.3f;
+//        transparencyValue = 1.0f;
+//
+//        // inner-layer defaults
+//        layerPatternScale = 1.0f;
+//        layerStrokeMult = 0.250f;
+//        layerAngle = 2.983f;
+//        layerLineThickness = 10.0f;
+//    }
 
-        // default floats
-        epsilonValue = 0.02f;
-        strokeMultiplier = 1.0f;
-        lineAngle1 = TAU / 8.0f;
-        lineAngle2 = TAU / 16.0f;
-        patternScale = 0.4f;
-        lineThickness = 0.3f;
-        transparencyValue = 1.0f;
+//}
 
-        // inner-layer defaults
-        layerPatternScale = 0.5f;
-        layerStrokeMult = 0.250f;
-        layerAngle = 2.983f;
-        layerLineThickness = 10.0f;
+// --- Modeling Module Command for Undo/Redo ---
+// This command saves the entire mesh state. In legacy code, this is the safest way 
+// to handle destructive operations like subdivision or merging.
+class MeshUpdateCommand : public ICommand {
+    Instance* inst;
+    std::vector<PosColorVertex> oldVertices, newVertices;
+    std::vector<uint32_t> oldIndices, newIndices;
+
+public:
+    MeshUpdateCommand(Instance* i,
+        const std::vector<PosColorVertex>& oldV, const std::vector<uint32_t>& oldI,
+        const std::vector<PosColorVertex>& newV, const std::vector<uint32_t>& newI)
+        : inst(i), oldVertices(oldV), oldIndices(oldI), newVertices(newV), newIndices(newI) {
     }
-    else if (crosshatchMode == 2) {
-        // default color (RGBA)
-        inkColor[0] = 0.0f; inkColor[1] = 0.0f;
-        inkColor[2] = 0.0f; inkColor[3] = 1.0f;
 
-        // default floats
-        epsilonValue = 0.02f;
-        strokeMultiplier = 1.0f;
-        lineAngle1 = TAU / 8.0f;
-        lineAngle2 = TAU / 16.0f;
-        patternScale = 3.0f;
-        lineThickness = 0.3f;
-        transparencyValue = 1.0f;
+    void updateGPU(const std::vector<PosColorVertex>& v, const std::vector<uint32_t>& i) {
+        if (bgfx::isValid(inst->vertexBuffer)) bgfx::destroy(inst->vertexBuffer);
+        if (bgfx::isValid(inst->indexBuffer)) bgfx::destroy(inst->indexBuffer);
 
-        // inner-layer defaults
-        layerPatternScale = 1.0f;
-        layerStrokeMult = 0.250f;
-        layerAngle = 2.983f;
-        layerLineThickness = 10.0f;
+        inst->vertexBuffer = bgfx::createVertexBuffer(bgfx::makeRef(v.data(), uint32_t(sizeof(PosColorVertex) * v.size())), PosColorVertex::ms_layout);
+        inst->indexBuffer = bgfx::createIndexBuffer(bgfx::makeRef(i.data(), uint32_t(sizeof(uint32_t) * i.size())), BGFX_BUFFER_INDEX32);
     }
 
+    void execute() override { updateGPU(newVertices, newIndices); }
+    void undo() override { updateGPU(oldVertices, oldIndices); }
+};
+
+// --- Modeling Helper Functions ---
+
+// 1. Basic Laplacian Smoothing
+void ApplySmoothing(std::vector<PosColorVertex>& vertices, const std::vector<uint32_t>& indices, float weight = 0.5f) {
+    std::vector<Vec3> centroids(vertices.size(), { 0,0,0 });
+    std::vector<int> neighborCount(vertices.size(), 0);
+
+    for (size_t i = 0; i < indices.size(); i += 3) {
+        uint32_t idx[3] = { indices[i], indices[i + 1], indices[i + 2] };
+        for (int j = 0; j < 3; j++) {
+            int current = idx[j];
+            int next = idx[(j + 1) % 3];
+            centroids[current].x += vertices[next].x;
+            centroids[current].y += vertices[next].y;
+            centroids[current].z += vertices[next].z;
+            neighborCount[current]++;
+        }
+    }
+
+    for (size_t i = 0; i < vertices.size(); i++) {
+        if (neighborCount[i] > 0) {
+            vertices[i].x = vertices[i].x * (1.0f - weight) + (centroids[i].x / neighborCount[i]) * weight;
+            vertices[i].y = vertices[i].y * (1.0f - weight) + (centroids[i].y / neighborCount[i]) * weight;
+            vertices[i].z = vertices[i].z * (1.0f - weight) + (centroids[i].z / neighborCount[i]) * weight;
+        }
+    }
+}
+
+// 2. Vertex Merging (Welding)
+void MergeVertices(std::vector<PosColorVertex>& vertices, std::vector<uint32_t>& indices, float threshold = 0.01f) {
+    std::vector<PosColorVertex> newUniqueVertices;
+    std::vector<uint32_t> remap(vertices.size());
+
+    for (uint32_t i = 0; i < vertices.size(); i++) {
+        bool found = false;
+        for (uint32_t j = 0; j < newUniqueVertices.size(); j++) {
+            float dx = vertices[i].x - newUniqueVertices[j].x;
+            float dy = vertices[i].y - newUniqueVertices[j].y;
+            float dz = vertices[i].z - newUniqueVertices[j].z;
+            if (sqrt(dx * dx + dy * dy + dz * dz) < threshold) {
+                remap[i] = j;
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            remap[i] = (uint32_t)newUniqueVertices.size();
+            newUniqueVertices.push_back(vertices[i]);
+        }
+    }
+    for (auto& idx : indices) idx = remap[idx];
+    vertices = newUniqueVertices;
+}
+
+// 3. Simple Linear Subdivision (Triangle Split)
+void SubdivideMesh(std::vector<PosColorVertex>& vertices, std::vector<uint32_t>& indices) {
+    std::vector<uint32_t> newIndices;
+    // Note: In a production environment, you'd use a map to avoid duplicate midpoints.
+    // For legacy simplicity, we split each triangle into 4.
+    for (size_t i = 0; i < indices.size(); i += 3) {
+        PosColorVertex v1 = vertices[indices[i]];
+        PosColorVertex v2 = vertices[indices[i + 1]];
+        PosColorVertex v3 = vertices[indices[i + 2]];
+
+        auto midpoint = [](PosColorVertex a, PosColorVertex b) {
+            PosColorVertex m = a;
+            m.x = (a.x + b.x) * 0.5f; m.y = (a.y + b.y) * 0.5f; m.z = (a.z + b.z) * 0.5f;
+            m.u = (a.u + b.u) * 0.5f; m.v = (a.v + b.v) * 0.5f;
+            return m;
+            };
+
+        uint32_t i1 = indices[i], i2 = indices[i + 1], i3 = indices[i + 2];
+        uint32_t m12 = (uint32_t)vertices.size(); vertices.push_back(midpoint(v1, v2));
+        uint32_t m23 = (uint32_t)vertices.size(); vertices.push_back(midpoint(v2, v3));
+        uint32_t m31 = (uint32_t)vertices.size(); vertices.push_back(midpoint(v3, v1));
+
+        uint32_t quad[12] = { i1, m12, m31, i2, m23, m12, i3, m31, m23, m12, m23, m31 };
+        for (int j = 0; j < 12; j++) newIndices.push_back(quad[j]);
+    }
+    indices = newIndices;
+}
+
+// Helper to refresh GPU buffers after a CPU-side change
+void SyncGPU(Instance* inst, const std::vector<PosColorVertex>& vertices, const std::vector<uint32_t>& indices) {
+    if (bgfx::isValid(inst->vertexBuffer)) bgfx::destroy(inst->vertexBuffer);
+    if (bgfx::isValid(inst->indexBuffer)) bgfx::destroy(inst->indexBuffer);
+
+    inst->vertexBuffer = bgfx::createVertexBuffer(
+        bgfx::copy(vertices.data(), uint32_t(sizeof(PosColorVertex) * vertices.size())),
+        PosColorVertex::ms_layout
+    );
+    inst->indexBuffer = bgfx::createIndexBuffer(
+        bgfx::copy(indices.data(), uint32_t(sizeof(uint32_t) * indices.size())),
+        BGFX_BUFFER_INDEX32
+    );
+}
+
+// --- MAIN MODULE FUNCTION ---
+void UpdateModelingModule(Instance* selected, std::vector<PosColorVertex>& currentVerts, std::vector<uint32_t>& currentIndices) {
+    if (!selected) return;
+
+    ImGuiIO& io = ImGui::GetIO();
+    bool meshChanged = false;
+
+    // 1. Keyboard Shortcuts
+    // Using ImGuiKey for modern compatibility
+    if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_Z)) gCmdManager.undo();
+    if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_Y)) gCmdManager.redo();
+
+    // Tool shortcuts (only if not typing in a text box)
+    if (!ImGui::GetIO().WantTextInput) {
+        if (ImGui::IsKeyPressed(ImGuiKey_S)) { /* Trigger Smooth */ }
+        if (ImGui::IsKeyPressed(ImGuiKey_D)) { /* Trigger Subdivide */ }
+    }
+
+    ImGui::Begin("Modeling Tools");
+
+    // --- Texture Editing ---
+    if (ImGui::CollapsingHeader("Texture Editing", ImGuiTreeNodeFlags_DefaultOpen)) {
+        ImGui::DragFloat2("Tiling", selected->material.tiling, 0.01f);
+        ImGui::DragFloat2("Offset", selected->material.offset, 0.01f);
+        ImGui::ColorEdit4("Albedo Tint", selected->material.albedo);
+    }
+
+    // --- Mesh Operations ---
+    if (ImGui::CollapsingHeader("Mesh Operations", ImGuiTreeNodeFlags_DefaultOpen)) {
+        static float weldDist = 0.01f;
+        ImGui::DragFloat("Weld Dist", &weldDist, 0.001f);
+
+        // Before any destructive operation, we store the "Old" state for Undo
+        auto captureState = [&]() {
+            return std::make_unique<MeshUpdateCommand>(selected, currentVerts, currentIndices, currentVerts, currentIndices);
+            };
+
+        if (ImGui::Button("Weld Vertices (Alt+M)") || (io.KeyAlt && ImGui::IsKeyPressed(ImGuiKey_M))) {
+            std::vector<PosColorVertex> oldV = currentVerts;
+            std::vector<uint32_t> oldI = currentIndices;
+
+            MergeVertices(currentVerts, currentIndices, weldDist);
+
+            gCmdManager.executeCommand(std::make_unique<MeshUpdateCommand>(selected, oldV, oldI, currentVerts, currentIndices));
+            meshChanged = true;
+        }
+
+        if (ImGui::Button("Smooth Mesh (S)")) {
+            std::vector<PosColorVertex> oldV = currentVerts;
+            std::vector<uint32_t> oldI = currentIndices;
+
+            ApplySmoothing(currentVerts, currentIndices, 0.5f);
+            computeNormals(currentVerts, currentIndices); // Recalculate normals for lighting
+
+            gCmdManager.executeCommand(std::make_unique<MeshUpdateCommand>(selected, oldV, oldI, currentVerts, currentIndices));
+            meshChanged = true;
+        }
+
+        if (ImGui::Button("Subdivide (D)")) {
+            std::vector<PosColorVertex> oldV = currentVerts;
+            std::vector<uint32_t> oldI = currentIndices;
+
+            SubdivideMesh(currentVerts, currentIndices);
+            computeNormals(currentVerts, currentIndices);
+
+            gCmdManager.executeCommand(std::make_unique<MeshUpdateCommand>(selected, oldV, oldI, currentVerts, currentIndices));
+            meshChanged = true;
+        }
+    }
+
+    // --- Morphing ---
+    // This implements a "Shape Key" or "Inflation" morph using the Vertex Normals
+    if (ImGui::CollapsingHeader("Morph Controls")) {
+        static float morphFactor = 0.0f;
+        if (ImGui::SliderFloat("Inflate Morph", &morphFactor, -1.0f, 1.0f)) {
+            // Morph logic: P' = P + (Normal * morphFactor)
+            std::vector<PosColorVertex> morphedVerts = currentVerts;
+            for (auto& v : morphedVerts) {
+                v.x += v.nx * morphFactor;
+                v.y += v.ny * morphFactor;
+                v.z += v.nz * morphFactor;
+            }
+            SyncGPU(selected, morphedVerts, currentIndices);
+        }
+        if (ImGui::IsItemDeactivatedAfterEdit()) {
+            // Ideally, push to Undo stack here after finishing the drag
+        }
+    }
+
+    // Update GPU if any destructive operation happened
+    if (meshChanged) {
+        SyncGPU(selected, currentVerts, currentIndices);
+    }
+
+    ImGui::End();
 }
 
 int main(void)
@@ -5000,21 +5234,6 @@ int main(void)
 
             ImGui::Begin("Controls", p_open, window_flags);
 
-            /*ImGui::Text("Controls:");
-            ImGui::Text("WASD - Move Camera");
-            ImGui::Text("Right Click - Rotate Camera");
-            ImGui::Text("Ctrl + Right Click - Pan Camera");
-            ImGui::Text("Shift - Move Down");
-            ImGui::Text("Space - Move Up");
-            ImGui::Text("1 - Switch Gizmo to Translate");
-            ImGui::Text("2 - Switch Gizmo to Rotate");
-            ImGui::Text("3 - Switch Gizmo to Scale");
-            ImGui::Text("Left Click - Select Object");
-            ImGui::Text("Double Left Click - Teleport to Object");
-            ImGui::Text("F1 - Toggle bgfx stats");
-            ImGui::Text("F2 - Disable/Enable UI");
-            ImGui::Text("F3 - Take Screenshot");*/
-
 
             if (ImGui::BeginTable("ControlsTable", 3, ImGuiTableFlags_NoBordersInBody))
             {
@@ -5063,316 +5282,6 @@ int main(void)
 
             ImGui::End();
 
-
-            //ImGui::Begin("Crosshatch Shader Settings");
-            //ImGui::Checkbox("Use Global Crosshatch Shader Settings", &useGlobalCrosshatchSettings);
-            //if (useGlobalCrosshatchSettings) {
-            //    const char* modeItems[] = { "Simple Lighting" };
-            //    ImGui::Combo("Shader Mode", &crosshatchMode, modeItems, IM_ARRAYSIZE(modeItems));
-            //    ImGui::Spacing(); ImGui::Spacing();
-            //    // --- Show controls depending on the mode ---
-            //    if (crosshatchMode == 0)
-            //    {
-            //        ImGui::Text("Crosshatch Ver 1.0 Settings:");
-            //        ImGui::ColorEdit4("Hatch Color", inkColor);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Line Smoothness", &epsilonValue, 0.001f, 0.0f, 0.1f);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Hatch Density", &strokeMultiplier, 0.01f, 0.0f, 10.0f);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Primary Hatch Angle", &lineAngle1, 0.01f, 0.0f, TAU);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Secondary Hatch Angle", &lineAngle2, 0.01f, 0.0f, TAU);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Hatch Scale", &patternScale, 0.01f, 0.1f, 10.0f);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Line Thickness", &lineThickness, 0.01f, -10.0f, 10.0f);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Hatch Opacity", &transparencyValue, 0.01f, 0.0f, 1.0f);
-            //    }
-            //    else if (crosshatchMode == 1)
-            //    {
-            //        ImGui::Text("Crosshatch Ver 1.1 Settings:");
-            //        ImGui::ColorEdit4("Hatch Color", inkColor);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Line Smoothness", &epsilonValue, 0.001f, 0.0f, 0.1f);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Hatch Density", &strokeMultiplier, 0.01f, 0.0f, 15.0f);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Hatch Angle", &lineAngle1, 0.01f, 0.0f, TAU);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Hatch Scale", &patternScale, 0.01f, 0.0f, 15.0f);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Line Thickness", &lineThickness, 0.01f, -15.0f, 15.0f);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Hatch Opacity", &transparencyValue, 0.01f, 0.0f, 1.0f);
-            //    }
-            //    else if (crosshatchMode == 2)
-            //    {
-            //        ImGui::Text("Crosshatch Ver 1.2 Settings:");
-            //        ImGui::ColorEdit4("Hatch Color", inkColor);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Outer Line Smoothness", &epsilonValue, 0.001f, 0.0f, 0.1f);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Outer Hatch Density", &strokeMultiplier, 0.01f, 0.0f, 15.0f);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Outer Hatch Angle", &lineAngle1, 0.01f, 0.0f, TAU);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Outer Hatch Scale", &patternScale, 0.01f, 0.0f, 15.0f);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Outer Hatch Thickness", &lineThickness, 0.01f, -15.0f, 15.0f);
-            //        ImGui::SetNextItemWidth(100);
-            //        // Inner layer settings:
-            //        ImGui::DragFloat("Inner Hatch Scale", &layerPatternScale, 0.01f, 0.0f, 15.0f);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Inner Hatch Density", &layerStrokeMult, 0.01f, 0.0f, 15.0f);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Inner Hatch Angle", &layerAngle, 0.01f, 0.0f, TAU);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Inner Hatch Thickness", &layerLineThickness, 0.01f, -15.0f, 15.0f);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Hatch Opacity", &transparencyValue, 0.01f, 0.0f, 1.0f);
-            //    }
-            //    else if (crosshatchMode == 3)
-            //    {
-            //        ImGui::Text("Crosshatch Ver 1.3 Settings:");
-            //        ImGui::ColorEdit4("Hatch Color", inkColor);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Outer Line Smoothness", &epsilonValue, 0.001f, 0.0f, 0.1f);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Outer Hatch Density", &strokeMultiplier, 0.01f, 0.0f, 15.0f);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Outer Hatch Angle", &lineAngle1, 0.01f, 0.0f, TAU);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Outer Hatch Scale", &patternScale, 0.01f, 0.0f, 15.0f);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Outer Hatch Thickness", &lineThickness, 0.01f, -15.0f, 15.0f);
-            //        ImGui::SetNextItemWidth(100);
-            //        // Inner layer settings:
-            //        ImGui::DragFloat("Inner Hatch Scale", &layerPatternScale, 0.01f, 0.0f, 15.0f);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Inner Hatch Density", &layerStrokeMult, 0.01f, 0.0f, 15.0f);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Inner Hatch Angle", &layerAngle, 0.01f, 0.0f, TAU);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Inner Hatch Thickness", &layerLineThickness, 0.01f, -15.0f, 15.0f);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Hatch Opacity", &transparencyValue, 0.01f, 0.0f, 1.0f);
-            //    }
-            //    else if (crosshatchMode == 4)
-            //    {
-            //        ImGui::Text("Simple Lighting (No Crosshatch)");
-            //    }
-
-            //    if (crosshatchMode != 4) {
-            //        ImGui::Spacing(); ImGui::Spacing();
-            //        if (ImGui::Button("Reset Crosshatch Settings")) {
-            //            ResetCrosshatchSettings();
-            //        }
-            //        ImGui::Spacing(); ImGui::Spacing();
-            //    }
-
-            //    // New: noise texture selection
-            //    if (!availableNoiseTextures.empty() && crosshatchMode != 4)
-            //    {
-            //        // Automatically update currentNoiseIndex based on the instance's noise texture.
-            //        bool found = false;
-            //        for (int i = 0; i < (int)availableNoiseTextures.size(); i++)
-            //        {
-            //            if (availableNoiseTextures[i].handle.idx == noiseTexture.idx)
-            //            {
-            //                globalCurrentNoiseIndex = i;
-            //                found = true;
-            //                break;
-            //            }
-            //        }
-            //        if (!found)
-            //        {
-            //            // If the instance doesn't have a valid noise texture, default to index 0.
-            //            globalCurrentNoiseIndex = 0;
-            //            noiseTexture = availableNoiseTextures[0].handle;
-            //        }
-
-            //        // Build an array of c-strings from the names in availableNoiseTextures
-            //        std::vector<const char*> noiseNames;
-            //        noiseNames.reserve(availableNoiseTextures.size());
-            //        for (auto& n : availableNoiseTextures)
-            //        {
-            //            noiseNames.push_back(n.name.c_str());
-            //        }
-
-            //        ImGui::Spacing(); ImGui::Spacing();
-            //        ImGui::Separator();
-            //        ImGui::Spacing(); ImGui::Spacing();
-            //        // Let user pick which noise texture to use
-            //        if (ImGui::Combo("Noise Pattern", &globalCurrentNoiseIndex, noiseNames.data(), (int)noiseNames.size()))
-            //        {
-            //            noiseTexture = availableNoiseTextures[globalCurrentNoiseIndex].handle;
-            //        }
-
-            //        ImGui::Text("Noise Texture Preview:");
-            //        if (bgfx::isValid(noiseTexture))
-            //        {
-            //            ImTextureID noiseID = (ImTextureID)(uintptr_t)(noiseTexture.idx);
-            //            ImGui::Image(noiseID, ImVec2(256, 256));
-            //        }
-            //        else
-            //        {
-            //            ImGui::Text("No valid noise texture selected.");
-            //        }
-            //    }
-            //}
-            //else if (selectedInstance && selectedInstance->isLight == false) {
-            //    const char* modeItems[] = { "Crosshatch Ver 1.0", "Crosshatch Ver 1.1", "Crosshatch Ver 1.2", "Crosshatch Ver 1.3", "Simple Lighting" };
-            //    ImGui::Combo("Shader Mode", &selectedInstance->crosshatchMode, modeItems, IM_ARRAYSIZE(modeItems));
-            //    ImGui::Spacing(); ImGui::Spacing();
-            //    // --- Show controls depending on the mode ---
-            //    if (selectedInstance->crosshatchMode == 0)
-            //    {
-            //        ImGui::Text("Crosshatch Ver 1.0 Settings:");
-            //        ImGui::ColorEdit4("Hatch Color", selectedInstance->inkColor);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Line Smoothness", &selectedInstance->epsilonValue, 0.001f, 0.0f, 0.1f);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Hatch Density", &selectedInstance->strokeMultiplier, 0.1f, 0.0f, 10.0f);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Primary Hatch Angle", &selectedInstance->lineAngle1, 0.1f, 0.0f, TAU);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Secondary Hatch Angle", &selectedInstance->lineAngle2, 0.1f, 0.0f, TAU);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Hatch Scale", &selectedInstance->patternScale, 0.1f, 0.1f, 10.0f);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Line Weight", &selectedInstance->lineThickness, 0.1f, -10.0f, 10.0f);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Hatch Opacity", &selectedInstance->transparencyValue, 0.01f, 0.0f, 1.0f);
-            //    }
-            //    else if (selectedInstance->crosshatchMode == 1)
-            //    {
-            //        ImGui::Text("Crosshatch Ver 1.1 Settings:");
-            //        ImGui::ColorEdit4("Hatch Color", selectedInstance->inkColor);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Line Smoothness", &selectedInstance->epsilonValue, 0.001f, 0.0f, 0.1f);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Hatch Density", &selectedInstance->strokeMultiplier, 0.1f, 0.0f, 10.0f);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Hatch Angle", &selectedInstance->lineAngle1, 0.1f, 0.0f, TAU);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Hatch Scale", &selectedInstance->patternScale, 0.1f, 0.1f, 10.0f);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Line Weight", &selectedInstance->lineThickness, 0.1f, -10.0f, 10.0f);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Hatch Opacity", &selectedInstance->transparencyValue, 0.01f, 0.0f, 1.0f);
-            //    }
-            //    else if (selectedInstance->crosshatchMode == 2)
-            //    {
-            //        ImGui::Text("Crosshatch Ver 1.2 Settings:");
-            //        ImGui::ColorEdit4("Hatch Color", selectedInstance->inkColor);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Outer Line Smoothness", &selectedInstance->epsilonValue, 0.001f, 0.0f, 0.1f);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Outer Hatch Density", &selectedInstance->strokeMultiplier, 0.1f, 0.0f, 10.0f);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Outer Hatch Angle", &selectedInstance->lineAngle1, 0.1f, 0.0f, TAU);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Outer Hatch Scale", &selectedInstance->patternScale, 0.1f, 0.1f, 10.0f);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Outer Hatch Weight", &selectedInstance->lineThickness, 0.1f, -10.0f, 10.0f);
-            //        ImGui::SetNextItemWidth(100);
-            //        // Inner layer settings:
-            //        ImGui::DragFloat("Inner Hatch Scale", &selectedInstance->layerPatternScale, 0.1f, 0.1f, 10.0f);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Inner Hatch Density", &selectedInstance->layerStrokeMult, 0.1f, 0.0f, 10.0f);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Inner Hatch Angle", &selectedInstance->layerAngle, 0.1f, 0.0f, TAU);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Inner Hatch Weight", &selectedInstance->layerLineThickness, 0.1f, -10.0f, 10.0f);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Hatch Opacity", &selectedInstance->transparencyValue, 0.01f, 0.0f, 1.0f);
-            //    }
-            //    else if (selectedInstance->crosshatchMode == 3)
-            //    {
-            //        ImGui::Text("Crosshatch Ver 1.3 Settings:");
-            //        ImGui::ColorEdit4("Hatch Color", selectedInstance->inkColor);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Outer Line Smoothness", &selectedInstance->epsilonValue, 0.001f, 0.0f, 0.1f);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Outer Hatch Density", &selectedInstance->strokeMultiplier, 0.1f, 0.0f, 10.0f);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Outer Hatch Angle", &selectedInstance->lineAngle1, 0.1f, 0.0f, TAU);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Outer Hatch Scale", &selectedInstance->patternScale, 0.1f, 0.1f, 10.0f);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Outer Hatch Weight", &selectedInstance->lineThickness, 0.1f, -10.0f, 10.0f);
-            //        ImGui::SetNextItemWidth(100);
-            //        // Inner layer settings:
-            //        ImGui::DragFloat("Inner Hatch Scale", &selectedInstance->layerPatternScale, 0.1f, 0.1f, 10.0f);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Inner Hatch Density", &selectedInstance->layerStrokeMult, 0.1f, 0.0f, 10.0f);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Inner Hatch Angle", &selectedInstance->layerAngle, 0.1f, 0.0f, TAU);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Inner Hatch Weight", &selectedInstance->layerLineThickness, 0.1f, -10.0f, 10.0f);
-            //        ImGui::SetNextItemWidth(100);
-            //        ImGui::DragFloat("Hatch Opacity", &selectedInstance->transparencyValue, 0.01f, 0.0f, 1.0f);
-            //    }
-            //    else if (selectedInstance->crosshatchMode == 4)
-            //    {
-            //        ImGui::Text("Simple Lighting (No Crosshatch)");
-            //    }
-
-            //    // New: noise texture selection
-            //    if (!availableNoiseTextures.empty() && selectedInstance->crosshatchMode != 4)
-            //    {
-            //        // Automatically update currentNoiseIndex based on the instance's noise texture.
-            //        bool found = false;
-            //        for (int i = 0; i < (int)availableNoiseTextures.size(); i++)
-            //        {
-            //            if (availableNoiseTextures[i].handle.idx == selectedInstance->noiseTexture.idx)
-            //            {
-            //                currentNoiseIndex = i;
-            //                found = true;
-            //                break;
-            //            }
-            //        }
-            //        if (!found)
-            //        {
-            //            // If the instance doesn't have a valid noise texture, default to index 0.
-            //            currentNoiseIndex = 0;
-            //            selectedInstance->noiseTexture = availableNoiseTextures[0].handle;
-            //        }
-
-            //        // Build an array of c-strings from the names in availableNoiseTextures
-            //        std::vector<const char*> noiseNames;
-            //        noiseNames.reserve(availableNoiseTextures.size());
-            //        for (auto& n : availableNoiseTextures)
-            //        {
-            //            noiseNames.push_back(n.name.c_str());
-            //        }
-
-            //        ImGui::Spacing(); ImGui::Spacing();
-            //        ImGui::Separator();
-            //        ImGui::Spacing(); ImGui::Spacing();
-            //        // Let user pick which noise texture to use
-            //        if (ImGui::Combo("Noise Pattern", &currentNoiseIndex, noiseNames.data(), (int)noiseNames.size()))
-            //        {
-            //            selectedInstance->noiseTexture = availableNoiseTextures[currentNoiseIndex].handle;
-            //        }
-
-            //        ImGui::Text("Noise Texture Preview:");
-            //        if (bgfx::isValid(selectedInstance->noiseTexture))
-            //        {
-            //            ImTextureID noiseID = (ImTextureID)(uintptr_t)(selectedInstance->noiseTexture.idx);
-            //            ImGui::Image(noiseID, ImVec2(256, 256));
-            //        }
-            //        else
-            //        {
-            //            ImGui::Text("No valid noise texture selected.");
-            //        }
-            //    }
-            //}
-            //ImGui::End();
-            //ImGui::Begin("Crosshatch Shader Settings");
-            // Add a new window for camera settings
             ImGui::Begin("Camera Settings", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
             ImGui::SetWindowFontScale(0.85f);
             Camera& activeCamera = cameras[currentCameraIndex];

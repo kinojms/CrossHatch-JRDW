@@ -1,6 +1,6 @@
 #ifndef PRIMITIVE_OBJECTS_H
 #define PRIMITIVE_OBJECTS_H
-
+#include <bgfx/bgfx.h>
 #include <vector>
 #include <cmath>
 #include <cstdint>
@@ -13,11 +13,15 @@ struct PosColorVertex {
     float nx, ny, nz;     // Normal
     uint32_t abgr;        // Color
     float u, v;  // texture coordinates
+    static bgfx::VertexLayout ms_layout; // Add this line
 };
 
+// Rectangle quad for text rendering
+inline float halfWidth = 2.0f;
+inline float halfHeight = 0.5f;
 // Rectangle quad for text rendering (e.g., 4 units wide x 1 unit tall)
-static float halfWidth = 2.0f;   // 4 total width
-static float halfHeight = 0.5f;  // 1 total height
+//static float halfWidth = 2.0f;   // 4 total width
+//static float halfHeight = 0.5f;  // 1 total height
 
 // Define a simple quad for text rendering (horizontal FLIP)
 static PosColorVertex textQuadVertices[] = {
@@ -146,7 +150,9 @@ static const uint16_t arrowIndices[] = {
     8, 11, 10, 10, 9, 8 // Base face (made of 2 triangles)
 };
 
-void generateCapsule(float radius, float halfHeight, int stacks, int sectors,
+
+
+inline void generateCapsule(float radius, float halfHeight, int stacks, int sectors,
     std::vector<PosColorVertex>& vertices,
     std::vector<uint16_t>& indices)
 {
@@ -290,7 +296,7 @@ void generateCapsule(float radius, float halfHeight, int stacks, int sectors,
 //    2, 4, 5
 //};
 
-void generateCylinder(float radius, float height, size_t resolution,
+inline void generateCylinder(float radius, float height, size_t resolution,
     std::vector<PosColorVertex>& vertices,
     std::vector<uint16_t>& indices)
 {
@@ -358,7 +364,7 @@ void generateCylinder(float radius, float height, size_t resolution,
 }
 
 
-void generateSphere(float radius, int stacks, int sectors,
+inline void generateSphere(float radius, int stacks, int sectors,
     std::vector<PosColorVertex>& vertices,
     std::vector<uint16_t>& indices)
 {
@@ -531,7 +537,7 @@ static const uint16_t cornellBoxLeftIndices[] = {
 
 // Generates a cone mesh with the given base radius, height, and number of sectors.
 // The cone is oriented with its apex at (0, height, 0) and its base centered on the plane y = 0.
-inline void generateCone(float radius, float height, int sectors,
+inline inline void generateCone(float radius, float height, int sectors,
     std::vector<PosColorVertex>& vertices,
     std::vector<uint16_t>& indices)
 {
