@@ -1617,6 +1617,7 @@ void ShowInstanceTree(
         if (ImGui::MenuItem("Delete"))
         {
             deletingInstance = instance;
+            //test
             // If the selected instance has a parent, remove it from the parent's children list.
             if (deletingInstance->parent)
             {
