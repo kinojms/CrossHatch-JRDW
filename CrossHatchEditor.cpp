@@ -1549,7 +1549,7 @@ void ShowInstanceTree(
     static char renameBuffer[256] = {};
 
     // g_PendingDelete must be declared at file scope
-     //Instance* g_PendingDelete = nullptr;
+     Instance* deletingInstance = nullptr;
 
     // ---------- Tree flags ----------
     ImGuiTreeNodeFlags flags =
@@ -1616,8 +1616,31 @@ void ShowInstanceTree(
 
         if (ImGui::MenuItem("Delete"))
         {
-            g_PendingDelete = instance;
+            deletingInstance = instance;
             ImGui::OpenPopup("##ConfirmDelete");
+            // If the selected instance has a parent, remove it from the parent's children list.
+            if (deletingInstance->parent)
+            {
+                Instance* parent = deletingInstance->parent;
+                auto it = std::find(parent->children.begin(), parent->children.end(), deletingInstance);
+                if (it != parent->children.end())
+                {
+                    parent->children.erase(it);
+                }
+            }
+            else
+            {
+                // Otherwise, it's top-level. Remove it from the global instances vector.
+                auto it = std::find(instances.begin(), instances.end(), deletingInstance);
+                if (it != instances.end())
+                {
+                    instances.erase(it);
+                }
+            }
+
+            // Delete the instance (which will recursively delete its children)
+            deleteInstance(deletingInstance);
+            selectedInstance = nullptr;
         }
 
         ImGui::EndPopup();
