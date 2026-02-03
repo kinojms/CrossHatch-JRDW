@@ -406,6 +406,98 @@ public:
     }
 };
 
+class AddInstanceCommand : public ICommand {
+    Instance* inst;
+    std::vector<Instance*>* instancesList;
+    bool isAdded = false;
+public:
+    AddInstanceCommand(Instance* i, std::vector<Instance*>* list) 
+        : inst(i), instancesList(list), isAdded(false) {}
+    void execute() override {
+        instancesList->push_back(inst);
+        isAdded = true;
+        std::cout << "[Undo/Redo] Instance added: " << inst->name << std::endl;
+    }
+    void undo() override {
+        if (isAdded && !instancesList->empty() && instancesList->back() == inst) {
+            instancesList->pop_back();
+            std::cout << "[Undo/Redo] Instance removed (undo): " << inst->name << std::endl;
+        }
+    }
+};
+
+class DeleteInstanceCommand : public ICommand {
+    Instance* inst;
+    // If top-level, instancesList points to global instances vector. If child, parent points to parent instance.
+    std::vector<Instance*>* instancesList = nullptr;
+    Instance* parent = nullptr;
+    size_t originalIndex = 0;
+    bool wasTopLevel = false;
+public:
+    // Top-level constructor
+    DeleteInstanceCommand(Instance* i, std::vector<Instance*>* list, size_t idx)
+        : inst(i), instancesList(list), parent(nullptr), originalIndex(idx), wasTopLevel(true) {}
+
+    // Child constructor
+    DeleteInstanceCommand(Instance* i, Instance* parentInst, size_t idx)
+        : inst(i), instancesList(nullptr), parent(parentInst), originalIndex(idx), wasTopLevel(false) {}
+
+    void execute() override {
+        if (wasTopLevel && instancesList) {
+            auto it = std::find(instancesList->begin(), instancesList->end(), inst);
+            if (it != instancesList->end()) {
+                instancesList->erase(it);
+                inst->parent = nullptr;
+                std::cout << "[Undo/Redo] Instance deleted (top-level): " << inst->name << std::endl;
+            }
+        }
+        else if (parent) {
+            auto it = std::find(parent->children.begin(), parent->children.end(), inst);
+            if (it != parent->children.end()) {
+                parent->children.erase(it);
+                inst->parent = nullptr;
+                std::cout << "[Undo/Redo] Instance deleted (child): " << inst->name << std::endl;
+            }
+        }
+    }
+
+    void undo() override {
+        if (wasTopLevel && instancesList) {
+            if (originalIndex <= instancesList->size()) {
+                instancesList->insert(instancesList->begin() + originalIndex, inst);
+                inst->parent = nullptr;
+                std::cout << "[Undo/Redo] Instance restored (top-level): " << inst->name << std::endl;
+            }
+        }
+        else if (parent) {
+            if (originalIndex <= parent->children.size()) {
+                parent->children.insert(parent->children.begin() + originalIndex, inst);
+                inst->parent = parent;
+                std::cout << "[Undo/Redo] Instance restored (child): " << inst->name << std::endl;
+            }
+        }
+    }
+};
+
+class ClearInstancesCommand : public ICommand {
+    std::vector<Instance*> savedInstances;
+    std::vector<Instance*>* instancesList;
+public:
+    ClearInstancesCommand(std::vector<Instance*>* list) 
+        : instancesList(list) {}
+    void execute() override {
+        // Save all instances
+        savedInstances = *instancesList;
+        instancesList->clear();
+        std::cout << "[Undo/Redo] All instances cleared (" << savedInstances.size() << " saved for undo)" << std::endl;
+    }
+    void undo() override {
+        // Restore instances
+        *instancesList = savedInstances;
+        std::cout << "[Undo/Redo] Instances restored (undo): " << savedInstances.size() << " instance(s)" << std::endl;
+    }
+};
+
 CommandManager gCmdManager;
 
 struct MeshData {
@@ -3706,6 +3798,36 @@ int main(void)
             if (ImGui::IsKeyPressed(ImGuiKey_3) && !selectedInstance->isLight) {
                 currentGizmoOperation = ImGuizmo::SCALE;
             }
+            // Delete selected instance with Delete key (undoable)
+            if (ImGui::IsKeyPressed(ImGuiKey_Delete)) {
+                if (selectedInstance)
+                {
+                    if (selectedInstance->parent)
+                    {
+                        Instance* parent = selectedInstance->parent;
+                        auto it = std::find(parent->children.begin(), parent->children.end(), selectedInstance);
+                        if (it != parent->children.end())
+                        {
+                            size_t idx = std::distance(parent->children.begin(), it);
+                            gCmdManager.executeCommand(
+                                std::make_unique<DeleteInstanceCommand>(selectedInstance, parent, idx)
+                            );
+                        }
+                    }
+                    else
+                    {
+                        auto it = std::find(instances.begin(), instances.end(), selectedInstance);
+                        if (it != instances.end())
+                        {
+                            size_t idx = std::distance(instances.begin(), it);
+                            gCmdManager.executeCommand(
+                                std::make_unique<DeleteInstanceCommand>(selectedInstance, &instances, idx)
+                            );
+                        }
+                    }
+                    selectedInstance = nullptr;
+                }
+            }
         }
         if (showMainMenu)
         {
@@ -4472,22 +4594,26 @@ int main(void)
                         gCmdManager.redo();
                     if (ImGui::MenuItem("Delete Last Instance"))
                     {
-                        Instance* inst = instances.back();
-                        instances.pop_back();
-                        //instanceCounter--;
-                        delete inst;
-                        selectedInstance = nullptr;
-                        std::cout << "Last Instance removed" << std::endl;
+                        if (!instances.empty())
+                        {
+                            Instance* inst = instances.back();
+                            size_t idx = instances.size() - 1;
+                            gCmdManager.executeCommand(
+                                std::make_unique<DeleteInstanceCommand>(inst, &instances, idx)
+                            );
+                            selectedInstance = nullptr;
+                            std::cout << "Last Instance removed (undoable)" << std::endl;
+                        }
                     }
                     if (ImGui::MenuItem("Clear All Instances"))
                     {
-                        for (Instance* inst : instances)
+                        if (!instances.empty())
                         {
-                            delete inst;
+                            gCmdManager.executeCommand(
+                                std::make_unique<ClearInstancesCommand>(&instances)
+                            );
+                            selectedInstance = nullptr;
                         }
-                        instances.clear();
-                        selectedInstance = nullptr;
-                        std::cout << "All Instances cleared" << std::endl;
                     }
                     ImGui::EndMenu();
                 }
@@ -4783,29 +4909,33 @@ int main(void)
                     ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing();
                     if (ImGui::Button("Delete Object"))
                     {
-                        // If the selected instance has a parent, remove it from the parent's children list.
-                        if (selectedInstance->parent)
+                        if (selectedInstance)
                         {
-                            Instance* parent = selectedInstance->parent;
-                            auto it = std::find(parent->children.begin(), parent->children.end(), selectedInstance);
-                            if (it != parent->children.end())
+                            if (selectedInstance->parent)
                             {
-                                parent->children.erase(it);
+                                Instance* parent = selectedInstance->parent;
+                                auto it = std::find(parent->children.begin(), parent->children.end(), selectedInstance);
+                                if (it != parent->children.end())
+                                {
+                                    size_t idx = std::distance(parent->children.begin(), it);
+                                    gCmdManager.executeCommand(
+                                        std::make_unique<DeleteInstanceCommand>(selectedInstance, parent, idx)
+                                    );
+                                }
                             }
-                        }
-                        else
-                        {
-                            // Otherwise, it's top-level. Remove it from the global instances vector.
-                            auto it = std::find(instances.begin(), instances.end(), selectedInstance);
-                            if (it != instances.end())
+                            else
                             {
-                                instances.erase(it);
+                                auto it = std::find(instances.begin(), instances.end(), selectedInstance);
+                                if (it != instances.end())
+                                {
+                                    size_t idx = std::distance(instances.begin(), it);
+                                    gCmdManager.executeCommand(
+                                        std::make_unique<DeleteInstanceCommand>(selectedInstance, &instances, idx)
+                                    );
+                                }
                             }
+                            selectedInstance = nullptr;
                         }
-
-                        // Delete the instance (which will recursively delete its children)
-                        deleteInstance(selectedInstance);
-                        selectedInstance = nullptr;
                     }
                     bool highlighted = highlightVisible;
                     if (ImGui::Checkbox("Show highlight tint", &highlighted))
