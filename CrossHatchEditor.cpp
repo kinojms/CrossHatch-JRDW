@@ -3785,27 +3785,7 @@ int main(void)
         if (showMainMenu)
         {
             //VIDEO BG
-            //// Update the video frame each frame.
-            //videoPlayer.update();
-            //// Render the video background
-            //{
-            //    //ImGui_ImplGlfw_NewFrame();
-            //    //ImGui_Implbgfx_NewFrame();
-            //    //ImGui::NewFrame();
-
-            //    // Create a full-screen window for the video background.
-            //    // Use window flags to remove decorations and inputs.
-            //    ImGui::SetNextWindowPos(ImVec2(0, 0));
-            //    ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize);
-            //    ImGui::Begin("Video Background", nullptr,
-            //        ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs |
-            //        ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus);
-            //    // Render the video texture to fill the background.
-            //    ImGui::Image((ImTextureID)(uintptr_t)(videoPlayer.texture.idx), ImGui::GetIO().DisplaySize);
-            //    ImGui::End();
-            //}
-
-            // Render the main menu on top.
+            
             {
                 ImGuiID dockspace_id = viewport->ID;
                 ImGui::DockSpaceOverViewport(dockspace_id, viewport, ImGuiDockNodeFlags_PassthruCentralNode);
