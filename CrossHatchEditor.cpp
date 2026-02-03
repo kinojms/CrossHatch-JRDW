@@ -4893,6 +4893,92 @@ int main(void)
                         }
                     }
 
+                    // NEW OPERATIONS HERE
+                    // IMPLEMENT:
+                    /*subdivision,
+                        merging of vertices,
+                        Morph
+                        Define boundaries
+                        Smoothing*/
+                        // --- Advanced Mesh Operations (Stubbed) ---
+                    ImGui::Separator();
+                    ImGui::Text("Advanced Mesh Operations");
+
+                    // --- Subdivision ---
+                    if (ImGui::Button("Subdivide Mesh")) {
+#ifdef _WIN32
+                        char dbg[128];
+                        sprintf_s(dbg, "[Subdivision] Mesh '%s' would be subdivided.\n", selectedInstance->name.c_str());
+                        OutputDebugStringA(dbg);
+#endif
+                        printf("[Subdivision] Mesh '%s' would be subdivided.\n", selectedInstance->name.c_str());
+                        // TODO: Implement subdivision algorithm here
+                    }
+
+                    // --- Merge Vertices ---
+                    static float mergeThreshold = 0.01f;
+                    ImGui::DragFloat("Merge Tolerance", &mergeThreshold, 0.001f, 0.0f, 1.0f);
+                    if (ImGui::Button("Merge Vertices")) {
+#ifdef _WIN32
+                        char dbg[128];
+                        sprintf_s(dbg, "[Merge] Vertices of '%s' would be merged with tolerance %.3f\n", selectedInstance->name.c_str(), mergeThreshold);
+                        OutputDebugStringA(dbg);
+#endif
+                        printf("[Merge] Vertices of '%s' would be merged with tolerance %.3f\n", selectedInstance->name.c_str(), mergeThreshold);
+                        // TODO: Implement vertex merging
+                    }
+
+                    // --- Morph ---
+                    static float morphWeight = 0.0f;
+                    ImGui::SliderFloat("Morph Weight", &morphWeight, 0.0f, 1.0f);
+                    if (ImGui::Button("Apply Morph")) {
+#ifdef _WIN32
+                        char dbg[128];
+                        sprintf_s(dbg, "[Morph] Mesh '%s' would be morphed with weight %.2f\n", selectedInstance->name.c_str(), morphWeight);
+                        OutputDebugStringA(dbg);
+#endif
+                        printf("[Morph] Mesh '%s' would be morphed with weight %.2f\n", selectedInstance->name.c_str(), morphWeight);
+                        // TODO: Apply morph to mesh
+                    }
+
+                    // --- Define Boundaries ---
+                    if (ImGui::Button("Compute Boundaries")) {
+#ifdef _WIN32
+                        char dbg[128];
+                        sprintf_s(dbg, "[Boundary] Boundaries of '%s' would be computed.\n", selectedInstance->name.c_str());
+                        OutputDebugStringA(dbg);
+#endif
+                        printf("[Boundary] Boundaries of '%s' would be computed.\n", selectedInstance->name.c_str());
+                        // TODO: Compute mesh bounds
+                    }
+                    if (ImGui::Button("Edit Boundaries")) {
+#ifdef _WIN32
+                        char dbg[128];
+                        sprintf_s(dbg, "[Boundary] Boundary editor for '%s' would open.\n", selectedInstance->name.c_str());
+                        OutputDebugStringA(dbg);
+#endif
+                        printf("[Boundary] Boundary editor for '%s' would open.\n", selectedInstance->name.c_str());
+                        // TODO: Open boundary editor
+                    }
+
+                    // --- Smoothing ---
+                    static int smoothIter = 1;
+                    ImGui::SliderInt("Smooth Iterations", &smoothIter, 1, 20);
+                    if (ImGui::Button("Smooth Mesh")) {
+#ifdef _WIN32
+                        char dbg[128];
+                        sprintf_s(dbg, "[Smoothing] Mesh '%s' would be smoothed for %d iterations.\n", selectedInstance->name.c_str(), smoothIter);
+                        OutputDebugStringA(dbg);
+#endif
+                        printf("[Smoothing] Mesh '%s' would be smoothed for %d iterations.\n", selectedInstance->name.c_str(), smoothIter);
+                        // TODO: Implement smoothing algorithm
+                    }
+
+                    ImGui::Separator();
+
+
+
+
                     //ImGui::Separator();
                     // You can add a button to remove the selected instance from the hierarchy.
                     ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing();
@@ -4930,7 +5016,7 @@ int main(void)
                 }
             }
 
-
+            
 
             ImGui::End();
 
