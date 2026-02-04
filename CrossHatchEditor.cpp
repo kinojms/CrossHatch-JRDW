@@ -93,6 +93,18 @@ static bgfx::ProgramHandle unlitColorProgram = BGFX_INVALID_HANDLE;
 #define PICKING_DIM 128
 
 static bool useGlobalCrosshatchSettings = true;
+
+// Window visibility toggles
+static bool show_Inspector = true;
+static bool show_ObjectList = true;
+static bool show_Gallery = true;
+static bool show_Info = true;
+static bool show_Controls = true;
+static bool show_Screenshot = true;
+static bool show_CameraSettings = true;
+static bool show_Cameras = true;
+static bool show_LogConsole = true;
+
 // (Define TAU in C++ too)
 const float TAU = 6.28318530718f;
 // Declare static variables to hold our crosshatch parameters:
@@ -115,6 +127,60 @@ static float layerPatternScale = 0.5f;          // Inner Hatch Scale or Layer Pa
 static float layerStrokeMult = 0.250f;           // Inner Hatch Density or Layer Stroke Multiplier
 static float layerAngle = 2.983f;               // Inner Hatch Angle or Layer Angle
 static float layerLineThickness = 10.0f;        // Inner Hatch Weight or Layer Line Thickness
+
+// Persistence helpers for window visibility
+static void LoadWindowVisibilityConfig(const std::string& filename)
+{
+    std::ifstream in(filename);
+    if (!in.is_open())
+        return;
+
+    auto trim = [](std::string &s) {
+        while (!s.empty() && isspace((unsigned char)s.back())) s.pop_back();
+        while (!s.empty() && isspace((unsigned char)s.front())) s.erase(s.begin());
+    };
+
+    std::string line;
+    while (std::getline(in, line))
+    {
+        if (line.empty())
+            continue;
+        auto pos = line.find('=');
+        if (pos == std::string::npos)
+            continue;
+        std::string key = line.substr(0, pos);
+        std::string val = line.substr(pos + 1);
+        trim(key); trim(val);
+        bool v = (val == "1" || val == "true" || val == "True");
+
+        if (key == "Inspector") show_Inspector = v;
+        else if (key == "ObjectList") show_ObjectList = v;
+        else if (key == "Gallery") show_Gallery = v;
+        else if (key == "Info") show_Info = v;
+        else if (key == "Controls") show_Controls = v;
+        else if (key == "Screenshot") show_Screenshot = v;
+        else if (key == "CameraSettings") show_CameraSettings = v;
+        else if (key == "Cameras") show_Cameras = v;
+        else if (key == "LogConsole") show_LogConsole = v;
+    }
+}
+
+static void SaveWindowVisibilityConfig(const std::string& filename)
+{
+    std::ofstream out(filename, std::ios::trunc);
+    if (!out.is_open())
+        return;
+
+    out << "Inspector=" << (show_Inspector ? "1" : "0") << "\n";
+    out << "ObjectList=" << (show_ObjectList ? "1" : "0") << "\n";
+    out << "Gallery=" << (show_Gallery ? "1" : "0") << "\n";
+    out << "Info=" << (show_Info ? "1" : "0") << "\n";
+    out << "Controls=" << (show_Controls ? "1" : "0") << "\n";
+    out << "Screenshot=" << (show_Screenshot ? "1" : "0") << "\n";
+    out << "CameraSettings=" << (show_CameraSettings ? "1" : "0") << "\n";
+    out << "Cameras=" << (show_Cameras ? "1" : "0") << "\n";
+    out << "LogConsole=" << (show_LogConsole ? "1" : "0") << "\n";
+}
 
 bgfx::TextureHandle noiseTexture = BGFX_INVALID_HANDLE;
 
@@ -2855,7 +2921,7 @@ int main(void)
         std::cerr << "Failed to initialize GLFW" << std::endl;
         return false;
     }
-    GLFWwindow* window = glfwCreateWindow(WNDW_WIDTH, WNDW_HEIGHT, "Anito GeoForge", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(WNDW_WIDTH, WNDW_HEIGHT, "AnitoScan", NULL, NULL);
     if (!window) {
         std::cerr << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
@@ -2881,6 +2947,8 @@ int main(void)
     //Initialize ImGui
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
+    // Load saved window visibility state (if any)
+    LoadWindowVisibilityConfig("window_visibility.cfg");
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     ImGuiWindowFlags window_flags = 0;
@@ -2890,7 +2958,9 @@ int main(void)
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
-    io.Fonts->AddFontFromFileTTF("fonts/Inter.ttf", 18.0f);
+    io.Fonts->AddFontFromFileTTF("fonts/Inter.ttf", 16.0f);
+    ImFont* fontSmall = io.Fonts->AddFontFromFileTTF("fonts/Inter.ttf", 28.0f);
+    ImFont* fontLarge = io.Fonts->AddFontFromFileTTF("fonts/Inter.ttf", 64); // Baked at high res
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_Implbgfx_Init(255);
 
@@ -3768,12 +3838,12 @@ int main(void)
         glfwPollEvents();
 
         ImGuiViewport* viewport = ImGui::GetMainViewport();
-        static VideoPlayer videoPlayer;
-        static bool videoLoaded = false;
-        if (!videoLoaded)
-        {
-            videoLoaded = videoPlayer.load("videos\\AnitoCrossHatchTrailer.mp4");
-        }
+        //static VideoPlayer videoPlayer;
+        //static bool videoLoaded = false;
+        //if (!videoLoaded)
+        //{
+        //    videoLoaded = videoPlayer.load("videos\\AnitoCrossHatchTrailer.mp4");
+        //}
         static bool showMainMenu = true;
         static bool showCreditsPage = false;
         static bool showGallery = false;
@@ -3834,6 +3904,7 @@ int main(void)
 
             // Render the main menu on top.
             {
+                
                 ImGuiID dockspace_id = viewport->ID;
                 ImGui::DockSpaceOverViewport(dockspace_id, viewport, ImGuiDockNodeFlags_PassthruCentralNode);
 
@@ -3862,20 +3933,23 @@ int main(void)
                 float logoY = (windowHeight * 0.3f) - (logoSize.y + 20); // 20px spacing
 
                 // Set font scale before measuring
-                ImGui::SetWindowFontScale(3.0f);
+                //ImGui::SetWindowFontScale(3.0f);
+				ImGui::PushFont(fontLarge);
 
                 // Measure text at correct scale
-                ImVec2 titleSize = ImGui::CalcTextSize("Anito GeoForge");
+                ImVec2 titleSize = ImGui::CalcTextSize("AnitoScan");
 
                 // Center position
                 float titleX = (windowWidth - titleSize.x) * 0.5f;
                 float titleY = (windowHeight * 0.3f) - (titleSize.y * 0.5f);
 
                 ImGui::SetCursorPos(ImVec2(titleX, titleY));
-                ImGui::Text("Anito GeoForge");
+                ImGui::Text("AnitoScan");
+                ImGui::PopFont();
 
                 // Restore font scale
-                ImGui::SetWindowFontScale(2.0f);
+                //ImGui::SetWindowFontScale(2.0f);
+                ImGui::PushFont(fontSmall);
 
                 // Vertical spacing
                 ImGui::Dummy(ImVec2(0, 50));
@@ -3922,7 +3996,7 @@ int main(void)
                 if (CenterButton("Exit")) {
                     glfwSetWindowShouldClose(window, true);
                 }
-
+                ImGui::PopFont();
                 ImGui::End();
                 //ImGui::PopStyleColor();
                 ImGui::PopStyleColor(3); // Remove the 3 pushed colors
@@ -4121,9 +4195,11 @@ int main(void)
 
             ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
             ImGui::SetNextWindowSize(ImVec2(ImGui::GetIO().DisplaySize.x, 0)); // full width
-            ImGui::Begin("MenuBar", p_open, menu_flags);
+            ImGui::Begin("AnitoScan", p_open, menu_flags);
             if (ImGui::BeginMenuBar())
             {
+                
+                
                 if (ImGui::BeginMenu("File", true))
                 {
                     if (ImGui::MenuItem("Open.."))
@@ -4653,14 +4729,29 @@ int main(void)
                     }
                     ImGui::EndMenu();
                 }
-
+                // VIEW MENU
+                if (ImGui::BeginMenu("View", true))
+                {
+                    ImGui::MenuItem("Inspector", nullptr, &show_Inspector);
+                    ImGui::MenuItem("Object List", nullptr, &show_ObjectList);
+                    ImGui::MenuItem("Gallery", nullptr, &show_Gallery);
+                    ImGui::MenuItem("Info", nullptr, &show_Info);
+                    ImGui::MenuItem("Controls", nullptr, &show_Controls);
+                    ImGui::MenuItem("Screenshot", nullptr, &show_Screenshot);
+                    ImGui::MenuItem("Camera Settings", nullptr, &show_CameraSettings);
+                    ImGui::MenuItem("Cameras", nullptr, &show_Cameras);
+                    ImGui::MenuItem("Log Console", nullptr, &show_LogConsole);
+                    ImGui::EndMenu();
+                }
                 ImGui::EndMenuBar();
             }
             ImGui::End();
 
             //IMGUI WINDOW FOR CONTROLS
             //FOR REFERENCE USE THIS: https://pthom.github.io/imgui_manual_online/manual/imgui_manual.html
-            ImGui::Begin("Inspector", p_open, window_flags);
+            if (show_Inspector)
+            {
+            ImGui::Begin("Inspector", &show_Inspector, window_flags);
             ImGui::SetWindowFontScale(0.85f);
 
             // If an instance is selected, show its transform controls.
@@ -4980,10 +5071,16 @@ int main(void)
 
 
             ImGui::End();
+            }
 
-            Logger::GetInstance().DrawImGuiLogger();
+            if (show_LogConsole)
+            {
+                Logger::GetInstance().DrawImGuiLogger(&show_LogConsole);
+            }
 
-            ImGui::Begin("Object List", p_open, window_flags);
+            if (show_ObjectList)
+            {
+            ImGui::Begin("Object List", &show_ObjectList, window_flags);
             static int selectedInstanceIndex = -1;
 
             ImGui::SetNextItemOpen(true, ImGuiCond_Once);//collapsing header set to open initially
@@ -5002,20 +5099,29 @@ int main(void)
 
             }
             ImGui::End();
+            }
 
             /*-------------------------------------------------------------------------------------*/
 
-            Logger::GetInstance().DrawImGuiLogger();
+            if (show_LogConsole)
+            {
+                Logger::GetInstance().DrawImGuiLogger(&show_LogConsole);
+            }
 
-            ImGui::Begin("Gallery", p_open, window_flags);
+            if (show_Gallery)
+            {
+            ImGui::Begin("Gallery", &show_Gallery, window_flags);
            
             Reconstructor::Draw();
             
             ImGui::End();
+            }
 
             /*-------------------------------------------------------------------------------------*/
 
-            ImGui::Begin("Info", p_open, window_flags);
+            if (show_Info)
+            {
+            ImGui::Begin("Info", &show_Info, window_flags);
 
             if (ImGui::BeginTable("Info", 2, ImGuiTableFlags_NoBordersInBody))
             {
@@ -5039,8 +5145,11 @@ int main(void)
                 ImGui::EndTable();
             }
             ImGui::End();
+            }
 
-            ImGui::Begin("Controls", p_open, window_flags);
+            if (show_Controls)
+            {
+            ImGui::Begin("Controls", &show_Controls, window_flags);
 
             /*ImGui::Text("Controls:");
             ImGui::Text("WASD - Move Camera");
@@ -5087,8 +5196,11 @@ int main(void)
             }
 
             ImGui::End();
+            }
 
-            ImGui::Begin("Screenshot", p_open, window_flags);
+            if (show_Screenshot)
+            {
+            ImGui::Begin("Screenshot", &show_Screenshot, window_flags);
             ImGui::InputText("Filename", screenshotName, IM_ARRAYSIZE(screenshotName));
             if (ImGui::Button("Save")) {
                 std::string fileNameStr = screenshotName;
@@ -5104,6 +5216,7 @@ int main(void)
             ImGui::Text("and press the screenshot button F3.");
 
             ImGui::End();
+            }
 
 
             //ImGui::Begin("Crosshatch Shader Settings");
@@ -5415,7 +5528,9 @@ int main(void)
             //ImGui::End();
 			//ImGui::Begin("Crosshatch Shader Settings");
             // Add a new window for camera settings
-            ImGui::Begin("Camera Settings", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+            if (show_CameraSettings)
+            {
+            ImGui::Begin("Camera Settings", &show_CameraSettings, ImGuiWindowFlags_AlwaysAutoResize);
             ImGui::SetWindowFontScale(0.85f);
             Camera& activeCamera = cameras[currentCameraIndex];
             // Basic camera controls
@@ -5461,7 +5576,11 @@ int main(void)
             }
 
             ImGui::End();
-            ImGui::Begin("Cameras");
+            }
+            
+            if (show_Cameras)
+            {
+            ImGui::Begin("Cameras", &show_Cameras, window_flags);
             for (size_t i = 0; i < cameras.size(); i++) {
                 char label[64];
                 sprintf(label, "Camera %d", static_cast<int>(i));
@@ -5473,6 +5592,7 @@ int main(void)
                 createNewCamera();
             }
             ImGui::End();
+            }
             //ImGui::Render();
             //ImGui_Implbgfx_RenderDrawLists(ImGui::GetDrawData());
         }
@@ -5773,6 +5893,9 @@ int main(void)
 
 
     }
+    // Save current window visibility state so it persists between sessions
+    SaveWindowVisibilityConfig("window_visibility.cfg");
+
     for (const auto& instance : instances)
     {
         const bgfx::VertexBufferHandle invalidVbh = BGFX_INVALID_HANDLE;

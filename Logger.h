@@ -14,7 +14,7 @@ public:
     ~Logger();
 
     static Logger& GetInstance();
-    void DrawImGuiLogger();
+    void DrawImGuiLogger(bool* p_open = nullptr);
     void Clear();
 
 protected:
