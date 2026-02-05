@@ -160,6 +160,10 @@ struct LightAnimation {
     float phase[3] = { 0.0f, 0.0f, 0.0f };  // Phase offset for each axis.
 };
 
+struct MeshData {
+    std::vector<PosColorVertex> vertices;
+    std::vector<uint32_t> indices;
+};
 struct Instance
 {
     int id;
@@ -420,10 +424,6 @@ public:
 
 CommandManager gCmdManager;
 
-struct MeshData {
-    std::vector<PosColorVertex> vertices;
-    std::vector<uint32_t> indices;
-};
 
 // Simple registry to reuse base mesh data by type/name.
 static std::unordered_map<std::string, MeshData> gMeshLibrary;
@@ -764,6 +764,61 @@ static void attachMeshDataToInstance(Instance* inst, const MeshData& meshData)
     inst->meshData = meshData;
     inst->hasEditableMesh = !inst->meshData.vertices.empty() && !inst->meshData.indices.empty();
     inst->boundaryFlags.assign(inst->meshData.vertices.size(), 0);
+}
+
+
+void createMeshBuffers(const MeshData& meshData, bgfx::VertexBufferHandle& vbh, bgfx::IndexBufferHandle& ibh) {
+    std::cout << "[DEBUG createMeshBuffers] Creating buffers for " << meshData.vertices.size()
+        << " vertices, " << meshData.indices.size() << " indices" << std::endl;
+
+    // Debug: Check first few vertex colors
+    if (meshData.vertices.size() > 0) {
+        std::cout << "[DEBUG createMeshBuffers] First vertex color: 0x" << std::hex
+            << meshData.vertices[0].abgr << std::dec << std::endl;
+#ifdef _WIN32
+        {
+            char dbg[128];
+            sprintf_s(dbg, "[AttributeMode] First vertex color CPU-side: 0x%08x\n",
+                meshData.vertices[0].abgr);
+            OutputDebugStringA(dbg);
+        }
+#endif
+        if (meshData.vertices.size() > 1) {
+            std::cout << "[DEBUG createMeshBuffers] Second vertex color: 0x" << std::hex
+                << meshData.vertices[1].abgr << std::dec << std::endl;
+        }
+    }
+
+    bgfx::VertexLayout layout;
+    layout.begin()
+        .add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
+        .add(bgfx::Attrib::Normal, 3, bgfx::AttribType::Float)
+        .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true, true)
+        .add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float) // NEW: UV coordinates
+        .end();
+
+    std::cout << "[DEBUG createMeshBuffers] Vertex layout includes Color0 attribute" << std::endl;
+
+    vbh = bgfx::createVertexBuffer(
+        bgfx::copy(meshData.vertices.data(), sizeof(PosColorVertex) * meshData.vertices.size()),
+        layout
+    );
+
+    // Detect if we need 32-bit indices
+    if (meshData.vertices.size() > std::numeric_limits<uint16_t>::max()) {
+        std::cout << "Using 32-bit index buffer due to high poly count.\n";
+        ibh = bgfx::createIndexBuffer(
+            bgfx::copy(meshData.indices.data(), sizeof(uint32_t) * meshData.indices.size()),
+            BGFX_BUFFER_INDEX32 // Enables 32-bit index buffer
+        );
+    }
+    else {
+        std::cout << "Using 16-bit index buffer for efficiency.\n";
+        std::vector<uint16_t> indices16(meshData.indices.begin(), meshData.indices.end());
+        ibh = bgfx::createIndexBuffer(
+            bgfx::copy(indices16.data(), sizeof(uint16_t) * indices16.size())
+        );
+    }
 }
 
 // Rebuild GPU buffers from instance mesh data.
@@ -1271,59 +1326,6 @@ MeshData loadMesh2(const std::string& filePath) {
     return { vertices, indices };
 }
 
-void createMeshBuffers(const MeshData& meshData, bgfx::VertexBufferHandle& vbh, bgfx::IndexBufferHandle& ibh) {
-    std::cout << "[DEBUG createMeshBuffers] Creating buffers for " << meshData.vertices.size()
-        << " vertices, " << meshData.indices.size() << " indices" << std::endl;
-
-    // Debug: Check first few vertex colors
-    if (meshData.vertices.size() > 0) {
-        std::cout << "[DEBUG createMeshBuffers] First vertex color: 0x" << std::hex
-            << meshData.vertices[0].abgr << std::dec << std::endl;
-#ifdef _WIN32
-        {
-            char dbg[128];
-            sprintf_s(dbg, "[AttributeMode] First vertex color CPU-side: 0x%08x\n",
-                meshData.vertices[0].abgr);
-            OutputDebugStringA(dbg);
-        }
-#endif
-        if (meshData.vertices.size() > 1) {
-            std::cout << "[DEBUG createMeshBuffers] Second vertex color: 0x" << std::hex
-                << meshData.vertices[1].abgr << std::dec << std::endl;
-        }
-    }
-
-    bgfx::VertexLayout layout;
-    layout.begin()
-        .add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
-        .add(bgfx::Attrib::Normal, 3, bgfx::AttribType::Float)
-        .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true, true)
-        .add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float) // NEW: UV coordinates
-        .end();
-
-    std::cout << "[DEBUG createMeshBuffers] Vertex layout includes Color0 attribute" << std::endl;
-
-    vbh = bgfx::createVertexBuffer(
-        bgfx::copy(meshData.vertices.data(), sizeof(PosColorVertex) * meshData.vertices.size()),
-        layout
-    );
-
-    // Detect if we need 32-bit indices
-    if (meshData.vertices.size() > std::numeric_limits<uint16_t>::max()) {
-        std::cout << "Using 32-bit index buffer due to high poly count.\n";
-        ibh = bgfx::createIndexBuffer(
-            bgfx::copy(meshData.indices.data(), sizeof(uint32_t) * meshData.indices.size()),
-            BGFX_BUFFER_INDEX32 // Enables 32-bit index buffer
-        );
-    }
-    else {
-        std::cout << "Using 16-bit index buffer for efficiency.\n";
-        std::vector<uint16_t> indices16(meshData.indices.begin(), meshData.indices.end());
-        ibh = bgfx::createIndexBuffer(
-            bgfx::copy(indices16.data(), sizeof(uint16_t) * indices16.size())
-        );
-    }
-}
 static void glfw_keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     if (key == GLFW_KEY_Z
@@ -2393,6 +2395,7 @@ void findMaxInstanceId(const Instance* instance, int& maxId) {
         findMaxInstanceId(child, maxId);
     }
 }
+
 
 // for comic bubble text
 void updateTextTexture(Instance* textInst) {
