@@ -1,4 +1,4 @@
-// CrossHatchEditor.cpp : Defines the entry point for the application.
+﻿// CrossHatchEditor.cpp : Defines the entry point for the application.
 //
 #include "CrossHatchEditor.h"
 #include "Reconstructor.h"
@@ -3927,8 +3927,8 @@ int main(void)
                 ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 0.8f));
 
                 //button colors
-                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.20f, 0.6f, 0.0f, 0.75f)); // Active
-                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.20f, 0.80f, 0.0f, 0.75f)); // Hovered
+                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.078f, 0.361f, 0.282f, 1.0f)); // Inactive
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.173f, 0.796f, 0.435f, 1.0f)); // Hovered
                 ImGui::Begin("Main Menu", nullptr,
                     ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
                 ImGuiIO& io = ImGui::GetIO();
