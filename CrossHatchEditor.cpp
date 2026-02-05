@@ -1,4 +1,4 @@
-﻿// CrossHatchEditor.cpp : Defines the entry point for the application.
+// CrossHatchEditor.cpp : Defines the entry point for the application.
 //
 #include "CrossHatchEditor.h"
 #include "Reconstructor.h"
@@ -58,6 +58,7 @@ namespace fs = std::filesystem;
 #include <ImGuizmo.h>
 #include <cmath> // for rad2deg, deg2rad, etc.
 #include <cfloat> // For FLT_MAX and FLT_MIN
+#include <numeric>
 
 //png, jpg image support #1179
 //reference: https://github.com/bkaradzic/bgfx/issues/1179
@@ -172,6 +173,17 @@ struct Instance
     bgfx::VertexBufferHandle vertexBuffer;
     bgfx::IndexBufferHandle indexBuffer;
     bool selected = false;
+    // Editable mesh data stored per-instance (if available).
+    MeshData meshData;
+    bool hasEditableMesh = false;
+    // Optional morph target and blend factor.
+    MeshData morphTarget;
+    MeshData morphBase;
+    bool hasMorphTarget = false;
+    bool hasMorphBase = false;
+    float morphAlpha = 0.0f;
+    // Boundary flags per vertex (1 = boundary).
+    std::vector<uint8_t> boundaryFlags;
 
     // Add an override object color (RGBA)
     float objectColor[4];
@@ -412,6 +424,9 @@ struct MeshData {
     std::vector<PosColorVertex> vertices;
     std::vector<uint32_t> indices;
 };
+
+// Simple registry to reuse base mesh data by type/name.
+static std::unordered_map<std::string, MeshData> gMeshLibrary;
 
 struct Vec3 {
     float x, y, z;
@@ -743,6 +758,216 @@ void computeNormals(std::vector<PosColorVertex>& vertices, const std::vector<uin
     }
 }
 
+// Attach mesh data to an instance and prep boundary flags.
+static void attachMeshDataToInstance(Instance* inst, const MeshData& meshData)
+{
+    inst->meshData = meshData;
+    inst->hasEditableMesh = !inst->meshData.vertices.empty() && !inst->meshData.indices.empty();
+    inst->boundaryFlags.assign(inst->meshData.vertices.size(), 0);
+}
+
+// Rebuild GPU buffers from instance mesh data.
+static void updateInstanceBuffers(Instance* inst)
+{
+    if (!inst || !inst->hasEditableMesh) return;
+
+    // Destroy previous buffers to avoid leaks.
+    const bgfx::VertexBufferHandle invalidVbh = BGFX_INVALID_HANDLE;
+    const bgfx::IndexBufferHandle invalidIbh = BGFX_INVALID_HANDLE;
+    if (bgfx::isValid(inst->vertexBuffer) && inst->vertexBuffer.idx != invalidVbh.idx) {
+        bgfx::destroy(inst->vertexBuffer);
+        inst->vertexBuffer = invalidVbh;
+    }
+    if (bgfx::isValid(inst->indexBuffer) && inst->indexBuffer.idx != invalidIbh.idx) {
+        bgfx::destroy(inst->indexBuffer);
+        inst->indexBuffer = invalidIbh;
+    }
+
+    createMeshBuffers(inst->meshData, inst->vertexBuffer, inst->indexBuffer);
+}
+
+// Basic midpoint subdivision: split each triangle into 4.
+static void subdivideMesh(MeshData& mesh)
+{
+    if (mesh.indices.size() < 3) return;
+    std::vector<PosColorVertex> newVerts = mesh.vertices;
+    std::vector<uint32_t> newIndices;
+    newIndices.reserve(mesh.indices.size() * 4);
+
+    auto midpoint = [&](uint32_t a, uint32_t b) -> uint32_t {
+        PosColorVertex va = newVerts[a];
+        PosColorVertex vb = newVerts[b];
+        PosColorVertex m{};
+        m.x = (va.x + vb.x) * 0.5f;
+        m.y = (va.y + vb.y) * 0.5f;
+        m.z = (va.z + vb.z) * 0.5f;
+        m.nx = (va.nx + vb.nx) * 0.5f;
+        m.ny = (va.ny + vb.ny) * 0.5f;
+        m.nz = (va.nz + vb.nz) * 0.5f;
+        m.u = (va.u + vb.u) * 0.5f;
+        m.v = (va.v + vb.v) * 0.5f;
+        m.abgr = va.abgr;
+        newVerts.push_back(m);
+        return static_cast<uint32_t>(newVerts.size() - 1);
+        };
+
+    for (size_t i = 0; i + 2 < mesh.indices.size(); i += 3) {
+        uint32_t i0 = mesh.indices[i];
+        uint32_t i1 = mesh.indices[i + 1];
+        uint32_t i2 = mesh.indices[i + 2];
+
+        uint32_t m01 = midpoint(i0, i1);
+        uint32_t m12 = midpoint(i1, i2);
+        uint32_t m20 = midpoint(i2, i0);
+
+        // Four new triangles
+        newIndices.push_back(i0); newIndices.push_back(m01); newIndices.push_back(m20);
+        newIndices.push_back(m01); newIndices.push_back(i1); newIndices.push_back(m12);
+        newIndices.push_back(m12); newIndices.push_back(i2); newIndices.push_back(m20);
+        newIndices.push_back(m01); newIndices.push_back(m12); newIndices.push_back(m20);
+    }
+
+    mesh.vertices = std::move(newVerts);
+    mesh.indices = std::move(newIndices);
+    computeNormals(mesh.vertices, mesh.indices);
+}
+
+// Merge vertices that are within a tolerance.
+static void mergeVertices(MeshData& mesh, float tolerance)
+{
+    if (mesh.vertices.empty()) return;
+    const float invTol = (tolerance > 0.0f) ? 1.0f / tolerance : 0.0f;
+
+    struct Key {
+        int x, y, z;
+        bool operator==(const Key& o) const { return x == o.x && y == o.y && z == o.z; }
+    };
+    struct KeyHash {
+        size_t operator()(const Key& k) const {
+            return (static_cast<size_t>(k.x) * 73856093u) ^
+                (static_cast<size_t>(k.y) * 19349663u) ^
+                (static_cast<size_t>(k.z) * 83492791u);
+        }
+    };
+
+    std::unordered_map<Key, uint32_t, KeyHash> weldMap;
+    std::vector<PosColorVertex> outVerts;
+    outVerts.reserve(mesh.vertices.size());
+    std::vector<uint32_t> remap(mesh.vertices.size());
+
+    for (size_t i = 0; i < mesh.vertices.size(); ++i) {
+        const auto& v = mesh.vertices[i];
+        Key k{
+            static_cast<int>(std::round(v.x * invTol)),
+            static_cast<int>(std::round(v.y * invTol)),
+            static_cast<int>(std::round(v.z * invTol))
+        };
+        auto it = weldMap.find(k);
+        if (it == weldMap.end()) {
+            uint32_t newIndex = static_cast<uint32_t>(outVerts.size());
+            weldMap[k] = newIndex;
+            remap[i] = newIndex;
+            outVerts.push_back(v);
+        }
+        else {
+            remap[i] = it->second;
+        }
+    }
+
+    for (auto& idx : mesh.indices) {
+        idx = remap[idx];
+    }
+
+    mesh.vertices = std::move(outVerts);
+    computeNormals(mesh.vertices, mesh.indices);
+}
+
+// Laplacian smoothing with fixed boundary (optional) flags.
+static void laplacianSmooth(MeshData& mesh, const std::vector<uint8_t>& boundaryFlags, int iterations, float lambda)
+{
+    if (mesh.vertices.empty() || iterations <= 0) return;
+    std::vector<std::vector<uint32_t>> adjacency(mesh.vertices.size());
+    for (size_t i = 0; i + 2 < mesh.indices.size(); i += 3) {
+        uint32_t a = mesh.indices[i], b = mesh.indices[i + 1], c = mesh.indices[i + 2];
+        adjacency[a].push_back(b); adjacency[a].push_back(c);
+        adjacency[b].push_back(a); adjacency[b].push_back(c);
+        adjacency[c].push_back(a); adjacency[c].push_back(b);
+    }
+
+    for (int it = 0; it < iterations; ++it) {
+        std::vector<PosColorVertex> updated = mesh.vertices;
+        for (size_t i = 0; i < mesh.vertices.size(); ++i) {
+            if (!boundaryFlags.empty() && boundaryFlags[i]) continue; // keep boundary locked
+            if (adjacency[i].empty()) continue;
+            float sx = 0, sy = 0, sz = 0;
+            for (uint32_t n : adjacency[i]) {
+                sx += mesh.vertices[n].x;
+                sy += mesh.vertices[n].y;
+                sz += mesh.vertices[n].z;
+            }
+            float inv = 1.0f / static_cast<float>(adjacency[i].size());
+            updated[i].x = mesh.vertices[i].x + lambda * (sx * inv - mesh.vertices[i].x);
+            updated[i].y = mesh.vertices[i].y + lambda * (sy * inv - mesh.vertices[i].y);
+            updated[i].z = mesh.vertices[i].z + lambda * (sz * inv - mesh.vertices[i].z);
+        }
+        mesh.vertices.swap(updated);
+    }
+    computeNormals(mesh.vertices, mesh.indices);
+}
+
+// Detect boundary vertices (edges that appear only once).
+static void detectBoundaries(const MeshData& mesh, std::vector<uint8_t>& boundaryFlags)
+{
+    boundaryFlags.assign(mesh.vertices.size(), 0);
+    struct EdgeKey {
+        uint32_t a, b;
+        bool operator==(const EdgeKey& o) const { return a == o.a && b == o.b; }
+    };
+    struct EdgeHash {
+        size_t operator()(const EdgeKey& k) const {
+            return (static_cast<size_t>(k.a) << 32) ^ k.b;
+        }
+    };
+    std::unordered_map<EdgeKey, int, EdgeHash> edgeCount;
+    for (size_t i = 0; i + 2 < mesh.indices.size(); i += 3) {
+        uint32_t tri[3] = { mesh.indices[i], mesh.indices[i + 1], mesh.indices[i + 2] };
+        for (int e = 0; e < 3; ++e) {
+            uint32_t a = tri[e];
+            uint32_t b = tri[(e + 1) % 3];
+            EdgeKey k{ std::min(a, b), std::max(a, b) };
+            edgeCount[k]++;
+        }
+    }
+    for (const auto& kv : edgeCount) {
+        if (kv.second == 1) {
+            boundaryFlags[kv.first.a] = 1;
+            boundaryFlags[kv.first.b] = 1;
+        }
+    }
+}
+
+// Apply morph between base meshData and morphTarget using alpha.
+static void applyMorph(Instance* inst)
+{
+    if (!inst || !inst->hasEditableMesh || !inst->hasMorphTarget || !inst->hasMorphBase) return;
+    if (inst->morphBase.vertices.size() != inst->morphTarget.vertices.size()) return;
+    MeshData blended = inst->morphBase;
+    for (size_t i = 0; i < blended.vertices.size(); ++i) {
+        const auto& a = inst->morphBase.vertices[i];
+        const auto& b = inst->morphTarget.vertices[i];
+        auto& o = blended.vertices[i];
+        o.x = a.x + (b.x - a.x) * inst->morphAlpha;
+        o.y = a.y + (b.y - a.y) * inst->morphAlpha;
+        o.z = a.z + (b.z - a.z) * inst->morphAlpha;
+        o.nx = a.nx + (b.nx - a.nx) * inst->morphAlpha;
+        o.ny = a.ny + (b.ny - a.ny) * inst->morphAlpha;
+        o.nz = a.nz + (b.nz - a.nz) * inst->morphAlpha;
+        o.u = a.u + (b.u - a.u) * inst->morphAlpha;
+        o.v = a.v + (b.v - a.v) * inst->morphAlpha;
+    }
+    computeNormals(blended.vertices, blended.indices);
+    inst->meshData = std::move(blended);
+}
 std::string openFileDialog(bool save) {
 #ifdef _WIN32
     char filePath[MAX_PATH] = { 0 };
@@ -1257,6 +1482,10 @@ static void spawnInstance(Camera camera, const std::string& instanceName, const 
 
     // Create a new instance with the current vertex and index buffers
     instances.push_back(new Instance(instanceCounter++, fullName, instanceType, x, y, z, vbh, ibh));
+    auto libIt = gMeshLibrary.find(instanceType);
+    if (libIt != gMeshLibrary.end()) {
+        attachMeshDataToInstance(instances.back(), libIt->second);
+    }
     std::cout << "New instance created at (" << x << ", " << y << ", " << z << ")" << std::endl;
 }
 
@@ -1266,6 +1495,10 @@ static void spawnInstanceAtCenter(const std::string& instanceName, const std::st
 
     // Create a new instance with the current vertex and index buffers
     instances.push_back(new Instance(instanceCounter++, fullName, instanceType, 0.0f, 0.0f, 0.0f, vbh, ibh));
+    auto libIt = gMeshLibrary.find(instanceType);
+    if (libIt != gMeshLibrary.end()) {
+        attachMeshDataToInstance(instances.back(), libIt->second);
+    }
     std::cout << "New instance created at (" << 0 << ", " << 0 << ", " << 0 << ")" << std::endl;
 }
 
@@ -2268,6 +2501,13 @@ std::unordered_map<std::string, std::string> loadSceneFromFile(std::vector<Insta
         // Create instance
         Instance* instance = new Instance(id, name, type, pos[0], pos[1], pos[2], vbh, ibh);
         instance->meshNumber = meshNo;
+        auto libIt = gMeshLibrary.find(type);
+        if (libIt != gMeshLibrary.end()) {
+            attachMeshDataToInstance(instance, libIt->second);
+        }
+        else if (!importedMeshes.empty() && meshNo < importedMeshes.size()) {
+            attachMeshDataToInstance(instance, importedMeshes[meshNo].meshData);
+        }
         instance->rotation[0] = rot[0]; instance->rotation[1] = rot[1]; instance->rotation[2] = rot[2];
         instance->scale[0] = scale[0]; instance->scale[1] = scale[1]; instance->scale[2] = scale[2];
         instance->objectColor[0] = color[0]; instance->objectColor[1] = color[1];
@@ -3063,78 +3303,91 @@ int main(void)
     bgfx::VertexBufferHandle vbh_mesh;
     bgfx::IndexBufferHandle ibh_mesh;
     createMeshBuffers(meshData, vbh_mesh, ibh_mesh);
+    gMeshLibrary["mesh"] = meshData;
 
     //teapot generation
     MeshData teapotData = loadMesh("meshes/teapot.obj");
     bgfx::VertexBufferHandle vbh_teapot;
     bgfx::IndexBufferHandle ibh_teapot;
     createMeshBuffers(teapotData, vbh_teapot, ibh_teapot);
+    gMeshLibrary["teapot"] = teapotData;
 
     //stanford bunny generation
     MeshData bunnyData = loadMesh("meshes/bunny.obj");
     bgfx::VertexBufferHandle vbh_bunny;
     bgfx::IndexBufferHandle ibh_bunny;
     createMeshBuffers(bunnyData, vbh_bunny, ibh_bunny);
+    gMeshLibrary["bunny"] = bunnyData;
 
     //lucy generation
     MeshData lucyData = loadMesh("meshes/lucy.obj");
     bgfx::VertexBufferHandle vbh_lucy;
     bgfx::IndexBufferHandle ibh_lucy;
     createMeshBuffers(lucyData, vbh_lucy, ibh_lucy);
+    gMeshLibrary["lucy"] = lucyData;
 
     //comic border generation
     MeshData comicborder = loadMesh("comic elements/comicborder.obj");
     bgfx::VertexBufferHandle vbh_comicborder;
     bgfx::IndexBufferHandle ibh_comicborder;
     createMeshBuffers(comicborder, vbh_comicborder, ibh_comicborder);
+    gMeshLibrary["comicborder"] = comicborder;
 
     //comic bubble object 1
     MeshData comicbubble1 = loadMesh("comic elements/comicbubble1_right.obj");
     bgfx::VertexBufferHandle vbh_comicbubble1;
     bgfx::IndexBufferHandle ibh_comicbubble1;
     createMeshBuffers(comicbubble1, vbh_comicbubble1, ibh_comicbubble1);
+    gMeshLibrary["comicbubble1"] = comicbubble1;
 
     //comic bubble object 2
     MeshData comicbubble2 = loadMesh("comic elements/comicbubble2_right.obj");
     bgfx::VertexBufferHandle vbh_comicbubble2;
     bgfx::IndexBufferHandle ibh_comicbubble2;
     createMeshBuffers(comicbubble2, vbh_comicbubble2, ibh_comicbubble2);
+    gMeshLibrary["comicbubble2"] = comicbubble2;
 
     //comic bubble object 3
     MeshData comicbubble3 = loadMesh("comic elements/comicbubble3_right.obj");
     bgfx::VertexBufferHandle vbh_comicbubble3;
     bgfx::IndexBufferHandle ibh_comicbubble3;
     createMeshBuffers(comicbubble3, vbh_comicbubble3, ibh_comicbubble3);
+    gMeshLibrary["comicbubble3"] = comicbubble3;
 
     //comic bubble object 4
     MeshData comicbubble4 = loadMesh("comic elements/comicbubble4_left.obj");
     bgfx::VertexBufferHandle vbh_comicbubble4;
     bgfx::IndexBufferHandle ibh_comicbubble4;
     createMeshBuffers(comicbubble4, vbh_comicbubble4, ibh_comicbubble4);
+    gMeshLibrary["comicbubble4"] = comicbubble4;
 
     //comic bubble object 5
     MeshData comicbubble5 = loadMesh("comic elements/comicbubble5_left.obj");
     bgfx::VertexBufferHandle vbh_comicbubble5;
     bgfx::IndexBufferHandle ibh_comicbubble5;
     createMeshBuffers(comicbubble5, vbh_comicbubble5, ibh_comicbubble5);
+    gMeshLibrary["comicbubble5"] = comicbubble5;
 
     //comic bubble object 6
     MeshData comicbubble6 = loadMesh("comic elements/comicbubble6_left.obj");
     bgfx::VertexBufferHandle vbh_comicbubble6;
     bgfx::IndexBufferHandle ibh_comicbubble6;
     createMeshBuffers(comicbubble6, vbh_comicbubble6, ibh_comicbubble6);
+    gMeshLibrary["comicbubble6"] = comicbubble6;
 
     //comic bubble object 7
     MeshData comicbubble7 = loadMesh("comic elements/comicbubble7_middle.obj");
     bgfx::VertexBufferHandle vbh_comicbubble7;
     bgfx::IndexBufferHandle ibh_comicbubble7;
     createMeshBuffers(comicbubble7, vbh_comicbubble7, ibh_comicbubble7);
+    gMeshLibrary["comicbubble7"] = comicbubble7;
 
     //comic bubble object 8
     MeshData comicbubble8 = loadMesh("comic elements/comicbubble8_middle.obj");
     bgfx::VertexBufferHandle vbh_comicbubble8;
     bgfx::IndexBufferHandle ibh_comicbubble8;
     createMeshBuffers(comicbubble8, vbh_comicbubble8, ibh_comicbubble8);
+    gMeshLibrary["comicbubble8"] = comicbubble8;
 
     // simple quad for text rendering
     bgfx::VertexBufferHandle vbh_textQuad = bgfx::createVertexBuffer(
@@ -3259,6 +3512,7 @@ int main(void)
                     fileName, 0.0f, 0.0f, 0.0f,
                     vbh_imported, ibh_imported);
                 childInst->meshNumber = i;
+                attachMeshDataToInstance(childInst, importedMeshes[i].meshData);
 
                 // Decompose the imported mesh's transform
                 aiVector3D scaling, position;
@@ -3785,7 +4039,7 @@ int main(void)
         if (showMainMenu)
         {
             //VIDEO BG
-            
+
             {
                 ImGuiID dockspace_id = viewport->ID;
                 ImGui::DockSpaceOverViewport(dockspace_id, viewport, ImGuiDockNodeFlags_PassthruCentralNode);
@@ -4188,6 +4442,8 @@ int main(void)
                                             fileName, 0.0f, 0.0f, 0.0f,
                                             vbh_imported, ibh_imported);
                                         childInst->meshNumber = i;
+                                        attachMeshDataToInstance(childInst, importedMeshes[i].meshData);
+                                        attachMeshDataToInstance(childInst, importedMeshes[i].meshData);
                                         // Decompose the imported mesh's transform.
                                         aiVector3D scaling, position;
                                         aiQuaternion rotation;
@@ -4892,6 +5148,68 @@ int main(void)
                             }
                         }
                     }
+
+                    // MESH OPERATIONS 
+                    if (ImGui::CollapsingHeader("Mesh Operations")) {
+                        if (!selectedInstance->hasEditableMesh) {
+                            ImGui::TextColored(ImVec4(1, 0.6f, 0.4f, 1), "No editable mesh data for this object.");
+                        }
+                        else {
+                            static float mergeTolerance = 0.001f;
+                            static int smoothIterations = 1;
+                            static float smoothLambda = 0.5f;
+
+                            if (ImGui::Button("Subdivide")) {
+                                subdivideMesh(selectedInstance->meshData);
+                                detectBoundaries(selectedInstance->meshData, selectedInstance->boundaryFlags);
+                                updateInstanceBuffers(selectedInstance);
+                            }
+                            ImGui::Separator();
+                            ImGui::DragFloat("Merge tolerance", &mergeTolerance, 0.0001f, 0.0f, 0.05f, "%.4f");
+                            if (ImGui::Button("Merge Vertices")) {
+                                mergeVertices(selectedInstance->meshData, mergeTolerance);
+                                detectBoundaries(selectedInstance->meshData, selectedInstance->boundaryFlags);
+                                updateInstanceBuffers(selectedInstance);
+                            }
+                            ImGui::Separator();
+                            ImGui::Text("Morph Target");
+                            if (ImGui::Button("Set Morph Target From Current")) {
+                                selectedInstance->morphBase = selectedInstance->meshData;
+                                selectedInstance->morphTarget = selectedInstance->meshData;
+                                selectedInstance->hasMorphBase = selectedInstance->hasMorphTarget = true;
+                                selectedInstance->morphAlpha = 0.0f;
+                            }
+                            ImGui::SameLine();
+                            if (ImGui::Button("Capture Current As Target")) {
+                                selectedInstance->morphTarget = selectedInstance->meshData;
+                                selectedInstance->hasMorphTarget = true;
+                            }
+                            ImGui::SliderFloat("Morph Alpha", &selectedInstance->morphAlpha, 0.0f, 1.0f);
+                            if (selectedInstance->hasMorphTarget && selectedInstance->hasMorphBase) {
+                                applyMorph(selectedInstance);
+                                detectBoundaries(selectedInstance->meshData, selectedInstance->boundaryFlags);
+                                updateInstanceBuffers(selectedInstance);
+                            }
+
+                            ImGui::Separator();
+                            if (ImGui::Button("Detect Boundaries")) {
+                                detectBoundaries(selectedInstance->meshData, selectedInstance->boundaryFlags);
+                            }
+                            if (!selectedInstance->boundaryFlags.empty()) {
+                                int count = std::accumulate(selectedInstance->boundaryFlags.begin(), selectedInstance->boundaryFlags.end(), 0);
+                                ImGui::Text("Boundary verts: %d / %d", count, (int)selectedInstance->boundaryFlags.size());
+                            }
+
+                            ImGui::Separator();
+                            ImGui::SliderInt("Smoothing Iterations", &smoothIterations, 1, 10);
+                            ImGui::SliderFloat("Smoothing Lambda", &smoothLambda, 0.0f, 1.0f);
+                            if (ImGui::Button("Smooth")) {
+                                laplacianSmooth(selectedInstance->meshData, selectedInstance->boundaryFlags, smoothIterations, smoothLambda);
+                                updateInstanceBuffers(selectedInstance);
+                            }
+                        }
+                    }
+
 
                     //ImGui::Separator();
                     // You can add a button to remove the selected instance from the hierarchy.
