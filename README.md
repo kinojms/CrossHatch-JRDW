@@ -30,6 +30,7 @@ Our application can perform real-time rendering with the stylized shaders, and c
 - **Scene Management**: Allows users to create, save, and load scenes with multiple 3D objects.
 - **Real-time Preview**: Provides a real-time preview of the cross-hatch rendering as changes are made.
 - **Image Export**: Allows users to export rendered images of the 3D scenes with cross-hatch effects.
+- **Sample Models**: Includes built-in 3D reconstruction samples (cube, pyramid, sphere) for quick prototyping.
 
 ## GALLERY
 <img src="https://lh3.googleusercontent.com/d/1d5xtsXshLkUXKhrfJdCzLPpBAhXf1Jj0" alt="AnitoCrosshatchGallery1" width="700">
@@ -48,55 +49,140 @@ Coming soom ;)
 - Visual Studio 2022 or later
 - CMake 3.10 or later
 
-## SETUP 
+## SETUP & BUILD
 
-### <u>PREREQUISITES</u>
+### Prerequisites
 
-### bgfx.cmake
+Ensure you have the following installed:
+- **CMake 3.10 or later** ([download](https://cmake.org/download/))
+- **Visual Studio 2022** with C++ development tools
+- **Git** for cloning repositories
 
-- inside the root directory input the following commands:
+### Quick Start (Recommended)
+
+**Windows:**
+```powershell
+# 1. Clone and setup dependencies
+git clone <repo-url> CrossHatch-JRDW
+cd CrossHatch-JRDW
+.\setup.bat  # Run setup script (if available)
+
+# 2. Build using CMake
+cmake -S . -B build -G "Visual Studio 17 2022"
+cmake --build build --config Release
+
+# 3. Run the application
+.\run.bat
 ```
+
+**macOS/Linux:**
+```bash
+# 1. Clone and setup dependencies
+git clone <repo-url> CrossHatch-JRDW
+cd CrossHatch-JRDW
+
+# 2. Build using CMake
+cmake -S . -B build
+cmake --build build --config Release
+
+# 3. Run the application
+./run.sh
+```
+
+### Detailed Setup (Manual)
+
+#### Option A: CLI Build (Recommended for Development)
+
+```powershell
+# Configure CMake project
+cmake -S . -B build -G "Visual Studio 17 2022"
+
+# Build in Release mode
+cmake --build build --config Release
+
+# Run from the build directory (important for assets/shaders)
+cd build
+.\bin\CrossHatchEditor.exe
+cd ..
+```
+
+**Or simply use the provided run script:**
+```powershell
+.\run.bat
+```
+
+#### Option B: Visual Studio IDE
+
+1. Open the project folder in Visual Studio 2022
+2. Visual Studio will automatically detect CMake configuration
+3. Select the desired configuration and click Build
+4. Run directly from the IDE
+
+> ⚠️ **Note:** Do not mix Option A and Option B. If you've used both, delete either `.\build` or `.\out` directory to avoid conflicts.
+
+### Resolving Common Build Issues
+
+#### CMake Toolchain File Error
+```
+"CMake toolchain file in the cache is different from the current toolchain file"
+```
+**Solution:**
+```powershell
+Remove-Item -Recurse -Force build
+cmake -S . -B build
+cmake --build build --config Release
+```
+
+#### Missing vcpkg
+**Solution:**
+```powershell
+cd vcpkg
+.\bootstrap-vcpkg.bat
+cd ..
+cmake -S . -B build
+```
+
+#### Shader Files Not Found at Runtime
+**Solution:** Use the provided `run.bat` script which ensures the correct working directory, or always run the executable from the `build/` directory.
+
+### Manual Dependency Setup (Advanced)
+
+If the automatic setup doesn't work, manually clone these dependencies in the project root:
+
+#### bgfx.cmake
+```powershell
 git clone https://github.com/bkaradzic/bgfx.cmake.git
 cd bgfx.cmake
 git submodule init
 git submodule update
 cmake -S. -Bcmake-build
 cmake --build cmake-build
+cd ..
 ```
 
-### glfw
-
-- inside the root directory input the following commands:
-```
+#### glfw
+```powershell
 git clone https://github.com/glfw/glfw
 cd glfw
 cmake -S. -Bcmake-build
 cmake --build cmake-build
+cd ..
 ```
 
-### imgui (Deprecated)
-<s>
-- inside the root directory input the following commands:
-```
-git clone https://github.com/ocornut/imgui
-```
-</s>
-
-
-<b>Current ImGui is not compatible with the project, we have saved the specific version in a drive link temporarily</b>
-
-
-<b>https://drive.google.com/file/d/1TZdXJ-motQRek31hDl7U2WD4qSkyYMCl/view?usp=sharing</b>
-
-### assimp
-
-- inside the root directory input the following commands:
-```
+#### assimp
+```powershell
 git clone https://github.com/assimp/assimp.git
 cd assimp
 cmake CMakeLists.txt
-cmake --build .
+cmake --build . --config Release
+cd ..
 ```
+
+#### ImGui
+⚠️ **Note:** Current ImGui from GitHub is not compatible. Use the specific version from:
+**[ImGui Archive](https://drive.google.com/file/d/1TZdXJ-motQRek31hDl7U2WD4qSkyYMCl/view?usp=sharing)**
+
+Extract to project root as `imgui/` directory.
 
 ### imguizmo
 
@@ -110,6 +196,36 @@ git clone https://github.com/CedricGuillemet/ImGuizmo
 - Download FFmpeg from https://github.com/GyanD/codexffmpeg/releases/download/7.1.1/ffmpeg-7.1.1-full_build-shared.7z
 - Unzip the file and place it in the root directory of the project.
 - rename the folder to <b>"ffmpeg"</b> so that the path is `AnitoCrosshatch/ffmpeg`."
+
+## USING SAMPLE MODELS
+
+AnitoCrosshatch includes built-in sample 3D models created via 3D reconstruction. These are perfect for learning and testing the editor:
+
+### Quick Start with Samples
+
+1. **Build and run the application** (follow build instructions above)
+2. **Go to Menu → Add → Load Sample Models**
+3. **Select a sample model:**
+   - **sample_cube** - Simple cube for testing basic crosshatch effects
+   - **sample_pyramid** - Pyramid model demonstrating faceted geometry
+   - **sample_sphere** - Spherical model for curved surface testing
+
+4. **Experiment with:**
+   - Transform tools (translate, rotate, scale)
+   - Crosshatch parameters (line thickness, angle, density)
+   - Materials and textures
+   - Lighting effects
+
+### Sample Models Location
+
+All sample models are stored in: `meshes/samples/`
+
+To add your own sample models:
+1. Place OBJ files in `meshes/samples/`
+2. Rebuild the project
+3. New models automatically appear in the "Load Sample Models" menu
+
+See [meshes/samples/README.md](meshes/samples/README.md) for detailed information about sample models.
 
 ## BUILDING THE PROJECT
 

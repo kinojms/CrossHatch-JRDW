@@ -15,8 +15,9 @@ C:/CrossHatch-JRDW/bgfx.cmake/cmake/bimg/bimg.cmake
 C:/CrossHatch-JRDW/bgfx.cmake/cmake/bimg/bimg_decode.cmake
 C:/CrossHatch-JRDW/bgfx.cmake/cmake/bimg/bimg_encode.cmake
 C:/CrossHatch-JRDW/bgfx.cmake/cmake/bimg/texturec.cmake
-C:/cmake-3.22.6-windows-x86_64/share/cmake-3.22/Modules/CMakeCheckCompilerFlagCommonPatterns.cmake
-C:/cmake-3.22.6-windows-x86_64/share/cmake-3.22/Modules/CheckCXXCompilerFlag.cmake
-C:/cmake-3.22.6-windows-x86_64/share/cmake-3.22/Modules/CheckCXXSourceCompiles.cmake
-C:/cmake-3.22.6-windows-x86_64/share/cmake-3.22/Modules/Internal/CheckCompilerFlag.cmake
-C:/cmake-3.22.6-windows-x86_64/share/cmake-3.22/Modules/Internal/CheckSourceCompiles.cmake
+C:/Program Files/CMake/share/cmake-4.2/Modules/CMakeCheckCompilerFlagCommonPatterns.cmake
+C:/Program Files/CMake/share/cmake-4.2/Modules/CheckCXXCompilerFlag.cmake
+C:/Program Files/CMake/share/cmake-4.2/Modules/CheckCXXSourceCompiles.cmake
+C:/Program Files/CMake/share/cmake-4.2/Modules/Internal/CheckCompilerFlag.cmake
+C:/Program Files/CMake/share/cmake-4.2/Modules/Internal/CheckFlagCommonConfig.cmake
+C:/Program Files/CMake/share/cmake-4.2/Modules/Internal/CheckSourceCompiles.cmake

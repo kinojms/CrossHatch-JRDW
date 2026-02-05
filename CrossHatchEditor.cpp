@@ -34,6 +34,7 @@ namespace fs = std::filesystem;
 
 #include <algorithm>
 #include <string>
+#include <map>
 
 //include embedded shaders
 
@@ -2905,7 +2906,7 @@ int main(void)
 
     glfwSetKeyCallback(window, glfw_keyCallback);
 
-    Gallery::LoadGallery("./screenshots");
+//    Gallery::LoadGallery("./screenshots");
 
     /*ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
@@ -4582,6 +4583,176 @@ int main(void)
                                 << " mesh(es) grouped under " << fileName << "_group" << std::endl;
                             importedObjMap[fileName] = normalizedRelPath;
                         }
+                    }
+
+                    // Load Sample Models submenu (dynamic discovery)
+                    if (ImGui::BeginMenu("Load Sample Models"))
+                    {
+                        fs::path samplesRoot = fs::path("meshes") / "samples";
+                        if (fs::exists(samplesRoot) && fs::is_directory(samplesRoot))
+                        {
+                            // Helper to check extensions
+                            auto isMeshExt = [](const fs::path &p)->bool {
+                                std::string ext = p.extension().string();
+                                std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+                                return (ext == ".obj" || ext == ".ply" || ext == ".stl");
+                            };
+
+                            // Gather candidate display names and first mesh path for each
+                            std::map<std::string, fs::path> samplesMap;
+
+                            for (auto &entry : fs::directory_iterator(samplesRoot))
+                            {
+                                std::string itemName = entry.path().filename().string();
+                                fs::path meshFile;
+
+                                if (fs::is_regular_file(entry.path()) && isMeshExt(entry.path()))
+                                {
+                                    // Use file name as display
+                                    samplesMap[itemName] = entry.path();
+                                    continue;
+                                }
+
+                                if (fs::is_directory(entry.path()))
+                                {
+                                    // 1) top-level files
+                                    for (auto &f : fs::directory_iterator(entry.path()))
+                                    {
+                                        if (fs::is_regular_file(f.path()) && isMeshExt(f.path()))
+                                        {
+                                            meshFile = f.path();
+                                            break;
+                                        }
+                                    }
+                                    // 2) reconstruction/
+                                    if (meshFile.empty())
+                                    {
+                                        fs::path recon = entry.path() / "reconstruction";
+                                        if (fs::exists(recon) && fs::is_directory(recon))
+                                        {
+                                            for (auto &f : fs::recursive_directory_iterator(recon))
+                                            {
+                                                if (fs::is_regular_file(f.path()) && isMeshExt(f.path()))
+                                                {
+                                                    meshFile = f.path();
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    // 3) recursive fallback
+                                    if (meshFile.empty())
+                                    {
+                                        for (auto &f : fs::recursive_directory_iterator(entry.path()))
+                                        {
+                                            if (fs::is_regular_file(f.path()) && isMeshExt(f.path()))
+                                            {
+                                                meshFile = f.path();
+                                                break;
+                                            }
+                                        }
+                                    }
+
+                                    if (!meshFile.empty())
+                                        samplesMap[itemName] = meshFile;
+                                }
+                            }
+
+                            if (samplesMap.empty())
+                            {
+                                ImGui::MenuItem("No samples found");
+                            }
+                            else
+                            {
+                                for (const auto &p : samplesMap)
+                                {
+                                    const std::string &displayName = p.first;
+                                    const fs::path &meshPath = p.second;
+                                    if (ImGui::MenuItem(displayName.c_str()))
+                                    {
+                                        std::string samplePath = meshPath.string();
+                                        std::cout << "[Load Sample] Attempting to load: " << samplePath << std::endl;
+
+                                        if (!fs::exists(samplePath))
+                                        {
+                                            std::cerr << "[Load Sample] ERROR: File does not exist: " << samplePath << std::endl;
+                                        }
+                                        else
+                                        {
+                                            std::vector<ImportedMesh> importedMeshes = loadImportedMeshes(samplePath);
+                                            if (importedMeshes.empty())
+                                            {
+                                                std::cerr << "[Load Sample] ERROR: Failed to load meshes from: " << samplePath << std::endl;
+                                            }
+                                            else
+                                            {
+                                                // Compute group center
+                                                aiVector3D groupCenter(0.0f, 0.0f, 0.0f);
+                                                for (const auto& impMesh : importedMeshes)
+                                                {
+                                                    groupCenter.x += impMesh.transform.a4;
+                                                    groupCenter.y += impMesh.transform.b4;
+                                                    groupCenter.z += impMesh.transform.c4;
+                                                }
+                                                if (!importedMeshes.empty())
+                                                {
+                                                    groupCenter.x /= importedMeshes.size();
+                                                    groupCenter.y /= importedMeshes.size();
+                                                    groupCenter.z /= importedMeshes.size();
+                                                }
+
+                                                Instance* parentInstance = new Instance(instanceCounter++, displayName + "_group", "empty",
+                                                    groupCenter.x, groupCenter.y, groupCenter.z,
+                                                    BGFX_INVALID_HANDLE, BGFX_INVALID_HANDLE);
+                                                instances.push_back(parentInstance);
+
+                                                for (size_t i = 0; i < importedMeshes.size(); ++i)
+                                                {
+                                                    bgfx::VertexBufferHandle vbh_imported;
+                                                    bgfx::IndexBufferHandle ibh_imported;
+                                                    createMeshBuffers(importedMeshes[i].meshData, vbh_imported, ibh_imported);
+
+                                                    Instance* childInst = new Instance(instanceCounter++, displayName + "_" + std::to_string(i), displayName,
+                                                        0.0f, 0.0f, 0.0f, vbh_imported, ibh_imported);
+                                                    childInst->meshNumber = i;
+
+                                                    aiVector3D scaling, position;
+                                                    aiQuaternion rotation;
+                                                    importedMeshes[i].transform.Decompose(scaling, rotation, position);
+
+                                                    childInst->position[0] = position.x - groupCenter.x;
+                                                    childInst->position[1] = position.y - groupCenter.y;
+                                                    childInst->position[2] = position.z - groupCenter.z;
+                                                    childInst->rotation[0] = childInst->rotation[1] = childInst->rotation[2] = 0.0f;
+                                                    childInst->scale[0] = scaling.x;
+                                                    childInst->scale[1] = scaling.y;
+                                                    childInst->scale[2] = scaling.z;
+
+                                                    childInst->diffuseTexture = importedMeshes[i].diffuseTexture;
+                                                    if (importedMeshes[i].hasDiffuseColor && !bgfx::isValid(childInst->diffuseTexture))
+                                                    {
+                                                        childInst->objectColor[0] = importedMeshes[i].diffuseColor[0];
+                                                        childInst->objectColor[1] = importedMeshes[i].diffuseColor[1];
+                                                        childInst->objectColor[2] = importedMeshes[i].diffuseColor[2];
+                                                        childInst->objectColor[3] = importedMeshes[i].diffuseColor[3];
+                                                    }
+
+                                                    parentInstance->addChild(childInst);
+                                                }
+
+                                                std::cout << "[Load Sample] Successfully loaded " << displayName << " with " << importedMeshes.size() << " mesh(es)" << std::endl;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            ImGui::MenuItem("No samples found");
+                        }
+
+                        ImGui::EndMenu();
                     }
 
                     ImGui::EndMenu();

@@ -246,17 +246,22 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 )
 
 # ---------------------------------------------------------------------------
-# Copy Asset Directories
+# Set Runtime Output Directory (where executable and assets go)
 # ---------------------------------------------------------------------------
-file(COPY ${SHADERS_DIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-file(COPY ${MESHES_DIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-file(COPY ${NOISE_TEX_DIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-file(COPY ${VIDEOS_DIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-file(COPY ${FONTS_DIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-file(COPY ${COMIC_ELEMENTS_DIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-file(COPY ${ASSETS_DIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-file(COPY ${TEXTURES_DIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-file(COPY ${SAVES_DIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
+# ---------------------------------------------------------------------------
+# Copy Asset Directories (to build directory for consistent access)
+# ---------------------------------------------------------------------------
+file(COPY ${SHADERS_DIR} DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY ${MESHES_DIR} DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY ${NOISE_TEX_DIR} DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY ${VIDEOS_DIR} DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY ${FONTS_DIR} DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY ${COMIC_ELEMENTS_DIR} DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY ${ASSETS_DIR} DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY ${TEXTURES_DIR} DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY ${SAVES_DIR} DESTINATION ${CMAKE_BINARY_DIR})
 
 # ---------------------------------------------------------------------------
 # Packaging Configuration

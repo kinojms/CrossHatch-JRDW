@@ -23,8 +23,9 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C8059B36-8C8B-3D0D-A923-73A593075601}</ProjectGuid>
-    <WindowsTargetPlatformVersion>10.0.26100.0</WindowsTargetPlatformVersion>
     <Keyword>Win32Proj</Keyword>
+    <VcpkgEnabled>false</VcpkgEnabled>
+    <WindowsTargetPlatformVersion>10.0.26100.0</WindowsTargetPlatformVersion>
     <Platform>x64</Platform>
     <ProjectName>example-17-drawstress</ProjectName>
     <VCProjectUpgraderObjectName>NoUpgrade</VCProjectUpgraderObjectName>
@@ -54,7 +55,7 @@
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
   <ImportGroup Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="do_not_import_user.props" Condition="exists('do_not_import_user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
@@ -90,19 +91,28 @@
       <AdditionalOptions>%(AdditionalOptions) /Zc:__cplusplus</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <BufferSecurityCheck></BufferSecurityCheck>
+      <CallingConvention></CallingConvention>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <ExceptionHandling>Sync</ExceptionHandling>
+      <FloatingPointModel></FloatingPointModel>
+      <ForceConformanceInForLoopScope></ForceConformanceInForLoopScope>
       <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <MinimalRebuild></MinimalRebuild>
       <Optimization>Disabled</Optimization>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RemoveUnreferencedCodeData></RemoveUnreferencedCodeData>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <SupportJustMyCode></SupportJustMyCode>
+      <TreatWChar_tAsBuiltInType></TreatWChar_tAsBuiltInType>
       <UseFullPaths>false</UseFullPaths>
       <UseStandardPreprocessor>true</UseStandardPreprocessor>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;_CRT_SECURE_NO_WARNINGS;__STDC_FORMAT_MACROS;ENTRY_CONFIG_IMPLEMENT_MAIN=1;BX_CONFIG_DEBUG=1;BGFX_CONFIG_DEBUG_ANNOTATION=1;BGFX_CONFIG_MULTITHREADED=1;__STDC_LIMIT_MACROS;__STDC_CONSTANT_MACROS;CMAKE_INTDIR="Debug"</PreprocessorDefinitions>
       <ObjectFileName>$(IntDir)</ObjectFileName>
+      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;__STDC_FORMAT_MACROS;ENTRY_CONFIG_IMPLEMENT_MAIN=1;BX_CONFIG_DEBUG=1;BGFX_CONFIG_DEBUG_ANNOTATION=1;BGFX_CONFIG_MULTITHREADED=1;__STDC_LIMIT_MACROS;__STDC_CONSTANT_MACROS;CMAKE_INTDIR=\"Debug\"</PreprocessorDefinitions>
@@ -116,15 +126,31 @@
       <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
+    <PostBuildEvent>
+      <Message></Message>
+      <Command>setlocal
+C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -noprofile -executionpolicy Bypass -file C:/CrossHatch-JRDW/vcpkg/scripts/buildsystems/msbuild/applocal.ps1 -targetBinary C:/CrossHatch-JRDW/build/bgfx.cmake/cmake/bgfx/Debug/example-17-drawstress.exe -installedDir C:/CrossHatch-JRDW/vcpkg/installed/x64-windows/debug/bin -OutVariable out
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+    </PostBuildEvent>
     <Link>
       <AdditionalDependencies>Debug\example-common.lib;Debug\bgfx.lib;..\bimg\Debug\bimg.lib;..\bimg\Debug\bimg_decode.lib;..\bx\Debug\bx.lib;psapi.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+      <DataExecutionPrevention></DataExecutionPrevention>
       <EntryPointSymbol>mainCRTStartup</EntryPointSymbol>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImageHasSafeExceptionHandlers></ImageHasSafeExceptionHandlers>
       <ImportLibrary>C:/CrossHatch-JRDW/build/bgfx.cmake/cmake/bgfx/Debug/example-17-drawstress.lib</ImportLibrary>
+      <LinkErrorReporting></LinkErrorReporting>
       <ProgramDataBaseFile>C:/CrossHatch-JRDW/build/bgfx.cmake/cmake/bgfx/Debug/example-17-drawstress.pdb</ProgramDataBaseFile>
+      <RandomizedBaseAddress></RandomizedBaseAddress>
       <SubSystem>Windows</SubSystem>
     </Link>
     <ProjectReference>
@@ -136,13 +162,22 @@
       <AdditionalIncludeDirectories>C:\CrossHatch-JRDW\bgfx.cmake\bgfx\examples\common;C:\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty;C:\CrossHatch-JRDW\bgfx.cmake\bgfx\include;C:\CrossHatch-JRDW\bgfx.cmake\bx\include;C:\CrossHatch-JRDW\bgfx.cmake\bx\3rdparty;C:\CrossHatch-JRDW\bgfx.cmake\bx\include\compat\msvc;C:\CrossHatch-JRDW\bgfx.cmake\bimg\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>%(AdditionalOptions) /Zc:__cplusplus</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <BufferSecurityCheck></BufferSecurityCheck>
+      <CallingConvention></CallingConvention>
       <ExceptionHandling>Sync</ExceptionHandling>
+      <FloatingPointModel></FloatingPointModel>
+      <ForceConformanceInForLoopScope></ForceConformanceInForLoopScope>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <MinimalRebuild></MinimalRebuild>
       <Optimization>MaxSpeed</Optimization>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RemoveUnreferencedCodeData></RemoveUnreferencedCodeData>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <SupportJustMyCode></SupportJustMyCode>
+      <TreatWChar_tAsBuiltInType></TreatWChar_tAsBuiltInType>
       <UseFullPaths>false</UseFullPaths>
       <UseStandardPreprocessor>true</UseStandardPreprocessor>
       <WarningLevel>Level3</WarningLevel>
@@ -150,6 +185,7 @@
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <DebugInformationFormat>
       </DebugInformationFormat>
+      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_WARNINGS;__STDC_FORMAT_MACROS;ENTRY_CONFIG_IMPLEMENT_MAIN=1;BX_CONFIG_DEBUG=0;BGFX_CONFIG_DEBUG_ANNOTATION=0;BGFX_CONFIG_MULTITHREADED=1;__STDC_LIMIT_MACROS;__STDC_CONSTANT_MACROS;CMAKE_INTDIR=\"Release\"</PreprocessorDefinitions>
@@ -163,15 +199,31 @@
       <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
+    <PostBuildEvent>
+      <Message></Message>
+      <Command>setlocal
+C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -noprofile -executionpolicy Bypass -file C:/CrossHatch-JRDW/vcpkg/scripts/buildsystems/msbuild/applocal.ps1 -targetBinary C:/CrossHatch-JRDW/build/bgfx.cmake/cmake/bgfx/Release/example-17-drawstress.exe -installedDir C:/CrossHatch-JRDW/vcpkg/installed/x64-windows/bin -OutVariable out
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+    </PostBuildEvent>
     <Link>
       <AdditionalDependencies>Release\example-common.lib;Release\bgfx.lib;..\bimg\Release\bimg.lib;..\bimg\Release\bimg_decode.lib;..\bx\Release\bx.lib;psapi.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+      <DataExecutionPrevention></DataExecutionPrevention>
       <EntryPointSymbol>mainCRTStartup</EntryPointSymbol>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImageHasSafeExceptionHandlers></ImageHasSafeExceptionHandlers>
       <ImportLibrary>C:/CrossHatch-JRDW/build/bgfx.cmake/cmake/bgfx/Release/example-17-drawstress.lib</ImportLibrary>
+      <LinkErrorReporting></LinkErrorReporting>
       <ProgramDataBaseFile>C:/CrossHatch-JRDW/build/bgfx.cmake/cmake/bgfx/Release/example-17-drawstress.pdb</ProgramDataBaseFile>
+      <RandomizedBaseAddress></RandomizedBaseAddress>
       <SubSystem>Windows</SubSystem>
     </Link>
     <ProjectReference>
@@ -183,13 +235,22 @@
       <AdditionalIncludeDirectories>C:\CrossHatch-JRDW\bgfx.cmake\bgfx\examples\common;C:\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty;C:\CrossHatch-JRDW\bgfx.cmake\bgfx\include;C:\CrossHatch-JRDW\bgfx.cmake\bx\include;C:\CrossHatch-JRDW\bgfx.cmake\bx\3rdparty;C:\CrossHatch-JRDW\bgfx.cmake\bx\include\compat\msvc;C:\CrossHatch-JRDW\bgfx.cmake\bimg\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>%(AdditionalOptions) /Zc:__cplusplus</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <BufferSecurityCheck></BufferSecurityCheck>
+      <CallingConvention></CallingConvention>
       <ExceptionHandling>Sync</ExceptionHandling>
+      <FloatingPointModel></FloatingPointModel>
+      <ForceConformanceInForLoopScope></ForceConformanceInForLoopScope>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <MinimalRebuild></MinimalRebuild>
       <Optimization>MinSpace</Optimization>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RemoveUnreferencedCodeData></RemoveUnreferencedCodeData>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <SupportJustMyCode></SupportJustMyCode>
+      <TreatWChar_tAsBuiltInType></TreatWChar_tAsBuiltInType>
       <UseFullPaths>false</UseFullPaths>
       <UseStandardPreprocessor>true</UseStandardPreprocessor>
       <WarningLevel>Level3</WarningLevel>
@@ -197,6 +258,7 @@
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <DebugInformationFormat>
       </DebugInformationFormat>
+      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_WARNINGS;__STDC_FORMAT_MACROS;ENTRY_CONFIG_IMPLEMENT_MAIN=1;BX_CONFIG_DEBUG=0;BGFX_CONFIG_DEBUG_ANNOTATION=0;BGFX_CONFIG_MULTITHREADED=1;__STDC_LIMIT_MACROS;__STDC_CONSTANT_MACROS;CMAKE_INTDIR=\"MinSizeRel\"</PreprocessorDefinitions>
@@ -210,15 +272,31 @@
       <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
+    <PostBuildEvent>
+      <Message></Message>
+      <Command>setlocal
+C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -noprofile -executionpolicy Bypass -file C:/CrossHatch-JRDW/vcpkg/scripts/buildsystems/msbuild/applocal.ps1 -targetBinary C:/CrossHatch-JRDW/build/bgfx.cmake/cmake/bgfx/MinSizeRel/example-17-drawstress.exe -installedDir C:/CrossHatch-JRDW/vcpkg/installed/x64-windows/bin -OutVariable out
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+    </PostBuildEvent>
     <Link>
       <AdditionalDependencies>MinSizeRel\example-common.lib;MinSizeRel\bgfx.lib;..\bimg\MinSizeRel\bimg.lib;..\bimg\MinSizeRel\bimg_decode.lib;..\bx\MinSizeRel\bx.lib;psapi.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+      <DataExecutionPrevention></DataExecutionPrevention>
       <EntryPointSymbol>mainCRTStartup</EntryPointSymbol>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImageHasSafeExceptionHandlers></ImageHasSafeExceptionHandlers>
       <ImportLibrary>C:/CrossHatch-JRDW/build/bgfx.cmake/cmake/bgfx/MinSizeRel/example-17-drawstress.lib</ImportLibrary>
+      <LinkErrorReporting></LinkErrorReporting>
       <ProgramDataBaseFile>C:/CrossHatch-JRDW/build/bgfx.cmake/cmake/bgfx/MinSizeRel/example-17-drawstress.pdb</ProgramDataBaseFile>
+      <RandomizedBaseAddress></RandomizedBaseAddress>
       <SubSystem>Windows</SubSystem>
     </Link>
     <ProjectReference>
@@ -230,19 +308,29 @@
       <AdditionalIncludeDirectories>C:\CrossHatch-JRDW\bgfx.cmake\bgfx\examples\common;C:\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty;C:\CrossHatch-JRDW\bgfx.cmake\bgfx\include;C:\CrossHatch-JRDW\bgfx.cmake\bx\include;C:\CrossHatch-JRDW\bgfx.cmake\bx\3rdparty;C:\CrossHatch-JRDW\bgfx.cmake\bx\include\compat\msvc;C:\CrossHatch-JRDW\bgfx.cmake\bimg\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>%(AdditionalOptions) /Zc:__cplusplus</AdditionalOptions>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <BufferSecurityCheck></BufferSecurityCheck>
+      <CallingConvention></CallingConvention>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <ExceptionHandling>Sync</ExceptionHandling>
+      <FloatingPointModel></FloatingPointModel>
+      <ForceConformanceInForLoopScope></ForceConformanceInForLoopScope>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <MinimalRebuild></MinimalRebuild>
       <Optimization>MaxSpeed</Optimization>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RemoveUnreferencedCodeData></RemoveUnreferencedCodeData>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <SupportJustMyCode></SupportJustMyCode>
+      <TreatWChar_tAsBuiltInType></TreatWChar_tAsBuiltInType>
       <UseFullPaths>false</UseFullPaths>
       <UseStandardPreprocessor>true</UseStandardPreprocessor>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_WARNINGS;__STDC_FORMAT_MACROS;ENTRY_CONFIG_IMPLEMENT_MAIN=1;BX_CONFIG_DEBUG=0;BGFX_CONFIG_DEBUG_ANNOTATION=0;BGFX_CONFIG_MULTITHREADED=1;__STDC_LIMIT_MACROS;__STDC_CONSTANT_MACROS;CMAKE_INTDIR="RelWithDebInfo"</PreprocessorDefinitions>
       <ObjectFileName>$(IntDir)</ObjectFileName>
+      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_WARNINGS;__STDC_FORMAT_MACROS;ENTRY_CONFIG_IMPLEMENT_MAIN=1;BX_CONFIG_DEBUG=0;BGFX_CONFIG_DEBUG_ANNOTATION=0;BGFX_CONFIG_MULTITHREADED=1;__STDC_LIMIT_MACROS;__STDC_CONSTANT_MACROS;CMAKE_INTDIR=\"RelWithDebInfo\"</PreprocessorDefinitions>
@@ -256,15 +344,31 @@
       <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
+    <PostBuildEvent>
+      <Message></Message>
+      <Command>setlocal
+C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -noprofile -executionpolicy Bypass -file C:/CrossHatch-JRDW/vcpkg/scripts/buildsystems/msbuild/applocal.ps1 -targetBinary C:/CrossHatch-JRDW/build/bgfx.cmake/cmake/bgfx/RelWithDebInfo/example-17-drawstress.exe -installedDir C:/CrossHatch-JRDW/vcpkg/installed/x64-windows/bin -OutVariable out
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+    </PostBuildEvent>
     <Link>
       <AdditionalDependencies>RelWithDebInfo\example-common.lib;RelWithDebInfo\bgfx.lib;..\bimg\RelWithDebInfo\bimg.lib;..\bimg\RelWithDebInfo\bimg_decode.lib;..\bx\RelWithDebInfo\bx.lib;psapi.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+      <DataExecutionPrevention></DataExecutionPrevention>
       <EntryPointSymbol>mainCRTStartup</EntryPointSymbol>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImageHasSafeExceptionHandlers></ImageHasSafeExceptionHandlers>
       <ImportLibrary>C:/CrossHatch-JRDW/build/bgfx.cmake/cmake/bgfx/RelWithDebInfo/example-17-drawstress.lib</ImportLibrary>
+      <LinkErrorReporting></LinkErrorReporting>
       <ProgramDataBaseFile>C:/CrossHatch-JRDW/build/bgfx.cmake/cmake/bgfx/RelWithDebInfo/example-17-drawstress.pdb</ProgramDataBaseFile>
+      <RandomizedBaseAddress></RandomizedBaseAddress>
       <SubSystem>Windows</SubSystem>
     </Link>
     <ProjectReference>
@@ -436,7 +540,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <UseUtf8Encoding>Always</UseUtf8Encoding>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule C:/CrossHatch-JRDW/bgfx.cmake/cmake/bgfx/CMakeLists.txt</Message>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
-C:\cmake-3.22.6-windows-x86_64\bin\cmake.exe -SC:/CrossHatch-JRDW -BC:/CrossHatch-JRDW/build --check-stamp-file C:/CrossHatch-JRDW/build/bgfx.cmake/cmake/bgfx/CMakeFiles/generate.stamp
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/CrossHatch-JRDW -BC:/CrossHatch-JRDW/build --check-stamp-file C:/CrossHatch-JRDW/build/bgfx.cmake/cmake/bgfx/CMakeFiles/generate.stamp
 if %errorlevel% neq 0 goto :cmEnd
 :cmEnd
 endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
@@ -444,12 +548,12 @@ endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
 exit /b %1
 :cmDone
 if %errorlevel% neq 0 goto :VCEnd</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\dear-imgui.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\fcpp.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\glsl-optimizer.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\glslang.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\meshoptimizer.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\spirv-cross.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\spirv-opt.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\webgpu.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\bgfx.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\examples.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\generated\shader.cpp.in;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\generated\vertexlayout.cpp.in;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\geometryc.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\geometryv.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\shaderc.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\shared.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\texturev.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\util\ConfigureDebugging.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfxToolUtils.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeParseArguments.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\dear-imgui.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\fcpp.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\glsl-optimizer.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\glslang.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\meshoptimizer.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\spirv-cross.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\spirv-opt.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\webgpu.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\bgfx.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\examples.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\generated\shader.cpp.in;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\generated\vertexlayout.cpp.in;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\geometryc.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\geometryv.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\shaderc.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\shared.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\texturev.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\util\ConfigureDebugging.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfxToolUtils.cmake;C:\Program Files\CMake\share\cmake-4.2\Modules\CMakeParseArguments.cmake;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\CMakeFiles\generate.stamp</Outputs>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule C:/CrossHatch-JRDW/bgfx.cmake/cmake/bgfx/CMakeLists.txt</Message>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
-C:\cmake-3.22.6-windows-x86_64\bin\cmake.exe -SC:/CrossHatch-JRDW -BC:/CrossHatch-JRDW/build --check-stamp-file C:/CrossHatch-JRDW/build/bgfx.cmake/cmake/bgfx/CMakeFiles/generate.stamp
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/CrossHatch-JRDW -BC:/CrossHatch-JRDW/build --check-stamp-file C:/CrossHatch-JRDW/build/bgfx.cmake/cmake/bgfx/CMakeFiles/generate.stamp
 if %errorlevel% neq 0 goto :cmEnd
 :cmEnd
 endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
@@ -457,12 +561,12 @@ endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
 exit /b %1
 :cmDone
 if %errorlevel% neq 0 goto :VCEnd</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\dear-imgui.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\fcpp.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\glsl-optimizer.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\glslang.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\meshoptimizer.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\spirv-cross.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\spirv-opt.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\webgpu.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\bgfx.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\examples.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\generated\shader.cpp.in;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\generated\vertexlayout.cpp.in;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\geometryc.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\geometryv.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\shaderc.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\shared.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\texturev.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\util\ConfigureDebugging.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfxToolUtils.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeParseArguments.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\dear-imgui.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\fcpp.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\glsl-optimizer.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\glslang.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\meshoptimizer.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\spirv-cross.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\spirv-opt.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\webgpu.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\bgfx.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\examples.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\generated\shader.cpp.in;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\generated\vertexlayout.cpp.in;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\geometryc.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\geometryv.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\shaderc.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\shared.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\texturev.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\util\ConfigureDebugging.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfxToolUtils.cmake;C:\Program Files\CMake\share\cmake-4.2\Modules\CMakeParseArguments.cmake;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\CMakeFiles\generate.stamp</Outputs>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
       <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Building Custom Rule C:/CrossHatch-JRDW/bgfx.cmake/cmake/bgfx/CMakeLists.txt</Message>
       <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
-C:\cmake-3.22.6-windows-x86_64\bin\cmake.exe -SC:/CrossHatch-JRDW -BC:/CrossHatch-JRDW/build --check-stamp-file C:/CrossHatch-JRDW/build/bgfx.cmake/cmake/bgfx/CMakeFiles/generate.stamp
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/CrossHatch-JRDW -BC:/CrossHatch-JRDW/build --check-stamp-file C:/CrossHatch-JRDW/build/bgfx.cmake/cmake/bgfx/CMakeFiles/generate.stamp
 if %errorlevel% neq 0 goto :cmEnd
 :cmEnd
 endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
@@ -470,12 +574,12 @@ endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
 exit /b %1
 :cmDone
 if %errorlevel% neq 0 goto :VCEnd</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\dear-imgui.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\fcpp.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\glsl-optimizer.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\glslang.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\meshoptimizer.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\spirv-cross.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\spirv-opt.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\webgpu.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\bgfx.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\examples.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\generated\shader.cpp.in;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\generated\vertexlayout.cpp.in;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\geometryc.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\geometryv.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\shaderc.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\shared.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\texturev.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\util\ConfigureDebugging.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfxToolUtils.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeParseArguments.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\dear-imgui.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\fcpp.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\glsl-optimizer.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\glslang.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\meshoptimizer.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\spirv-cross.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\spirv-opt.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\webgpu.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\bgfx.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\examples.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\generated\shader.cpp.in;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\generated\vertexlayout.cpp.in;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\geometryc.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\geometryv.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\shaderc.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\shared.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\texturev.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\util\ConfigureDebugging.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfxToolUtils.cmake;C:\Program Files\CMake\share\cmake-4.2\Modules\CMakeParseArguments.cmake;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\CMakeFiles\generate.stamp</Outputs>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
       <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Building Custom Rule C:/CrossHatch-JRDW/bgfx.cmake/cmake/bgfx/CMakeLists.txt</Message>
       <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
-C:\cmake-3.22.6-windows-x86_64\bin\cmake.exe -SC:/CrossHatch-JRDW -BC:/CrossHatch-JRDW/build --check-stamp-file C:/CrossHatch-JRDW/build/bgfx.cmake/cmake/bgfx/CMakeFiles/generate.stamp
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/CrossHatch-JRDW -BC:/CrossHatch-JRDW/build --check-stamp-file C:/CrossHatch-JRDW/build/bgfx.cmake/cmake/bgfx/CMakeFiles/generate.stamp
 if %errorlevel% neq 0 goto :cmEnd
 :cmEnd
 endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
@@ -483,7 +587,7 @@ endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
 exit /b %1
 :cmDone
 if %errorlevel% neq 0 goto :VCEnd</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\dear-imgui.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\fcpp.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\glsl-optimizer.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\glslang.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\meshoptimizer.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\spirv-cross.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\spirv-opt.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\webgpu.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\bgfx.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\examples.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\generated\shader.cpp.in;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\generated\vertexlayout.cpp.in;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\geometryc.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\geometryv.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\shaderc.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\shared.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\texturev.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\util\ConfigureDebugging.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfxToolUtils.cmake;C:\cmake-3.22.6-windows-x86_64\share\cmake-3.22\Modules\CMakeParseArguments.cmake;%(AdditionalInputs)</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\dear-imgui.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\fcpp.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\glsl-optimizer.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\glslang.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\meshoptimizer.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\spirv-cross.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\spirv-opt.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\3rdparty\webgpu.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\bgfx.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\examples.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\generated\shader.cpp.in;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\generated\vertexlayout.cpp.in;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\geometryc.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\geometryv.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\shaderc.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\shared.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\texturev.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\util\ConfigureDebugging.cmake;C:\CrossHatch-JRDW\bgfx.cmake\cmake\bgfxToolUtils.cmake;C:\Program Files\CMake\share\cmake-4.2\Modules\CMakeParseArguments.cmake;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\CrossHatch-JRDW\build\bgfx.cmake\cmake\bgfx\CMakeFiles\generate.stamp</Outputs>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
     </CustomBuild>
@@ -495,6 +599,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     </None>
     <ClInclude Include="C:\CrossHatch-JRDW\bgfx.cmake\bgfx\examples\17-drawstress\vs_drawstress.bin.h" />
   </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
     <ProjectReference Include="C:\CrossHatch-JRDW\build\ZERO_CHECK.vcxproj">
       <Project>{AAC8710C-EB8C-3E3F-8CBD-78E2F2A137E1}</Project>
