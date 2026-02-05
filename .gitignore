@@ -361,6 +361,10 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /ffmpeg
-assimp
-bgfx.cmake
-glfw
+
+/glfw
+/imgui
+/ImGuizmo
+/vcpkg
+/assimp
+/bgfx.cmake

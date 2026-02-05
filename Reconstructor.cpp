@@ -95,8 +95,8 @@ namespace Reconstructor {
     static std::string existingImagesDir;
 
     // Paths/commands for post-extraction automation
-    static const char* kColmapScriptPath = "C:\\0_Thesis\\instant-ngp-rtx-3000\\scripts\\colmap2nerf.py";
-    static const char* kInstantNgpCmd = "C:\\0_Thesis\\instant-ngp-rtx-3000\\instant-ngp.exe";
+    static const char* kColmapScriptPath = "E:\\Development\\School_Projects\\Thesis\\instant-ngp-2000\\scripts\\colmap2nerf.py";
+    static const char* kInstantNgpCmd = "E:\\Development\\School_Projects\\Thesis\\instant-ngp-2000\\instant-ngp.exe";
 
     static std::string buildDir = fs::current_path().string();
     static std::string projectRoot = fs::absolute(buildDir + "/../../..").string();
