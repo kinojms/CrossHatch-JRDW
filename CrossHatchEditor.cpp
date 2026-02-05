@@ -3853,19 +3853,34 @@ int main(void)
 
         // OVERRIDE default blue tabs:
         ImGuiStyle& style = ImGui::GetStyle();
-        style.Colors[ImGuiCol_TitleBg] = ImVec4(0.20f, 0.3f, 0.0f, 0.75f); // unfocused
-        style.Colors[ImGuiCol_TitleBgActive] = ImVec4(0.20f, 0.40f, 0.0f, 0.75f); // active
-        style.Colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.10f, 0.10f, 0.10f, 1.0f); // collapsed
+        // Inactive window title bar: #145C48
+        style.Colors[ImGuiCol_TitleBg] = ImVec4(0.078f, 0.361f, 0.282f, 1.0f); // inactive
+        // Active window title bar: #2ccb6f (green accent)
+        style.Colors[ImGuiCol_TitleBgActive] = ImVec4(0.173f, 0.796f, 0.435f, 1.0f); // active
+        style.Colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.078f, 0.361f, 0.282f, 1.0f); // collapsed
 
         // Optional: Tabs
-        style.Colors[ImGuiCol_Tab] = ImVec4(0.20f, 0.3f, 0.0f, 0.75f); // unfocused
-        style.Colors[ImGuiCol_TabActive] = ImVec4(0.20f, 0.60f, 0.0f, 0.75f); // active
-        style.Colors[ImGuiCol_TabHovered] = ImVec4(0.10f, 0.10f, 0.10f, 1.0f); 
+        style.Colors[ImGuiCol_Tab] = ImVec4(0.078f, 0.361f, 0.282f, 1.0f); // unfocused
+        style.Colors[ImGuiCol_TabActive] = ImVec4(0.173f, 0.796f, 0.435f, 1.0f); // active
+        style.Colors[ImGuiCol_TabHovered] = ImVec4(0.173f, 0.796f, 0.435f, 1.0f); 
 
-        style.Colors[ImGuiCol_TabUnfocused] = ImVec4(0.15f, 0.15f, 0.15f, 1.0f);   // unfocused inactive
-        style.Colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0, 0, 0, 1.0f); // unfocused active
+        style.Colors[ImGuiCol_TabUnfocused] = ImVec4(0.078f, 0.361f, 0.282f, 1.0f);   // unfocused inactive
+        style.Colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.173f, 0.796f, 0.435f, 1.0f); // unfocused active
 
+        // Button colors
+        style.Colors[ImGuiCol_Button] = ImVec4(0.078f, 0.361f, 0.282f, 1.0f); // inactive button
+        style.Colors[ImGuiCol_ButtonHovered] = ImVec4(0.173f, 0.796f, 0.435f, 1.0f); // hovered
+        style.Colors[ImGuiCol_ButtonActive] = ImVec4(0.173f, 0.796f, 0.435f, 1.0f); // active
 
+        // Header colors
+        style.Colors[ImGuiCol_Header] = ImVec4(0.078f, 0.361f, 0.282f, 1.0f); // inactive header
+        style.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.173f, 0.796f, 0.435f, 1.0f); // hovered
+        style.Colors[ImGuiCol_HeaderActive] = ImVec4(0.173f, 0.796f, 0.435f, 1.0f); // active
+
+        // Accent colors for interactive elements
+        style.Colors[ImGuiCol_CheckMark] = ImVec4(0.173f, 0.796f, 0.435f, 1.0f); // green checkmark
+        style.Colors[ImGuiCol_SliderGrab] = ImVec4(0.173f, 0.796f, 0.435f, 1.0f); // green slider
+        style.Colors[ImGuiCol_SliderGrabActive] = ImVec4(0.200f, 1.0f, 0.5f, 1.0f); // brighter green when active
 
         ImGui_ImplGlfw_NewFrame();
         ImGui_Implbgfx_NewFrame();
@@ -3905,14 +3920,11 @@ int main(void)
             //    ImGui::End();
             //}
 
-            // Render the main menu on top.
+            // Render the main menu overlay on top (if active)
+            if (showMainMenu)
             {
-                
-                ImGuiID dockspace_id = viewport->ID;
-                ImGui::DockSpaceOverViewport(dockspace_id, viewport, ImGuiDockNodeFlags_PassthruCentralNode);
-
-                // Main menu window with opaque background.
-                ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 0.5f));
+                // Main menu window with semi-transparent background.
+                ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 0.8f));
 
                 //button colors
                 ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.20f, 0.6f, 0.0f, 0.75f)); // Active
@@ -3983,12 +3995,12 @@ int main(void)
                 }
                 ImGui::Dummy(ImVec2(0.0f, spacing));
 
-                if (CenterButton("Gallery")) {
-                    showMainMenu = false;
-                    showCreditsPage = false;
-                    showGallery = true;
-                }
-                ImGui::Dummy(ImVec2(0.0f, spacing));
+                // if (CenterButton("Gallery")) {
+                //     showMainMenu = false;
+                //     showCreditsPage = false;
+                //     showGallery = true;
+                // }
+                // ImGui::Dummy(ImVec2(0.0f, spacing));
 
                 if (CenterButton("Credits")) {
                     showCreditsPage = true;
@@ -4150,7 +4162,8 @@ int main(void)
 				showGallery = true; // Show gallery again
             }
         }
-        else if (!takingScreenshot)
+        // Always render main UI if not taking screenshot (except for credits/gallery overlays)
+        if (!takingScreenshot && !showCreditsPage && !showGallery && !Gallery::fullscreenOpen)
         {
             //imgui loop
             //ImGui_ImplGlfw_NewFrame();
@@ -4159,7 +4172,6 @@ int main(void)
 
             //transformation gizmo
             ImGuizmo::BeginFrame();
-
 
             ImGuiID dockspace_id = viewport->ID;
             ImGui::DockSpaceOverViewport(dockspace_id, viewport, ImGuiDockNodeFlags_PassthruCentralNode);
