@@ -28,10 +28,10 @@ void Logger::Clear() {
     logBuffer.clear();
 }
 
-void Logger::DrawImGuiLogger() {
+void Logger::DrawImGuiLogger(bool* p_open) {
     std::lock_guard<std::mutex> lock(logMutex);
 
-    ImGui::Begin("Log Console");
+    ImGui::Begin("Log Console", p_open);
     
     //not working
     /*if (ImGui::Button("Clear")) {

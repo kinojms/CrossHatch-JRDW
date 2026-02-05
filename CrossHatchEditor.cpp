@@ -1,4 +1,4 @@
-// CrossHatchEditor.cpp : Defines the entry point for the application.
+﻿// CrossHatchEditor.cpp : Defines the entry point for the application.
 //
 #include "CrossHatchEditor.h"
 #include "Reconstructor.h"
@@ -94,6 +94,19 @@ static bgfx::ProgramHandle unlitColorProgram = BGFX_INVALID_HANDLE;
 #define PICKING_DIM 128
 
 static bool useGlobalCrosshatchSettings = true;
+
+// Window visibility toggles
+static bool show_Inspector = true;
+static bool show_ObjectList = true;
+static bool show_Gallery = true;
+static bool show_Reconstructor = true;
+static bool show_Info = true;
+static bool show_Controls = true;
+static bool show_Screenshot = true;
+static bool show_CameraSettings = true;
+static bool show_Cameras = true;
+static bool show_LogConsole = true;
+
 // (Define TAU in C++ too)
 const float TAU = 6.28318530718f;
 // Declare static variables to hold our crosshatch parameters:
@@ -116,6 +129,62 @@ static float layerPatternScale = 0.5f;          // Inner Hatch Scale or Layer Pa
 static float layerStrokeMult = 0.250f;           // Inner Hatch Density or Layer Stroke Multiplier
 static float layerAngle = 2.983f;               // Inner Hatch Angle or Layer Angle
 static float layerLineThickness = 10.0f;        // Inner Hatch Weight or Layer Line Thickness
+
+// Persistence helpers for window visibility
+static void LoadWindowVisibilityConfig(const std::string& filename)
+{
+    std::ifstream in(filename);
+    if (!in.is_open())
+        return;
+
+    auto trim = [](std::string &s) {
+        while (!s.empty() && isspace((unsigned char)s.back())) s.pop_back();
+        while (!s.empty() && isspace((unsigned char)s.front())) s.erase(s.begin());
+    };
+
+    std::string line;
+    while (std::getline(in, line))
+    {
+        if (line.empty())
+            continue;
+        auto pos = line.find('=');
+        if (pos == std::string::npos)
+            continue;
+        std::string key = line.substr(0, pos);
+        std::string val = line.substr(pos + 1);
+        trim(key); trim(val);
+        bool v = (val == "1" || val == "true" || val == "True");
+
+        if (key == "Inspector") show_Inspector = v;
+        else if (key == "ObjectList") show_ObjectList = v;
+        else if (key == "Gallery") show_Gallery = v;
+        else if (key == "Reconstructor") show_Reconstructor = v;
+        else if (key == "Info") show_Info = v;
+        else if (key == "Controls") show_Controls = v;
+        else if (key == "Screenshot") show_Screenshot = v;
+        else if (key == "CameraSettings") show_CameraSettings = v;
+        else if (key == "Cameras") show_Cameras = v;
+        else if (key == "LogConsole") show_LogConsole = v;
+    }
+}
+
+static void SaveWindowVisibilityConfig(const std::string& filename)
+{
+    std::ofstream out(filename, std::ios::trunc);
+    if (!out.is_open())
+        return;
+
+    out << "Inspector=" << (show_Inspector ? "1" : "0") << "\n";
+    out << "ObjectList=" << (show_ObjectList ? "1" : "0") << "\n";
+    out << "Gallery=" << (show_Gallery ? "1" : "0") << "\n";
+    out << "Reconstructor=" << (show_Reconstructor ? "1" : "0") << "\n";
+    out << "Info=" << (show_Info ? "1" : "0") << "\n";
+    out << "Controls=" << (show_Controls ? "1" : "0") << "\n";
+    out << "Screenshot=" << (show_Screenshot ? "1" : "0") << "\n";
+    out << "CameraSettings=" << (show_CameraSettings ? "1" : "0") << "\n";
+    out << "Cameras=" << (show_Cameras ? "1" : "0") << "\n";
+    out << "LogConsole=" << (show_LogConsole ? "1" : "0") << "\n";
+}
 
 bgfx::TextureHandle noiseTexture = BGFX_INVALID_HANDLE;
 
@@ -2948,7 +3017,7 @@ int main(void)
         std::cerr << "Failed to initialize GLFW" << std::endl;
         return false;
     }
-    GLFWwindow* window = glfwCreateWindow(WNDW_WIDTH, WNDW_HEIGHT, "Anito GeoForge", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(WNDW_WIDTH, WNDW_HEIGHT, "AnitoScan", NULL, NULL);
     if (!window) {
         std::cerr << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
@@ -2974,6 +3043,8 @@ int main(void)
     //Initialize ImGui
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
+    // Load saved window visibility state (if any)
+    LoadWindowVisibilityConfig("window_visibility.cfg");
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     ImGuiWindowFlags window_flags = 0;
@@ -2983,7 +3054,9 @@ int main(void)
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
-    io.Fonts->AddFontFromFileTTF("fonts/Inter.ttf", 18.0f);
+    io.Fonts->AddFontFromFileTTF("fonts/Inter.ttf", 16.0f);
+    ImFont* fontSmall = io.Fonts->AddFontFromFileTTF("fonts/Inter.ttf", 28.0f);
+    ImFont* fontLarge = io.Fonts->AddFontFromFileTTF("fonts/Inter.ttf", 64); // Baked at high res
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_Implbgfx_Init(255);
 
@@ -3861,31 +3934,46 @@ int main(void)
         glfwPollEvents();
 
         ImGuiViewport* viewport = ImGui::GetMainViewport();
-        static VideoPlayer videoPlayer;
-        static bool videoLoaded = false;
-        if (!videoLoaded)
-        {
-            videoLoaded = videoPlayer.load("videos\\AnitoCrossHatchTrailer.mp4");
-        }
+        //static VideoPlayer videoPlayer;
+        //static bool videoLoaded = false;
+        //if (!videoLoaded)
+        //{
+        //    videoLoaded = videoPlayer.load("videos\\AnitoCrossHatchTrailer.mp4");
+        //}
         static bool showMainMenu = true;
         static bool showCreditsPage = false;
         static bool showGallery = false;
 
         // OVERRIDE default blue tabs:
         ImGuiStyle& style = ImGui::GetStyle();
-        style.Colors[ImGuiCol_TitleBg] = ImVec4(0.20f, 0.3f, 0.0f, 0.75f); // unfocused
-        style.Colors[ImGuiCol_TitleBgActive] = ImVec4(0.20f, 0.40f, 0.0f, 0.75f); // active
-        style.Colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.10f, 0.10f, 0.10f, 1.0f); // collapsed
+        // Inactive window title bar: #145C48
+        style.Colors[ImGuiCol_TitleBg] = ImVec4(0.078f, 0.361f, 0.282f, 1.0f); // inactive
+        // Active window title bar: #2ccb6f (green accent)
+        style.Colors[ImGuiCol_TitleBgActive] = ImVec4(0.173f, 0.796f, 0.435f, 1.0f); // active
+        style.Colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.078f, 0.361f, 0.282f, 1.0f); // collapsed
 
         // Optional: Tabs
-        style.Colors[ImGuiCol_Tab] = ImVec4(0.20f, 0.3f, 0.0f, 0.75f); // unfocused
-        style.Colors[ImGuiCol_TabActive] = ImVec4(0.20f, 0.60f, 0.0f, 0.75f); // active
-        style.Colors[ImGuiCol_TabHovered] = ImVec4(0.10f, 0.10f, 0.10f, 1.0f); 
+        style.Colors[ImGuiCol_Tab] = ImVec4(0.078f, 0.361f, 0.282f, 1.0f); // unfocused
+        style.Colors[ImGuiCol_TabActive] = ImVec4(0.173f, 0.796f, 0.435f, 1.0f); // active
+        style.Colors[ImGuiCol_TabHovered] = ImVec4(0.173f, 0.796f, 0.435f, 1.0f); 
 
-        style.Colors[ImGuiCol_TabUnfocused] = ImVec4(0.15f, 0.15f, 0.15f, 1.0f);   // unfocused inactive
-        style.Colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0, 0, 0, 1.0f); // unfocused active
+        style.Colors[ImGuiCol_TabUnfocused] = ImVec4(0.078f, 0.361f, 0.282f, 1.0f);   // unfocused inactive
+        style.Colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.173f, 0.796f, 0.435f, 1.0f); // unfocused active
 
+        // Button colors
+        style.Colors[ImGuiCol_Button] = ImVec4(0.078f, 0.361f, 0.282f, 1.0f); // inactive button
+        style.Colors[ImGuiCol_ButtonHovered] = ImVec4(0.173f, 0.796f, 0.435f, 1.0f); // hovered
+        style.Colors[ImGuiCol_ButtonActive] = ImVec4(0.173f, 0.796f, 0.435f, 1.0f); // active
 
+        // Header colors
+        style.Colors[ImGuiCol_Header] = ImVec4(0.078f, 0.361f, 0.282f, 1.0f); // inactive header
+        style.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.173f, 0.796f, 0.435f, 1.0f); // hovered
+        style.Colors[ImGuiCol_HeaderActive] = ImVec4(0.173f, 0.796f, 0.435f, 1.0f); // active
+
+        // Accent colors for interactive elements
+        style.Colors[ImGuiCol_CheckMark] = ImVec4(0.173f, 0.796f, 0.435f, 1.0f); // green checkmark
+        style.Colors[ImGuiCol_SliderGrab] = ImVec4(0.173f, 0.796f, 0.435f, 1.0f); // green slider
+        style.Colors[ImGuiCol_SliderGrabActive] = ImVec4(0.200f, 1.0f, 0.5f, 1.0f); // brighter green when active
 
         ImGui_ImplGlfw_NewFrame();
         ImGui_Implbgfx_NewFrame();
@@ -3955,17 +4043,15 @@ int main(void)
             //    ImGui::End();
             //}
 
-            // Render the main menu on top.
+            // Render the main menu overlay on top (if active)
+            if (showMainMenu)
             {
-                ImGuiID dockspace_id = viewport->ID;
-                ImGui::DockSpaceOverViewport(dockspace_id, viewport, ImGuiDockNodeFlags_PassthruCentralNode);
-
-                // Main menu window with opaque background.
-                ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 0.5f));
+                // Main menu window with semi-transparent background.
+                ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 0.8f));
 
                 //button colors
-                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.20f, 0.6f, 0.0f, 0.75f)); // Active
-                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.20f, 0.80f, 0.0f, 0.75f)); // Hovered
+                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.078f, 0.361f, 0.282f, 1.0f)); // Inactive
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.173f, 0.796f, 0.435f, 1.0f)); // Hovered
                 ImGui::Begin("Main Menu", nullptr,
                     ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
                 ImGuiIO& io = ImGui::GetIO();
@@ -3985,20 +4071,23 @@ int main(void)
                 float logoY = (windowHeight * 0.3f) - (logoSize.y + 20); // 20px spacing
 
                 // Set font scale before measuring
-                ImGui::SetWindowFontScale(3.0f);
+                //ImGui::SetWindowFontScale(3.0f);
+				ImGui::PushFont(fontLarge);
 
                 // Measure text at correct scale
-                ImVec2 titleSize = ImGui::CalcTextSize("Anito GeoForge");
+                ImVec2 titleSize = ImGui::CalcTextSize("AnitoScan");
 
                 // Center position
                 float titleX = (windowWidth - titleSize.x) * 0.5f;
                 float titleY = (windowHeight * 0.3f) - (titleSize.y * 0.5f);
 
                 ImGui::SetCursorPos(ImVec2(titleX, titleY));
-                ImGui::Text("Anito GeoForge");
+                ImGui::Text("AnitoScan");
+                ImGui::PopFont();
 
                 // Restore font scale
-                ImGui::SetWindowFontScale(2.0f);
+                //ImGui::SetWindowFontScale(2.0f);
+                ImGui::PushFont(fontSmall);
 
                 // Vertical spacing
                 ImGui::Dummy(ImVec2(0, 50));
@@ -4029,12 +4118,12 @@ int main(void)
                 }
                 ImGui::Dummy(ImVec2(0.0f, spacing));
 
-                if (CenterButton("Gallery")) {
-                    showMainMenu = false;
-                    showCreditsPage = false;
-                    showGallery = true;
-                }
-                ImGui::Dummy(ImVec2(0.0f, spacing));
+                // if (CenterButton("Gallery")) {
+                //     showMainMenu = false;
+                //     showCreditsPage = false;
+                //     showGallery = true;
+                // }
+                // ImGui::Dummy(ImVec2(0.0f, spacing));
 
                 if (CenterButton("Credits")) {
                     showCreditsPage = true;
@@ -4045,7 +4134,7 @@ int main(void)
                 if (CenterButton("Exit")) {
                     glfwSetWindowShouldClose(window, true);
                 }
-
+                ImGui::PopFont();
                 ImGui::End();
                 //ImGui::PopStyleColor();
                 ImGui::PopStyleColor(3); // Remove the 3 pushed colors
@@ -4196,7 +4285,8 @@ int main(void)
 				showGallery = true; // Show gallery again
             }
         }
-        else if (!takingScreenshot)
+        // Always render main UI if not taking screenshot (except for credits/gallery overlays)
+        if (!takingScreenshot && !showCreditsPage && !showGallery && !Gallery::fullscreenOpen)
         {
             //imgui loop
             //ImGui_ImplGlfw_NewFrame();
@@ -4205,7 +4295,6 @@ int main(void)
 
             //transformation gizmo
             ImGuizmo::BeginFrame();
-
 
             ImGuiID dockspace_id = viewport->ID;
             ImGui::DockSpaceOverViewport(dockspace_id, viewport, ImGuiDockNodeFlags_PassthruCentralNode);
@@ -4244,9 +4333,11 @@ int main(void)
 
             ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
             ImGui::SetNextWindowSize(ImVec2(ImGui::GetIO().DisplaySize.x, 0)); // full width
-            ImGui::Begin("MenuBar", p_open, menu_flags);
+            ImGui::Begin("AnitoScan", p_open, menu_flags);
             if (ImGui::BeginMenuBar())
             {
+                
+                
                 if (ImGui::BeginMenu("File", true))
                 {
                     if (ImGui::MenuItem("Open.."))
@@ -4950,14 +5041,30 @@ int main(void)
                     }
                     ImGui::EndMenu();
                 }
-
+                // VIEW MENU
+                if (ImGui::BeginMenu("View", true))
+                {
+                    ImGui::MenuItem("Inspector", nullptr, &show_Inspector);
+                    ImGui::MenuItem("Object List", nullptr, &show_ObjectList);
+                    ImGui::MenuItem("Gallery", nullptr, &show_Gallery);
+                    ImGui::MenuItem("3D Reconstructor", nullptr, &show_Reconstructor);
+                    ImGui::MenuItem("Info", nullptr, &show_Info);
+                    ImGui::MenuItem("Controls", nullptr, &show_Controls);
+                    ImGui::MenuItem("Screenshot", nullptr, &show_Screenshot);
+                    ImGui::MenuItem("Camera Settings", nullptr, &show_CameraSettings);
+                    ImGui::MenuItem("Cameras", nullptr, &show_Cameras);
+                    ImGui::MenuItem("Log Console", nullptr, &show_LogConsole);
+                    ImGui::EndMenu();
+                }
                 ImGui::EndMenuBar();
             }
             ImGui::End();
 
-            //IMGUI WINDOW FOR CONTROLS
+            //IMGUI WINDOW FOR CONTROLS - FIXED LAYOUT
             //FOR REFERENCE USE THIS: https://pthom.github.io/imgui_manual_online/manual/imgui_manual.html
-            ImGui::Begin("Inspector", p_open, window_flags);
+            if (show_Inspector)
+            {
+            ImGui::Begin("Inspector", &show_Inspector, window_flags);
             ImGui::SetWindowFontScale(0.85f);
 
             // If an instance is selected, show its transform controls.
@@ -4979,42 +5086,73 @@ int main(void)
                 {
                     ImGui::Separator();
                     ImGui::Text("Selected: %s", selectedInstance->name.c_str());
-                    if (ImGui::RadioButton("Translate", currentGizmoOperation == ImGuizmo::TRANSLATE))
+                    
+                    // Gizmo operation selection - horizontal layout
+                    if (ImGui::RadioButton("Translate##op", currentGizmoOperation == ImGuizmo::TRANSLATE))
                         currentGizmoOperation = ImGuizmo::TRANSLATE;
                     if (!selectedInstance->isLight)
                     {
-                        ImGui::SameLine();
-                        if (ImGui::RadioButton("Rotate", currentGizmoOperation == ImGuizmo::ROTATE))
+                        ImGui::SameLine(0, 15);
+                        if (ImGui::RadioButton("Rotate##op", currentGizmoOperation == ImGuizmo::ROTATE))
                             currentGizmoOperation = ImGuizmo::ROTATE;
-                        ImGui::SameLine();
-                        if (ImGui::RadioButton("Scale", currentGizmoOperation == ImGuizmo::SCALE))
-                            currentGizmoOperation = ImGuizmo::SCALE;
+                        ImGui::SameLine(0, 15);
                     }
+                    if (ImGui::RadioButton("Scale##op", currentGizmoOperation == ImGuizmo::SCALE))
+                        currentGizmoOperation = ImGuizmo::SCALE;
 
+                    ImGui::Spacing();
 
-                    float rotDeg[3] = {
-                    bx::toDeg(selectedInstance->rotation[0]),
-                    bx::toDeg(selectedInstance->rotation[1]),
-                    bx::toDeg(selectedInstance->rotation[2]),
-                    };
+                    // Calculate available width for inputs
+                    float avail_width = ImGui::GetContentRegionAvail().x;
+                    float label_width = 110.0f;
+                    float input_width = avail_width - label_width;
 
-                    ImGui::DragFloat3("Translation", selectedInstance->position, 0.01f);
+                    // Position/Translation
+                    ImGui::AlignTextToFramePadding();
+                    ImGui::Text("Position");
+                    ImGui::SameLine(label_width);
+                    ImGui::SetNextItemWidth(input_width);
+                    ImGui::DragFloat3("##pos", selectedInstance->position, 0.01f);
+
+                    // Rotation
                     if (!selectedInstance->isLight) {
-                        if (ImGui::DragFloat3("Rotation (degrees)", rotDeg, 0.1f)) {
+                        float rotDeg[3] = {
+                            bx::toDeg(selectedInstance->rotation[0]),
+                            bx::toDeg(selectedInstance->rotation[1]),
+                            bx::toDeg(selectedInstance->rotation[2]),
+                        };
+                        ImGui::AlignTextToFramePadding();
+                        ImGui::Text("Rotation");
+                        ImGui::SameLine(label_width);
+                        ImGui::SetNextItemWidth(input_width);
+                        if (ImGui::DragFloat3("##rot", rotDeg, 0.1f)) {
                             selectedInstance->rotation[0] = bx::toRad(rotDeg[0]);
                             selectedInstance->rotation[1] = bx::toRad(rotDeg[1]);
                             selectedInstance->rotation[2] = bx::toRad(rotDeg[2]);
                         }
-                        ImGui::DragFloat3("Scale", selectedInstance->scale, 0.01f);
+
+                        // Scale
+                        ImGui::AlignTextToFramePadding();
+                        ImGui::Text("Scale");
+                        ImGui::SameLine(label_width);
+                        ImGui::SetNextItemWidth(input_width);
+                        ImGui::DragFloat3("##scale", selectedInstance->scale, 0.01f);
                     }
 
+                    ImGui::Spacing();
+
+                    // Gizmo mode
+                    ImGui::AlignTextToFramePadding();
+                    ImGui::Text("Mode");
+                    ImGui::SameLine(label_width);
                     if (currentGizmoOperation != ImGuizmo::SCALE) {
-                        if (ImGui::RadioButton("World", currentGizmoMode == ImGuizmo::WORLD))
+                        if (ImGui::RadioButton("World##mode", currentGizmoMode == ImGuizmo::WORLD))
                             currentGizmoMode = ImGuizmo::WORLD;
-                        ImGui::SameLine();
-                        if (ImGui::RadioButton("Local", currentGizmoMode == ImGuizmo::LOCAL))
+                        ImGui::SameLine(0, 15);
+                        if (ImGui::RadioButton("Local##mode", currentGizmoMode == ImGuizmo::LOCAL))
                             currentGizmoMode = ImGuizmo::LOCAL;
                     }
+
                     ImGui::Separator();
                     ImGui::Text("Snapping Options:");
                     if (!selectedInstance->isLight) {
@@ -5042,7 +5180,12 @@ int main(void)
                             ImGui::Text("Light Properties:");
                             const char* lightTypes[] = { "Directional", "Point", "Spot" };
                             int currentType = static_cast<int>(selectedInstance->lightProps.type);
-                            if (ImGui::Combo("Light Type", &currentType, lightTypes, IM_ARRAYSIZE(lightTypes)))
+                            
+                            ImGui::AlignTextToFramePadding();
+                            ImGui::Text("Type");
+                            ImGui::SameLine(label_width);
+                            ImGui::SetNextItemWidth(input_width);
+                            if (ImGui::Combo("##lighttype", &currentType, lightTypes, IM_ARRAYSIZE(lightTypes)))
                             {
                                 selectedInstance->lightProps.type = static_cast<LightType>(currentType);
 
@@ -5058,22 +5201,52 @@ int main(void)
                                     selectedInstance->indexBuffer = ibh_cone;
                                 }
                             }
+                            
                             if (selectedInstance->lightProps.type == LightType::Directional ||
                                 selectedInstance->lightProps.type == LightType::Spot)
                             {
-                                ImGui::DragFloat3("Light Direction", selectedInstance->lightProps.direction, 0.1f);
+                                ImGui::AlignTextToFramePadding();
+                                ImGui::Text("Direction");
+                                ImGui::SameLine(label_width);
+                                ImGui::SetNextItemWidth(input_width);
+                                ImGui::DragFloat3("##lightdir", selectedInstance->lightProps.direction, 0.1f);
                             }
+                            
                             if (selectedInstance->lightProps.type == LightType::Point ||
                                 selectedInstance->lightProps.type == LightType::Spot)
                             {
-                                ImGui::DragFloat3("Light Position", selectedInstance->position, 0.1f);
-                                ImGui::DragFloat("Range", &selectedInstance->lightProps.range, 0.1f, 0.0f, 1000.0f);
+                                ImGui::AlignTextToFramePadding();
+                                ImGui::Text("Position");
+                                ImGui::SameLine(label_width);
+                                ImGui::SetNextItemWidth(input_width);
+                                ImGui::DragFloat3("##lightpos", selectedInstance->position, 0.1f);
+                                
+                                ImGui::AlignTextToFramePadding();
+                                ImGui::Text("Range");
+                                ImGui::SameLine(label_width);
+                                ImGui::SetNextItemWidth(input_width);
+                                ImGui::DragFloat("##range", &selectedInstance->lightProps.range, 0.1f, 0.0f, 1000.0f);
                             }
-                            ImGui::ColorEdit4("Light Color", selectedInstance->lightProps.color);
-                            ImGui::DragFloat("Intensity", &selectedInstance->lightProps.intensity, 0.01f, 0.0f, 10.0f);
+                            
+                            ImGui::AlignTextToFramePadding();
+                            ImGui::Text("Color");
+                            ImGui::SameLine(label_width);
+                            ImGui::SetNextItemWidth(input_width);
+                            ImGui::ColorEdit4("##lightcol", selectedInstance->lightProps.color);
+                            
+                            ImGui::AlignTextToFramePadding();
+                            ImGui::Text("Intensity");
+                            ImGui::SameLine(label_width);
+                            ImGui::SetNextItemWidth(input_width);
+                            ImGui::DragFloat("##intensity", &selectedInstance->lightProps.intensity, 0.01f, 0.0f, 10.0f);
+                            
                             if (selectedInstance->lightProps.type == LightType::Spot)
                             {
-                                ImGui::DragFloat("Cone Angle", &selectedInstance->lightProps.coneAngle, 0.1f, 0.0f, 3.14f);
+                                ImGui::AlignTextToFramePadding();
+                                ImGui::Text("Cone Angle");
+                                ImGui::SameLine(label_width);
+                                ImGui::SetNextItemWidth(input_width);
+                                ImGui::DragFloat("##coneangle", &selectedInstance->lightProps.coneAngle, 0.1f, 0.0f, 3.14f);
                             }
 
                             if (selectedInstance->lightProps.type == LightType::Point ||
@@ -5099,9 +5272,23 @@ int main(void)
                                             }
                                         }
                                     }
-                                    ImGui::DragFloat3("Animation Amplitude", selectedInstance->lightAnim.amplitude, 0.1f, 0.0f, 10.0f);
-                                    ImGui::DragFloat3("Animation Frequency", selectedInstance->lightAnim.frequency, 0.1f, 0.0f, 10.0f);
-                                    ImGui::DragFloat3("Animation Phase", selectedInstance->lightAnim.phase, 0.1f, 0.0f, 10.0f);
+                                    ImGui::AlignTextToFramePadding();
+                                    ImGui::Text("Amplitude");
+                                    ImGui::SameLine(label_width);
+                                    ImGui::SetNextItemWidth(input_width);
+                                    ImGui::DragFloat3("##amp", selectedInstance->lightAnim.amplitude, 0.1f, 0.0f, 10.0f);
+                                    
+                                    ImGui::AlignTextToFramePadding();
+                                    ImGui::Text("Frequency");
+                                    ImGui::SameLine(label_width);
+                                    ImGui::SetNextItemWidth(input_width);
+                                    ImGui::DragFloat3("##freq", selectedInstance->lightAnim.frequency, 0.1f, 0.0f, 10.0f);
+                                    
+                                    ImGui::AlignTextToFramePadding();
+                                    ImGui::Text("Phase");
+                                    ImGui::SameLine(label_width);
+                                    ImGui::SetNextItemWidth(input_width);
+                                    ImGui::DragFloat3("##phase", selectedInstance->lightAnim.phase, 0.1f, 0.0f, 10.0f);
                                 }
                             }
 
@@ -5115,10 +5302,29 @@ int main(void)
                             ImGui::Separator();
                             if (selectedInstance->name.find("rotating_light") != std::string::npos) {
                                 ImGui::Text("Rotating Light Properties:");
-                                ImGui::DragFloat("Radius", &selectedInstance->radius, 0.1f, 0.0f, 100.0f);
-                                ImGui::DragFloat("Center X", &selectedInstance->centerX, 0.1f);
-                                ImGui::DragFloat("Center Z", &selectedInstance->centerZ, 0.1f);
-                                ImGui::DragFloat("Rotation Speed", &selectedInstance->rotationSpeed, 0.1f);
+                                ImGui::AlignTextToFramePadding();
+                                ImGui::Text("Radius");
+                                ImGui::SameLine(label_width);
+                                ImGui::SetNextItemWidth(input_width);
+                                ImGui::DragFloat("##radius", &selectedInstance->radius, 0.1f, 0.0f, 100.0f);
+                                
+                                ImGui::AlignTextToFramePadding();
+                                ImGui::Text("Center X");
+                                ImGui::SameLine(label_width);
+                                ImGui::SetNextItemWidth(input_width);
+                                ImGui::DragFloat("##centerx", &selectedInstance->centerX, 0.1f);
+                                
+                                ImGui::AlignTextToFramePadding();
+                                ImGui::Text("Center Z");
+                                ImGui::SameLine(label_width);
+                                ImGui::SetNextItemWidth(input_width);
+                                ImGui::DragFloat("##centerz", &selectedInstance->centerZ, 0.1f);
+                                
+                                ImGui::AlignTextToFramePadding();
+                                ImGui::Text("Rotation Speed");
+                                ImGui::SameLine(label_width);
+                                ImGui::SetNextItemWidth(input_width);
+                                ImGui::DragFloat("##rotspeed", &selectedInstance->rotationSpeed, 0.1f);
                             }
 
                         }
@@ -5141,7 +5347,12 @@ int main(void)
                         }
                         ImGui::Spacing(); ImGui::Spacing();
 
-                        ImGui::ColorEdit3("Object Color", selectedInstance->objectColor);
+                        ImGui::AlignTextToFramePadding();
+                        ImGui::Text("Object Color");
+                        ImGui::SameLine(label_width);
+                        ImGui::SetNextItemWidth(input_width);
+                        ImGui::ColorEdit3("##objcolor", selectedInstance->objectColor);
+                        
                         ImGui::Spacing(); ImGui::Spacing();
                         ImGui::Separator();
                         // --- Texture/Material Editor ---
@@ -5190,11 +5401,25 @@ int main(void)
                             if (selectedInstance->diffuseTexture.idx != bgfx::kInvalidHandle) {
                                 ImGui::Text("Material Parameters:");
                                 // Let the user edit the UV tiling.
-                                ImGui::DragFloat2("Tiling", selectedInstance->material.tiling, 0.01f, 0.0f, 10.0f);
+                                ImGui::AlignTextToFramePadding();
+                                ImGui::Text("Tiling");
+                                ImGui::SameLine(label_width);
+                                ImGui::SetNextItemWidth(input_width);
+                                ImGui::DragFloat2("##tiling", selectedInstance->material.tiling, 0.01f, 0.0f, 10.0f);
+                                
                                 // Let the user edit the UV offset.
-                                ImGui::DragFloat2("Offset", selectedInstance->material.offset, 0.01f, -10.0f, 10.0f);
+                                ImGui::AlignTextToFramePadding();
+                                ImGui::Text("Offset");
+                                ImGui::SameLine(label_width);
+                                ImGui::SetNextItemWidth(input_width);
+                                ImGui::DragFloat2("##offset", selectedInstance->material.offset, 0.01f, -10.0f, 10.0f);
+                                
                                 // Let the user edit the albedo (color tint).
-                                ImGui::ColorEdit4("Albedo", selectedInstance->material.albedo);
+                                ImGui::AlignTextToFramePadding();
+                                ImGui::Text("Albedo");
+                                ImGui::SameLine(label_width);
+                                ImGui::SetNextItemWidth(input_width);
+                                ImGui::ColorEdit4("##albedo", selectedInstance->material.albedo);
 
                                 ImGui::Separator(); ImGui::Spacing(); ImGui::Spacing();
                                 ImGui::Text("Raw Material Preview:");
@@ -5227,7 +5452,11 @@ int main(void)
                                 s_lastSelectedInstanceId = selectedInstance->id;
                             }
 
-                            ImGui::InputText("Text Content", s_textBuffer, sizeof(s_textBuffer));
+                            ImGui::AlignTextToFramePadding();
+                            ImGui::Text("Content");
+                            ImGui::SameLine(label_width);
+                            ImGui::SetNextItemWidth(input_width);
+                            ImGui::InputText("##textcontent", s_textBuffer, sizeof(s_textBuffer));
                             if (ImGui::Button("Update Text"))
                             {
                                 // Update the instance's text content and re-generate its texture.
@@ -5281,10 +5510,16 @@ int main(void)
 
 
             ImGui::End();
+            }
 
-            Logger::GetInstance().DrawImGuiLogger();
+            if (show_LogConsole)
+            {
+                Logger::GetInstance().DrawImGuiLogger(&show_LogConsole);
+            }
 
-            ImGui::Begin("Object List", p_open, window_flags);
+            if (show_ObjectList)
+            {
+            ImGui::Begin("Object List", &show_ObjectList, window_flags);
             static int selectedInstanceIndex = -1;
 
             ImGui::SetNextItemOpen(true, ImGuiCond_Once);//collapsing header set to open initially
@@ -5303,20 +5538,36 @@ int main(void)
 
             }
             ImGui::End();
+            }
 
             /*-------------------------------------------------------------------------------------*/
 
-            Logger::GetInstance().DrawImGuiLogger();
+            if (show_LogConsole)
+            {
+                Logger::GetInstance().DrawImGuiLogger(&show_LogConsole);
+            }
 
-            ImGui::Begin("Gallery", p_open, window_flags);
+            if (show_Gallery)
+            {
+            ImGui::Begin("Gallery", &show_Gallery, window_flags);
+           
+            ImGui::End();
+            }
+
+            if (show_Reconstructor)
+            {
+            ImGui::Begin("3D Reconstructor", &show_Reconstructor, window_flags);
            
             Reconstructor::Draw();
             
             ImGui::End();
+            }
 
             /*-------------------------------------------------------------------------------------*/
 
-            ImGui::Begin("Info", p_open, window_flags);
+            if (show_Info)
+            {
+            ImGui::Begin("Info", &show_Info, window_flags);
 
             if (ImGui::BeginTable("Info", 2, ImGuiTableFlags_NoBordersInBody))
             {
@@ -5340,8 +5591,11 @@ int main(void)
                 ImGui::EndTable();
             }
             ImGui::End();
+            }
 
-            ImGui::Begin("Controls", p_open, window_flags);
+            if (show_Controls)
+            {
+            ImGui::Begin("Controls", &show_Controls, window_flags);
 
             /*ImGui::Text("Controls:");
             ImGui::Text("WASD - Move Camera");
@@ -5388,8 +5642,11 @@ int main(void)
             }
 
             ImGui::End();
+            }
 
-            ImGui::Begin("Screenshot", p_open, window_flags);
+            if (show_Screenshot)
+            {
+            ImGui::Begin("Screenshot", &show_Screenshot, window_flags);
             ImGui::InputText("Filename", screenshotName, IM_ARRAYSIZE(screenshotName));
             if (ImGui::Button("Save")) {
                 std::string fileNameStr = screenshotName;
@@ -5405,6 +5662,7 @@ int main(void)
             ImGui::Text("and press the screenshot button F3.");
 
             ImGui::End();
+            }
 
 
             //ImGui::Begin("Crosshatch Shader Settings");
@@ -5716,7 +5974,9 @@ int main(void)
             //ImGui::End();
 			//ImGui::Begin("Crosshatch Shader Settings");
             // Add a new window for camera settings
-            ImGui::Begin("Camera Settings", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+            if (show_CameraSettings)
+            {
+            ImGui::Begin("Camera Settings", &show_CameraSettings, ImGuiWindowFlags_AlwaysAutoResize);
             ImGui::SetWindowFontScale(0.85f);
             Camera& activeCamera = cameras[currentCameraIndex];
             // Basic camera controls
@@ -5762,7 +6022,11 @@ int main(void)
             }
 
             ImGui::End();
-            ImGui::Begin("Cameras");
+            }
+            
+            if (show_Cameras)
+            {
+            ImGui::Begin("Cameras", &show_Cameras, window_flags);
             for (size_t i = 0; i < cameras.size(); i++) {
                 char label[64];
                 sprintf(label, "Camera %d", static_cast<int>(i));
@@ -5774,6 +6038,7 @@ int main(void)
                 createNewCamera();
             }
             ImGui::End();
+            }
             //ImGui::Render();
             //ImGui_Implbgfx_RenderDrawLists(ImGui::GetDrawData());
         }
@@ -6074,6 +6339,9 @@ int main(void)
 
 
     }
+    // Save current window visibility state so it persists between sessions
+    SaveWindowVisibilityConfig("window_visibility.cfg");
+
     for (const auto& instance : instances)
     {
         const bgfx::VertexBufferHandle invalidVbh = BGFX_INVALID_HANDLE;
