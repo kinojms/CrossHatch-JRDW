@@ -3055,9 +3055,9 @@ int main(void)
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
-    io.Fonts->AddFontFromFileTTF("fonts/Inter.ttf", 16.0f);
-    ImFont* fontSmall = io.Fonts->AddFontFromFileTTF("fonts/Inter.ttf", 28.0f);
-    ImFont* fontLarge = io.Fonts->AddFontFromFileTTF("fonts/Inter.ttf", 64); // Baked at high res
+    io.Fonts->AddFontFromFileTTF("fonts/SNPro-Bold.ttf", 16.0f);
+    ImFont* fontSmall = io.Fonts->AddFontFromFileTTF("fonts/SNPro-Bold.ttf", 28.0f);
+    ImFont* fontLarge = io.Fonts->AddFontFromFileTTF("fonts/SNPro-Bold.ttf", 64); // Baked at high res
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_Implbgfx_Init(255);
 
