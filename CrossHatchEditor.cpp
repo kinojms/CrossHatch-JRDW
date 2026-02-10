@@ -95,16 +95,16 @@ static bgfx::ProgramHandle unlitColorProgram = BGFX_INVALID_HANDLE;
 
 static bool useGlobalCrosshatchSettings = true;
 
-// Window visibility toggles
+// Window visibility toggles (defaults: some windows hidden)
 static bool show_Inspector = true;
 static bool show_ObjectList = true;
-static bool show_Gallery = true;
+static bool show_Gallery = false;          // hidden by default
 static bool show_Reconstructor = true;
-static bool show_Info = true;
-static bool show_Controls = true;
-static bool show_Screenshot = true;
-static bool show_CameraSettings = true;
-static bool show_Cameras = true;
+static bool show_Info = false;             // hidden by default
+static bool show_Controls = false;         // hidden by default
+static bool show_Screenshot = false;       // hidden by default
+static bool show_CameraSettings = false;   // hidden by default
+static bool show_Cameras = false;          // hidden by default
 static bool show_LogConsole = true;
 
 // (Define TAU in C++ too)
