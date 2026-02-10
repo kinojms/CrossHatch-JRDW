@@ -270,6 +270,14 @@ file(COPY ${ASSETS_DIR} DESTINATION ${CMAKE_BINARY_DIR})
 file(COPY ${TEXTURES_DIR} DESTINATION ${CMAKE_BINARY_DIR})
 file(COPY ${SAVES_DIR} DESTINATION ${CMAKE_BINARY_DIR})
 
+# Copy imgui.ini as the source of truth via POST_BUILD command
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_SOURCE_DIR}/imgui.ini"
+        "${CMAKE_BINARY_DIR}/imgui.ini"
+    COMMENT "Copying imgui.ini from root to build directory"
+)
+
 # ---------------------------------------------------------------------------
 # Packaging Configuration
 # ---------------------------------------------------------------------------

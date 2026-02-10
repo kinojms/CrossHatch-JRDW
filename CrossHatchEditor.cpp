@@ -3046,6 +3046,7 @@ int main(void)
     // Load saved window visibility state (if any)
     LoadWindowVisibilityConfig("window_visibility.cfg");
     ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.IniFilename = "imgui.ini";  // Use root imgui.ini as source of truth
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     ImGuiWindowFlags window_flags = 0;
     //window_flags |= ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDocking;
