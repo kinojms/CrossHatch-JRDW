@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+﻿cmake_minimum_required(VERSION 3.12)
 
 # ---------------------------------------------------------------------------
 # VCPKG Setup (must be defined before project())
@@ -137,14 +137,21 @@ target_link_libraries(imgui PRIVATE glfw)
 # ---------------------------------------------------------------------------
 # Assimp Setup
 # ---------------------------------------------------------------------------
-set(ASSIMP_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR}/assimp)
-target_include_directories(${PROJECT_NAME} PRIVATE ${ASSIMP_ROOT_DIR}/include)
-target_link_directories(CrossHatchEditor PRIVATE ${ASSIMP_ROOT_DIR}/lib/Debug)
+set(ASSIMP_ROOT_DIR "${CMAKE_CURRENT_LIST_DIR}/assimp")
+
+# Use absolute path to ensure linker can find the library
+set(ASSIMP_LIB_DIR "${ASSIMP_ROOT_DIR}/lib/Debug")
+set(ASSIMP_BIN_DIR "${ASSIMP_ROOT_DIR}/bin/Debug")
+set(ASSIMP_INCLUDE_DIR "${ASSIMP_ROOT_DIR}/include")
+
+target_include_directories(${PROJECT_NAME} PRIVATE "${ASSIMP_INCLUDE_DIR}")
+target_link_directories(${PROJECT_NAME} PRIVATE "${ASSIMP_LIB_DIR}")
 target_link_libraries(${PROJECT_NAME} PRIVATE assimp-vc143-mtd)
 
+# Copy the ASSIMP DLL to the output directory
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${ASSIMP_ROOT_DIR}/bin/Debug/assimp-vc143-mtd.dll"  # Replace with the actual path to assimp.dll
+        "${ASSIMP_BIN_DIR}/assimp-vc143-mtd.dll"
         $<TARGET_FILE_DIR:${PROJECT_NAME}>
 )
 
