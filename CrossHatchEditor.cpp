@@ -3233,19 +3233,14 @@ static void RenderLeftSidebar()
         };
 
         const bool hasSelection = (selectedInstance != nullptr);
-        const bool isLight = (selectedInstance && selectedInstance->isLight);
-
-        // If a light is selected, force a valid operation (rotate is not supported for lights in this editor UI).
-        if (hasSelection && isLight && currentGizmoOperation == ImGuizmo::ROTATE)
-            currentGizmoOperation = ImGuizmo::TRANSLATE;
 
         // Keep behavior consistent with the inspector gizmo controls:
         // - Translate always available
-        // - Rotate hidden/disabled for lights
+        // - Rotate available for any selected object (including lights)
         // - Scale available (matches existing inspector UI)
         operation_button("##op_translate", "Translate (1)", ImGuizmo::TRANSLATE, true, draw_translate_icon);
         ImGui::Spacing();
-        operation_button("##op_rotate", "Rotate (2)", ImGuizmo::ROTATE, hasSelection && !isLight, draw_rotate_icon);
+        operation_button("##op_rotate", "Rotate (2)", ImGuizmo::ROTATE, hasSelection, draw_rotate_icon);
         ImGui::Spacing();
         operation_button("##op_scale", "Scale (3)", ImGuizmo::SCALE, true, draw_scale_icon);
 
@@ -3462,13 +3457,10 @@ static void RenderInspectorBody(Instance* selectedInstance, std::vector<Instance
     // Gizmo operation selection
     if (ImGui::RadioButton("Translate##op", currentGizmoOperation == ImGuizmo::TRANSLATE))
         currentGizmoOperation = ImGuizmo::TRANSLATE;
-    if (!selectedInstance->isLight)
-    {
-        ImGui::SameLine(0, 15);
-        if (ImGui::RadioButton("Rotate##op", currentGizmoOperation == ImGuizmo::ROTATE))
-            currentGizmoOperation = ImGuizmo::ROTATE;
-        ImGui::SameLine(0, 15);
-    }
+    ImGui::SameLine(0, 15);
+    if (ImGui::RadioButton("Rotate##op", currentGizmoOperation == ImGuizmo::ROTATE))
+        currentGizmoOperation = ImGuizmo::ROTATE;
+    ImGui::SameLine(0, 15);
     if (ImGui::RadioButton("Scale##op", currentGizmoOperation == ImGuizmo::SCALE))
         currentGizmoOperation = ImGuizmo::SCALE;
 
@@ -3479,7 +3471,7 @@ static void RenderInspectorBody(Instance* selectedInstance, std::vector<Instance
     ImGui::SetNextItemWidth(input_width);
     ImGui::DragFloat3("##pos", selectedInstance->position, 0.01f);
 
-    if (!selectedInstance->isLight)
+    // Rotation is now editable for any selected object (including lights).
     {
         float rotDeg[3] = { bx::toDeg(selectedInstance->rotation[0]), bx::toDeg(selectedInstance->rotation[1]), bx::toDeg(selectedInstance->rotation[2]) };
         ImGui::AlignTextToFramePadding();
@@ -3492,6 +3484,10 @@ static void RenderInspectorBody(Instance* selectedInstance, std::vector<Instance
             selectedInstance->rotation[1] = bx::toRad(rotDeg[1]);
             selectedInstance->rotation[2] = bx::toRad(rotDeg[2]);
         }
+    }
+
+    if (!selectedInstance->isLight)
+    {
         ImGui::AlignTextToFramePadding();
         ImGui::Text("Scale");
         ImGui::SameLine(label_width);
@@ -4574,10 +4570,10 @@ int main(void)
             if (ImGui::IsKeyPressed(ImGuiKey_1)) {
                 currentGizmoOperation = ImGuizmo::TRANSLATE;
             }
-            if (ImGui::IsKeyPressed(ImGuiKey_2) && !selectedInstance->isLight) {
+            if (ImGui::IsKeyPressed(ImGuiKey_2)) {
                 currentGizmoOperation = ImGuizmo::ROTATE;
             }
-            if (ImGui::IsKeyPressed(ImGuiKey_3) && !selectedInstance->isLight) {
+            if (ImGui::IsKeyPressed(ImGuiKey_3)) {
                 currentGizmoOperation = ImGuizmo::SCALE;
             }
             // Delete selected instance with Delete key (undoable)
