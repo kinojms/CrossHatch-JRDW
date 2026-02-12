@@ -6,17 +6,37 @@ import sys
 import json
 import time
 from pathlib import Path
+import os
+
+# Debug: Print Python version and paths
+print(f"[pyngp] Python version: {sys.version}")
+print(f"[pyngp] Python executable: {sys.executable}")
 
 # Add pyngp to path
 pyngp_path = str(Path(__file__).parent / 'pyngp')
+print(f"[pyngp] Looking for pyngp in: {pyngp_path}")
+print(f"[pyngp] Directory exists: {os.path.exists(pyngp_path)}")
+print(f"[pyngp] Files in {pyngp_path}:")
+if os.path.exists(pyngp_path):
+    for file in os.listdir(pyngp_path):
+        print(f"  - {file}")
+
 sys.path.insert(0, pyngp_path)
+print(f"[pyngp] Added to sys.path: {pyngp_path}")
+print(f"[pyngp] sys.path (first 5 entries):")
+for i, p in enumerate(sys.path[:5]):
+    print(f"  {i}: {p}")
 
 try:
+    print(f"[pyngp] Attempting to import pyngp...")
     import pyngp as ngp
+    print(f"[pyngp] Successfully imported pyngp")
     import numpy as np
+    print(f"[pyngp] Successfully imported numpy")
 except ImportError as e:
-    print(f"ERROR: Could not import pyngp from {pyngp_path}")
-    print(f"Make sure pyngp.cp313-win_amd64.pyd exists in {pyngp_path}")
+    print(f"[pyngp] ERROR: Could not import pyngp from {pyngp_path}")
+    print(f"[pyngp] ImportError details: {e}")
+    print(f"[pyngp] Make sure pyngp.cp313-win_amd64.pyd exists in {pyngp_path}")
     sys.exit(1)
 
 def train_nerf(images_dir, output_path, n_steps=10000, progress_file=None):

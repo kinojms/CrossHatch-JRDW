@@ -20,6 +20,7 @@ import math
 import cv2
 import os
 import shutil
+import subprocess
 
 # Import the background removal functionality
 from removebg import remove_backgrounds_batch
@@ -54,7 +55,16 @@ def parse_args():
 
 def do_system(arg):
 	print(f"==== running: {arg}")
-	err = os.system(arg)
+	# On Windows, os.system() has issues with backslash escaping in paths.
+	# Use subprocess.run() with shell=True to properly handle Windows paths.
+	if os.name == 'nt':
+		# Windows: use subprocess with shell=True
+		result = subprocess.run(arg, shell=True, capture_output=False)
+		err = result.returncode
+	else:
+		# Unix-like systems: use os.system() as before
+		err = os.system(arg)
+	
 	if err:
 		print("FATAL: command failed")
 		sys.exit(err)
@@ -113,23 +123,7 @@ def run_colmap(args):
             colmap_binary = candidates[0]
 
     db = args.colmap_db
-    
-    # DEBUG: Print the received arguments
-    print("\n========== COLMAP DEBUG INFO (Python) ==========")
-    print(f"args.images (raw): {args.images}")
-    print(f"args.images (repr): {repr(args.images)}")
-    print(f"args.images length: {len(args.images)}")
-    print(f"Backslash check in args.images:")
-    for i, c in enumerate(args.images):
-        if c == '\\':
-            print(f"  Position {i}: BACKSLASH found")
-        elif c == '"':
-            print(f"  Position {i}: QUOTE found")
-    
     images = "\"" + args.images + "\""
-    print(f"images (after quoting): {images}")
-    print(f"images (repr): {repr(images)}")
-    
     db_noext = str(Path(db).with_suffix(""))
 
     if args.text == "text":
@@ -161,14 +155,6 @@ def run_colmap(args):
         f"--ImageReader.single_camera 1 "
         f"--database_path {db} --image_path {images}"
     )
-    print(f"\nCOLMAP Feature Extraction Command (raw):")
-    print(feature_extract_cmd)
-    print(f"\nCOLMAP Command (repr):")
-    print(repr(feature_extract_cmd))
-    print(f"\nCOLMAP Command (with escaped backslashes shown):")
-    escaped_display = feature_extract_cmd.replace("\\", "[BS]")
-    print(escaped_display)
-    print("========== END DEBUG INFO ==========\n")
     do_system(feature_extract_cmd)
 
     # Feature matching (CPU SIFT)

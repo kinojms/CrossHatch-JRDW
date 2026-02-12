@@ -13,7 +13,9 @@
 #include <chrono>
 #include <cstdlib>
 #include <iostream>
+#include <fstream>
 #include <algorithm>
+#include <regex>
 #include <numeric>
 #include <map>
 #include <memory>
@@ -94,12 +96,11 @@ namespace Reconstructor {
     static std::string imagesDir;
     static std::string existingImagesDir;
 
-    // Paths/commands for post-extraction automation
-    static const char* kColmapScriptPath = "E:\\Development\\School_Projects\\Thesis\\instant-ngp-2000\\scripts\\colmap2nerf.py";
-    static const char* kInstantNgpCmd = "E:\\Development\\School_Projects\\Thesis\\instant-ngp-2000\\instant-ngp.exe";
-
+    // Paths for post-extraction automation
     static std::string buildDir = fs::current_path().string();
     static std::string projectRoot = fs::absolute(buildDir + "/../../..").string();
+    static std::string colmapScriptPath = (fs::path(projectRoot) / "pyngp" / "scripts" / "colmap2nerf.py").string();
+    static const char* kNerfPipelineScript = "nerf_pipeline.py";
     static std::string pythonScript = (fs::path(projectRoot) / "remove_bg.py").string();
     static fs::path outputRoot = fs::path(buildDir);
 
@@ -137,6 +138,7 @@ namespace Reconstructor {
     // Timing and progress tracking
     static std::chrono::steady_clock::time_point nerfStartTime;
     static std::atomic<int> nerfProgress{ 0 };
+    static std::string nerfProgressFile{ "" };
     
 }
 
@@ -730,7 +732,7 @@ namespace Reconstructor {
 
 
     // ----------------------------
-    // NeRF (Instant-NGP) Automation
+    // NeRF (Instant-NGP Python) Automation
     // ----------------------------
     static void runNeRFAutomation() {
         std::thread([]() {
@@ -741,44 +743,32 @@ namespace Reconstructor {
             
             std::cout << "[FrameExtractor] Starting COLMAP/NeRF automation..." << std::endl;
             std::cout << "[FrameExtractor] Output directory: " << outputDir << std::endl;
-            std::cout << "[FrameExtractor] Images directory: " << imagesDir << std::endl;
             
-            // Validate that the images directory exists
-            if (!fs::exists(imagesDir)) {
-                std::cerr << "[FrameExtractor] ERROR: Images directory does not exist: " << imagesDir << std::endl;
+            // Get the background-removed images directory
+            std::string bgRemovedDir = (fs::path(outputDir) / "images" / "no_bg").string();
+            
+            if (!fs::exists(bgRemovedDir)) {
+                std::cerr << "[FrameExtractor] ERROR: Background-removed images directory does not exist: " << bgRemovedDir << std::endl;
                 runningNeRF = false;
                 return;
             }
             
-            std::string cdPrefix = std::string("cd /d \"") + outputDir + "\" && ";
-
-            // 1) colmap2nerf.py with --images pointing to the actual images directory
+            // Step 1: Run COLMAP via colmap2nerf.py
             nerfProgress = 25;
-            {
-                std::string cmd1 = cdPrefix + "python \"" + kColmapScriptPath + "\" --images \"" + imagesDir + "\" --run_colmap --overwrite";
-                runShellCommand(cmd1);
-            }
-
-            // 2) colmap2nerf.py exhaustive matching with aabb scale
+            std::cout << "[FrameExtractor] Running COLMAP..." << std::endl;
+            std::string colmapCmd = std::string("cd /d \"") + outputDir + "\" && python \"" + colmapScriptPath + "\" --images \"" + bgRemovedDir + "\" --run_colmap --overwrite";
+            runShellCommand(colmapCmd);
             nerfProgress = 50;
-            {
-                std::string cmd2 = cdPrefix + "python \"" + kColmapScriptPath + "\" --images \"" + imagesDir + "\" --colmap_matcher exhaustive --run_colmap --aabb_scale 16 --overwrite";
-                runShellCommand(cmd2);
-            }
-
-            // 3) instant-ngp on the video's folder (hide window first)
-            nerfProgress = 75;
-            {
-                std::cout << "[FrameExtractor] Hiding main window before running instant-ngp..." << std::endl;
-                hideMainWindow();
-                std::string cmd3 = std::string(kInstantNgpCmd) + " \"" + outputDir + "\"";
-                runShellCommand(cmd3);
-                
-                // Restore window after instant-ngp completes
-                std::cout << "[FrameExtractor] Restoring main window after instant-ngp..." << std::endl;
-                restoreMainWindow();
-            }
-
+            
+            // Step 2: Train NeRF model
+            nerfProgress = 60;
+            std::cout << "[FrameExtractor] Starting NeRF training..." << std::endl;
+            nerfProgressFile = (fs::path(outputDir) / "nerf_progress.json").string();
+            std::string pyngpPath = (fs::path(projectRoot) / "pyngp").string();
+            std::string nerfCmd = "set PYTHONPATH=" + pyngpPath + "&& python \"" + (fs::path(projectRoot) / "nerf_pipeline.py").string() + "\" \"" + bgRemovedDir + "\" \"" + (fs::path(outputDir) / "model.ingp").string() + "\" 10000 \"" + nerfProgressFile + "\"";
+            runShellCommand(nerfCmd);
+            nerfProgress = 90;
+            
             nerfProgress = 100;
             runningNeRF = false;
             reconstructionComplete = true;
@@ -786,7 +776,6 @@ namespace Reconstructor {
             
             // Show import prompt if OBJ was found during automation
             if (objFound.load()) {
-                // Copy the reconstructed model to the gallery
                 ModelGallery::AddModelToGallery(foundObjPath);
                 showImportPrompt.store(true);
             }
@@ -930,134 +919,139 @@ namespace Reconstructor {
                     removalDone = false;
                     savedCount = 0;
 
-                    // --- Thread 1: Frame extraction ---
+                    // Use Instant-NGP's preprocessing script to extract frames and remove backgrounds
                     std::thread([]() {
-                        cv::Mat frame;
-                        int frameIndex = 0;
-                        int savedIndex = 0;
-                        int step = std::max(1, static_cast<int>(fps / savedFPS));
+                        extracting = true;
+                        extractionDone = false;
+                        removalDone = false;
+                        removingBG = false;
+                        savedCount = 0;
 
-                        while (cap.read(frame)) {
-                            if (frameIndex % step == 0) {
-                                frameQueue.push({ savedIndex++, frame.clone() });
+                        // Pre-compute expected total frames so UI progress has a valid denominator
+                        int expectedFrames = 0;
+                        try {
+                            if (!videoPath.empty() && cap.isOpened() && originalTotalFrames.load() > 0 && fps.load() > 0.0) {
+                                double ratio = fps.load() / static_cast<double>(savedFPS);
+                                expectedFrames = static_cast<int>(originalTotalFrames.load() / std::max(1.0, ratio)) + 1;
+                                totalFrames = expectedFrames;
+                                std::cout << "[FrameExtractor] Expected frames (video): " << expectedFrames << std::endl;
+                            } else if (!existingImagesDir.empty()) {
+                                int count = 0;
+                                for (auto& e : fs::directory_iterator(existingImagesDir)) {
+                                    if (!e.is_regular_file()) continue;
+                                    std::string ext = e.path().extension().string();
+                                    std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+                                    if (ext == ".png" || ext == ".jpg" || ext == ".jpeg") ++count;
+                                }
+                                totalFrames = count;
+                                expectedFrames = count;
+                                std::cout << "[FrameExtractor] Expected frames (existing folder): " << count << std::endl;
                             }
-                            frameIndex++;
-                        }
-                        extractionDone = true;
-                        cap.release();
-                        }).detach();
-
-                    // --- Thread 2: Frame saving + background removal ---
-                    std::thread([]() {
-                        int totalExpectedFrames = static_cast<int>((originalTotalFrames / (fps / savedFPS)) + 1);
-
-                        while (!extractionDone || !frameQueue.empty()) {
-                            std::pair<int, cv::Mat> item;
-                            if (frameQueue.pop(item)) {
-                                std::string filename = (fs::path(imagesDir) / ("frame_" + std::to_string(item.first) + ".png")).string();
-                                cv::imwrite(filename, item.second);
-                                savedCount++;
-
-                                // print progress
-                                std::cout << "[FrameExtractor] Extracting " << savedCount.load()
-                                    << " / " << totalExpectedFrames << " frames" << std::endl;
-                            }
-                            else {
-                                std::this_thread::sleep_for(std::chrono::milliseconds(5));
-                            }
+                        } catch (...) {
+                            // ignore and proceed, totalFrames may be set later by parser
                         }
 
-                        // --- Run background removal ---
-                        totalFrames.store(savedCount);
-                        // After extractionDone = true; and cap.release();
-                        removingBG = true;
-                        std::cout << "[FrameExtractor] Starting parallel background removal..." << std::endl;
+                        std::cout << "[FrameExtractor] Running Instant-NGP preprocessor (colmap2nerf.py)..." << std::endl;
 
-                        // Gather all frame files
-                        std::vector<fs::path> frameFiles;
-                        for (const auto& entry : fs::directory_iterator(imagesDir)) {
-                            if (entry.is_regular_file() && entry.path().extension() == ".png") {
-                                frameFiles.push_back(entry.path());
-                            }
-                        }
-
-                        int totalFiles = static_cast<int>(frameFiles.size());
-                        if (totalFiles == 0) {
-                            std::cerr << "[FrameExtractor] No frames found for background removal.\n";
-                            removingBG = false;
-                            removalDone = true;
+                        // Build command to extract frames and remove background. This uses the pyngp/scripts/colmap2nerf.py script.
+                        std::string cmd;
+                        if (!videoPath.empty() && cap.isOpened()) {
+                            cmd = "python \"" + colmapScriptPath + "\" --video_in \"" + videoPath + "\" --video_fps " + std::to_string(savedFPS) + " --remove_background --preprocess_only --overwrite --images \"" + imagesDir + "\" 2>&1";
+                        } else if (!existingImagesDir.empty()) {
+                            cmd = "python \"" + colmapScriptPath + "\" --images \"" + existingImagesDir + "\" --remove_background --preprocess_only --overwrite 2>&1";
+                        } else {
+                            std::cerr << "[FrameExtractor] No video or existing images found for preprocessing." << std::endl;
                             extracting = false;
+                            removalDone = true;
                             return;
                         }
 
-                        savedCount.store(0);
-                        totalFrames.store(totalFiles);
+                        std::cout << "[FrameExtractor] Command: " << cmd << std::endl;
 
-                        int numThreads = std::min(5, totalFiles);
-                        std::atomic<int> activeThreads = 0;
-                        std::mutex coutMutex;
+                        FILE* pipe = _popen(cmd.c_str(), "r");
+                        if (pipe) {
+                            char buffer[1024];
+                            int frameCount = 0;
+                            int removedCount = 0;
+                            bool isRemovalPhase = false;
 
-                        auto worker = [&](int id, int startIndex, int step) {
-                            activeThreads++;
-                            for (int i = startIndex; i < totalFiles; i += step) {
-                                const auto& file = frameFiles[i];
-                                std::string command = "python \"" + pythonScript + "\" \"" + outputDir + "\" \"" + file.string() + "\"";
+                            std::regex frameRe("frame=\\s*([0-9]+)");
+                            // Match explicit processed/saved indicators or rembg mentions
+                            std::regex processedRe("(Processed|processed|Saved|saved|rembg|Removing background|removing background)");
+                            // Match concrete saved filenames like "0001.png" (avoid matching template strings like %04d.png)
+                            std::regex savedFileRe("(\\d{1,6}\\.png)");
+                            std::smatch m;
 
-                                std::cout << command;
-                                {
-                                    std::lock_guard<std::mutex> lock(coutMutex);
-                                    std::cout << "[Thread " << id << "] Running: " << command << std::endl;
-                                }
+                            while (fgets(buffer, sizeof(buffer), pipe)) {
+                                std::string line(buffer);
+                                std::cout << "[colmap2nerf] " << line;
 
-                                FILE* pipe = _popen(command.c_str(), "r");
-                                if (pipe) {
-                                    char buffer[256];
-                                    while (fgets(buffer, sizeof(buffer), pipe)) {
-                                        std::string line(buffer);
-                                        std::lock_guard<std::mutex> lock(coutMutex);
-                                        std::cout << "[Python T" << id << "] " << line;
-
-                                        if (line.rfind("PROGRESS", 0) == 0) {
-                                           // int done = 0, total = 0;
-                                           // if (sscanf(line.c_str(), "PROGRESS %d/%d", &done, &total) == 2) {
-                                                savedCount.fetch_add(1);
-                                            // }
-                                        }
-                                        else if (line.rfind("Processed", 0) == 0) {
-                                            savedCount.fetch_add(1);
-                                        }
+                                // If we haven't entered removal phase yet, try to extract ffmpeg frame count
+                                if (!isRemovalPhase) {
+                                    if (std::regex_search(line, m, frameRe) && m.size() > 1) {
+                                        try {
+                                            frameCount = std::stoi(m[1].str());
+                                            savedCount = frameCount;
+                                            std::cout << "[FrameExtractor][DEBUG] parsed frameCount=" << frameCount
+                                                      << " totalFrames(current)=" << totalFrames.load()
+                                                      << " isRemovalPhase=" << isRemovalPhase << std::endl;
+                                        } catch (...) {}
                                     }
-                                    _pclose(pipe);
-                                }
-                                else {
-                                    std::lock_guard<std::mutex> lock(coutMutex);
-                                    std::cerr << "[Thread " << id << "] Failed to run script for " << file.filename() << std::endl;
+
+                                    // Heuristic: require explicit processed/saved keywords OR a concrete saved filename
+                                    bool hasProcessedKeyword = std::regex_search(line, m, processedRe);
+                                    bool hasConcreteSavedFile = (line.find(".png") != std::string::npos && line.find("%") == std::string::npos && std::regex_search(line, m, savedFileRe));
+
+                                    // Avoid false positive from ffmpeg header lines that include the template "%04d.png" or "Output #0"
+                                    bool looksLikeFfmpegTemplate = (line.find("%04d") != std::string::npos) || (line.find("Output #0") != std::string::npos);
+
+                                    if ((hasProcessedKeyword || hasConcreteSavedFile) && !looksLikeFfmpegTemplate) {
+                                        isRemovalPhase = true;
+                                        removingBG = true;
+                                        if (totalFrames.load() == 0) {
+                                            totalFrames = frameCount > 0 ? frameCount : totalFrames.load();
+                                        }
+                                        removedCount = 0;
+                                        savedCount = 0;
+                                        std::cout << "[FrameExtractor] Detected removal phase. totalFrames=" << totalFrames.load() << std::endl;
+                                    }
+                                } else {
+                                    // Removal phase: increment removed count when we see processed/saved or image filename
+                                    if (std::regex_search(line, m, processedRe) || line.find(".png") != std::string::npos || line.find("Saved") != std::string::npos || line.find("saved") != std::string::npos) {
+                                        removedCount++;
+                                        savedCount = removedCount;
+                                        std::cout << "[FrameExtractor][DEBUG] removal progress removedCount=" << removedCount
+                                                  << " / " << totalFrames.load() << std::endl;
+                                    }
                                 }
                             }
-                            activeThreads--;
-                            };
-
-                        // Launch threads
-                        std::vector<std::thread> threads;
-                        for (int i = 0; i < numThreads; ++i) {
-                            threads.emplace_back(worker, i + 1, i, numThreads);
+                            _pclose(pipe);
+                        } else {
+                            std::cerr << "[FrameExtractor] Failed to start colmap2nerf.py" << std::endl;
                         }
 
-                        // Wait for all to complete
-                        for (auto& t : threads) {
-                            if (t.joinable()) t.join();
-                        }
-
+                        // After preprocessing completes, prefer the background-removed images if present
                         removingBG = false;
+                        extracting = false;
                         showImageSelection = true;
                         removalDone = true;
-                        extracting = false;
-                        std::cout << "[FrameExtractor] All background removals done. Loading images for selection.\n";
-                        
-                        // load images to frame gallery after bg removal is done
-                        FrameGallery::LoadFrameGallery(imagesDir);
+                        std::cout << "[FrameExtractor] Preprocessing complete. Extracted: " << savedCount.load() << " frames. Loading images for selection.\n";
 
-                        }).detach();
+                        try {
+                            fs::path imagesPath(imagesDir);
+                            fs::path bgDir = imagesPath / "no_bg";
+                            if (fs::exists(bgDir) && fs::is_directory(bgDir)) {
+                                std::cout << "[FrameExtractor] Found background-removed folder: " << bgDir.string() << std::endl;
+                                imagesDir = bgDir.string();
+                            } else {
+                                std::cout << "[FrameExtractor] No background-removed folder found; using: " << imagesDir << std::endl;
+                            }
+                        } catch (const std::exception& e) {
+                            std::cerr << "[FrameExtractor] Warning checking no_bg folder: " << e.what() << std::endl;
+                        }
+
+                        FrameGallery::LoadFrameGallery(imagesDir);
+                    }).detach();
                 }
             }
             
@@ -1142,8 +1136,34 @@ namespace Reconstructor {
         }
 
         // --- NeRF Progress Display ---
-		// TODO: Fix NeRF progress tracking based on actual process output (similar to frame extraction progress tracker)
         if (runningNeRF) {
+            // Try to read progress from file
+            if (!nerfProgressFile.empty() && fs::exists(nerfProgressFile)) {
+                try {
+                    std::ifstream progressFile(nerfProgressFile);
+                    std::string content((std::istreambuf_iterator<char>(progressFile)),
+                                       std::istreambuf_iterator<char>());
+                    
+                    // Simple JSON parsing: extract "progress" value
+                    size_t progPos = content.find("\"progress\"");
+                    if (progPos != std::string::npos) {
+                        size_t colonPos = content.find(":", progPos);
+                        size_t commaPos = content.find(",", colonPos);
+                        if (commaPos == std::string::npos) {
+                            commaPos = content.find("}", colonPos);
+                        }
+                        if (colonPos != std::string::npos && commaPos != std::string::npos) {
+                            std::string progressStr = content.substr(colonPos + 1, commaPos - colonPos - 1);
+                            progressStr.erase(0, progressStr.find_first_not_of(" \t\n\r"));
+                            int fileProgress = std::stoi(progressStr);
+                            nerfProgress = fileProgress;
+                        }
+                    }
+                } catch (...) {
+                    // Silently continue with current progress
+                }
+            }
+            
             std::string statusText = "Running NeRF reconstruction... " + std::to_string(nerfProgress.load()) + "%";
             CenterLargeText(statusText);
             

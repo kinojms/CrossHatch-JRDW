@@ -24,7 +24,6 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{87AB27F5-AED0-3231-A705-FF3286855CBA}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <VcpkgEnabled>false</VcpkgEnabled>
     <WindowsTargetPlatformVersion>10.0.26100.0</WindowsTargetPlatformVersion>
     <Platform>x64</Platform>
     <ProjectName>shaderc</ProjectName>
@@ -55,7 +54,7 @@
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
   <ImportGroup Label="PropertySheets">
-    <Import Project="do_not_import_user.props" Condition="exists('do_not_import_user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
@@ -126,18 +125,6 @@
       <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
-    <PostBuildEvent>
-      <Message></Message>
-      <Command>setlocal
-C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -noprofile -executionpolicy Bypass -file C:/CrossHatch-JRDW/vcpkg/scripts/buildsystems/msbuild/applocal.ps1 -targetBinary C:/CrossHatch-JRDW/build/bgfx.cmake/cmake/bgfx/Debug/shaderc.exe -installedDir C:/CrossHatch-JRDW/vcpkg/installed/x64-windows/debug/bin -OutVariable out
-if %errorlevel% neq 0 goto :cmEnd
-:cmEnd
-endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
-:cmErrorLevel
-exit /b %1
-:cmDone
-if %errorlevel% neq 0 goto :VCEnd</Command>
-    </PostBuildEvent>
     <Link>
       <AdditionalDependencies>..\bx\Debug\bx.lib;Debug\fcpp.lib;Debug\glslang.lib;Debug\glsl-optimizer.lib;Debug\spirv-opt.lib;Debug\spirv-cross.lib;..\bx\Debug\bx.lib;..\bimg\Debug\bimg.lib;Debug\fcpp.lib;Debug\glslang.lib;Debug\glsl-optimizer.lib;Debug\spirv-opt.lib;Debug\spirv-cross.lib;..\bx\Debug\bx.lib;psapi.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -198,18 +185,6 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
-    <PostBuildEvent>
-      <Message></Message>
-      <Command>setlocal
-C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -noprofile -executionpolicy Bypass -file C:/CrossHatch-JRDW/vcpkg/scripts/buildsystems/msbuild/applocal.ps1 -targetBinary C:/CrossHatch-JRDW/build/bgfx.cmake/cmake/bgfx/Release/shaderc.exe -installedDir C:/CrossHatch-JRDW/vcpkg/installed/x64-windows/bin -OutVariable out
-if %errorlevel% neq 0 goto :cmEnd
-:cmEnd
-endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
-:cmErrorLevel
-exit /b %1
-:cmDone
-if %errorlevel% neq 0 goto :VCEnd</Command>
-    </PostBuildEvent>
     <Link>
       <AdditionalDependencies>..\bx\Release\bx.lib;Release\fcpp.lib;Release\glslang.lib;Release\glsl-optimizer.lib;Release\spirv-opt.lib;Release\spirv-cross.lib;..\bx\Release\bx.lib;..\bimg\Release\bimg.lib;Release\fcpp.lib;Release\glslang.lib;Release\glsl-optimizer.lib;Release\spirv-opt.lib;Release\spirv-cross.lib;..\bx\Release\bx.lib;psapi.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -270,18 +245,6 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
-    <PostBuildEvent>
-      <Message></Message>
-      <Command>setlocal
-C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -noprofile -executionpolicy Bypass -file C:/CrossHatch-JRDW/vcpkg/scripts/buildsystems/msbuild/applocal.ps1 -targetBinary C:/CrossHatch-JRDW/build/bgfx.cmake/cmake/bgfx/MinSizeRel/shaderc.exe -installedDir C:/CrossHatch-JRDW/vcpkg/installed/x64-windows/bin -OutVariable out
-if %errorlevel% neq 0 goto :cmEnd
-:cmEnd
-endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
-:cmErrorLevel
-exit /b %1
-:cmDone
-if %errorlevel% neq 0 goto :VCEnd</Command>
-    </PostBuildEvent>
     <Link>
       <AdditionalDependencies>..\bx\MinSizeRel\bx.lib;MinSizeRel\fcpp.lib;MinSizeRel\glslang.lib;MinSizeRel\glsl-optimizer.lib;MinSizeRel\spirv-opt.lib;MinSizeRel\spirv-cross.lib;..\bx\MinSizeRel\bx.lib;..\bimg\MinSizeRel\bimg.lib;MinSizeRel\fcpp.lib;MinSizeRel\glslang.lib;MinSizeRel\glsl-optimizer.lib;MinSizeRel\spirv-opt.lib;MinSizeRel\spirv-cross.lib;..\bx\MinSizeRel\bx.lib;psapi.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -341,18 +304,6 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
-    <PostBuildEvent>
-      <Message></Message>
-      <Command>setlocal
-C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -noprofile -executionpolicy Bypass -file C:/CrossHatch-JRDW/vcpkg/scripts/buildsystems/msbuild/applocal.ps1 -targetBinary C:/CrossHatch-JRDW/build/bgfx.cmake/cmake/bgfx/RelWithDebInfo/shaderc.exe -installedDir C:/CrossHatch-JRDW/vcpkg/installed/x64-windows/bin -OutVariable out
-if %errorlevel% neq 0 goto :cmEnd
-:cmEnd
-endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
-:cmErrorLevel
-exit /b %1
-:cmDone
-if %errorlevel% neq 0 goto :VCEnd</Command>
-    </PostBuildEvent>
     <Link>
       <AdditionalDependencies>..\bx\RelWithDebInfo\bx.lib;RelWithDebInfo\fcpp.lib;RelWithDebInfo\glslang.lib;RelWithDebInfo\glsl-optimizer.lib;RelWithDebInfo\spirv-opt.lib;RelWithDebInfo\spirv-cross.lib;..\bx\RelWithDebInfo\bx.lib;..\bimg\RelWithDebInfo\bimg.lib;RelWithDebInfo\fcpp.lib;RelWithDebInfo\glslang.lib;RelWithDebInfo\glsl-optimizer.lib;RelWithDebInfo\spirv-opt.lib;RelWithDebInfo\spirv-cross.lib;..\bx\RelWithDebInfo\bx.lib;psapi.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>

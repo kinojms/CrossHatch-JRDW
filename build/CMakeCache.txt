@@ -541,8 +541,26 @@ bgfx_BINARY_DIR:STATIC=C:/CrossHatch-JRDW/build/bgfx.cmake
 //Value Computed by CMake
 bgfx_IS_TOP_LEVEL:STATIC=OFF
 
+//Dependencies for the target
+bgfx_LIB_DEPENDS:STATIC=general;bx;general;bimg;
+
 //Value Computed by CMake
 bgfx_SOURCE_DIR:STATIC=C:/CrossHatch-JRDW/bgfx.cmake
+
+//Dependencies for the target
+bimg_LIB_DEPENDS:STATIC=general;bx;
+
+//Dependencies for the target
+bimg_decode_LIB_DEPENDS:STATIC=general;bx;
+
+//Dependencies for the target
+bimg_encode_LIB_DEPENDS:STATIC=general;bx;
+
+//Dependencies for the target
+bx_LIB_DEPENDS:STATIC=general;psapi;
+
+//Dependencies for the target
+example-common_LIB_DEPENDS:STATIC=general;bgfx;general;bx;general;bimg;general;bimg_decode;
 
 //CMake built-in FindProtobuf.cmake module compatible
 protobuf_MODULE_COMPATIBLE:BOOL=OFF
