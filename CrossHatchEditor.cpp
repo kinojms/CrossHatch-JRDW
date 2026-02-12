@@ -4629,10 +4629,10 @@ int main(void)
                 NGO, WAY WE P.
                 SACDALAN, JUSTIN MORRIE E.*/
 
-            ImGui::BulletText("SACDALAN, JUSTIN MORRIE E - Developer");
-            ImGui::BulletText("DELA CRUZ, DIEGO J. - Developer");
-            ImGui::BulletText("KHAN, RENEE ALTHEA F. - Developer");
-            ImGui::BulletText("NGO, WAY WE P. - Developer");
+            ImGui::BulletText("SACDALAN, JUSTIN MORRIE E");
+            ImGui::BulletText("DELA CRUZ, DIEGO J.");
+            ImGui::BulletText("KHAN, RENEE ALTHEA F.");
+            ImGui::BulletText("NGO, WAY WE P.");
 
             ImGui::Dummy(ImVec2(0, 30));
 
