@@ -3375,11 +3375,11 @@ static void RenderLeftSidebar()
         // - Translate always available
         // - Rotate available for any selected object (including lights)
         // - Scale available (matches existing inspector UI)
-        operation_button("##op_translate", "Translate (1)", ImGuizmo::TRANSLATE, true, draw_translate_icon);
+        operation_button("##op_translate", "Translate (1)", ImGuizmo::TRANSLATE, hasSelection, draw_translate_icon);
         ImGui::Spacing();
         operation_button("##op_rotate", "Rotate (2)", ImGuizmo::ROTATE, hasSelection, draw_rotate_icon);
         ImGui::Spacing();
-        operation_button("##op_scale", "Scale (3)", ImGuizmo::SCALE, true, draw_scale_icon);
+        operation_button("##op_scale", "Scale (3)", ImGuizmo::SCALE, hasSelection, draw_scale_icon);
 
         // If nothing is selected, hint that the toolbar still affects the gizmo once an object is picked.
         if (!hasSelection)
