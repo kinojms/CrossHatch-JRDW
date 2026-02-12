@@ -654,7 +654,7 @@ void DecomposeMatrixToInstance_ImGuizmo(const float* matrix, Instance* inst)
     inst->scale[2] = scl[2];
 }
 
-void DrawGizmoForSelected(Instance* selectedInstance, float originX, float originY, const float* view, const float* proj)
+void DrawGizmoForSelected(Instance* selectedInstance, float originX, float originY, const float* view, const float* proj, float rectWidth, float rectHeight)
 {
     // Static state for this function:
     static bool wasUsing = false;
@@ -668,9 +668,9 @@ void DrawGizmoForSelected(Instance* selectedInstance, float originX, float origi
     float matrix[16];
     BuildWorldMatrix(selectedInstance, matrix);
 
-    // 2) Setup ImGuizmo
-    ImGuiIO& io = ImGui::GetIO();
-    ImGuizmo::SetRect(originX, originY, io.DisplaySize.x, io.DisplaySize.y);
+    // 2) Draw and hit-test in the current window (viewport); required for correct input when gizmo is in its own window
+    ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
+    ImGuizmo::SetRect(originX, originY, rectWidth, rectHeight);
 
     // 3) Store the original object's local transform before manipulation
     float localMatrix[16];
@@ -679,8 +679,9 @@ void DrawGizmoForSelected(Instance* selectedInstance, float originX, float origi
         selectedInstance->rotation[0], selectedInstance->rotation[1], selectedInstance->rotation[2],
         selectedInstance->position[0], selectedInstance->position[1], selectedInstance->position[2]);
 
-    // Check if CTRL is held down to enable snapping
-    bool useSnap = io.KeyAlt; //changed to alt
+    ImGuiIO& io = ImGui::GetIO();
+    // Check if ALT is held down to enable snapping
+    bool useSnap = io.KeyAlt;
 
     // Define snap settings for different operations (x, y, z for each operation)
     float snapTranslation[3] = { 0.5f, 0.5f, 0.5f };  // Snap all axes to 0.5 units
@@ -1591,7 +1592,7 @@ void drawInstance(Instance* instance, bgfx::ProgramHandle defaultProgram, bgfx::
 
             if (bgfx::isValid(unlitColorProgram))
             {
-                bgfx::submit(0, unlitColorProgram);
+                bgfx::submit(1, unlitColorProgram);
             }
             else
             {
@@ -1599,7 +1600,7 @@ void drawInstance(Instance* instance, bgfx::ProgramHandle defaultProgram, bgfx::
                 OutputDebugStringA("[AttributeMode] unlitColorProgram is invalid, falling back to defaultProgram.\n");
 #endif
                 bgfx::setState(BGFX_STATE_DEFAULT);
-                bgfx::submit(0, defaultProgram);
+                bgfx::submit(1, defaultProgram);
             }
         }
         else
@@ -1661,21 +1662,21 @@ void drawInstance(Instance* instance, bgfx::ProgramHandle defaultProgram, bgfx::
                     // Enable alpha blending for text rendering
                     bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A |
                         BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_SRC_ALPHA, BGFX_STATE_BLEND_INV_SRC_ALPHA));
-                    bgfx::submit(0, textProgram);
+                    bgfx::submit(1, textProgram);
                 }
                 else if (instance->type == "comicborder" || instance->type == "comicbubble") {
                     bgfx::setState(BGFX_STATE_DEFAULT);
 
                     // Set the comic color uniform (see below for how it's updated via ImGui).
                     bgfx::setUniform(u_comicColor, comicColor);
-                    bgfx::submit(0, comicProgram);
+                    bgfx::submit(1, comicProgram);
                 }
                 else
                 {
                     // Use default or debug shader
                     bgfx::setState(BGFX_STATE_DEFAULT);
 
-                    bgfx::submit(0, (instance->type == "light") ? lightDebugProgram : defaultProgram);
+                    bgfx::submit(1, (instance->type == "light") ? lightDebugProgram : defaultProgram);
                 }
             }
         }
@@ -3097,6 +3098,13 @@ static float g_RightPanelWidth  = 420.0f;  // Sidebar width in pixels
 static float g_ObjPanelRatio    = 0.33f;   // Fraction of sidebar height for Object List
 static float g_InspectorRatio   = 0.34f;   // Fraction for Inspector (rest goes to Reconstructor)
 
+// 3D Viewport window rect (LichtFeld-style: its own window with rounded corners), set each frame when the window is built
+static float g_ViewportRectX = 0.0f, g_ViewportRectY = 0.0f, g_ViewportRectW = 800.0f, g_ViewportRectH = 600.0f;
+
+// Application background: dark so the 3D viewport window shape (rounded corners) is visible (0xRRGGBBAA)
+static const uint32_t g_AppBackgroundColor = 0x0d0d0dff;
+static const uint32_t g_ViewportClearColor  = 0x303030ff;  // 3D world clear (unchanged)
+
 // Full inspector UI body (transform, light, material, delete, etc.). Used by the right sidebar only.
 static void RenderInspectorBody(Instance* selectedInstance, std::vector<Instance*>& instances);
 
@@ -3241,21 +3249,7 @@ static void RenderRightSidebar()
                 // If an instance is selected, show its transform controls.
                 if (selectedInstance)
                 {
-                    int width = static_cast<int>(vp->Size.x);
-                    int height = static_cast<int>(vp->Size.y);
-                    float view[16];
-                    bx::mtxLookAt(view, cameras[currentCameraIndex].position,
-                                  bx::add(cameras[currentCameraIndex].position, cameras[currentCameraIndex].front),
-                                  cameras[currentCameraIndex].up);
-
-                    float proj[16];
-                    bx::mtxProj(proj, cameras[currentCameraIndex].fov, float(width) / float(height),
-                                cameras[currentCameraIndex].nearClip, cameras[currentCameraIndex].farClip,
-                                bgfx::getCaps()->homogeneousDepth);
-
-                    //default gizmo draw
-                    DrawGizmoForSelected(selectedInstance, 0.0f, 0.0f, view, proj);
-
+                    // Gizmo is drawn in the 3D viewport window (##3DViewport) so it receives input and aligns with the scene
                     ImGui::SetNextItemOpen(true, ImGuiCond_Once);//collapsing header set to open initially
                     if (ImGui::CollapsingHeader("Transform Controls/Gizmo"))
                     {
@@ -3815,7 +3809,7 @@ int main(void)
     bgfx::setDebug(BGFX_DEBUG_TEXT); // <-- Add this line here
 
     bgfx::setViewRect(0, 0, 0, WNDW_WIDTH, WNDW_HEIGHT);
-    bgfx::setViewClear(0, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, 0x303030ff, 1.0f, 0);
+    bgfx::setViewClear(0, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, g_AppBackgroundColor, 1.0f, 0);
 
     InputManager::initialize(window);
 
@@ -4738,32 +4732,58 @@ int main(void)
             //transformation gizmo
             ImGuizmo::BeginFrame();
 
-            ImGuiID dockspace_id = viewport->ID;
-            ImGui::DockSpaceOverViewport(dockspace_id, viewport, ImGuiDockNodeFlags_PassthruCentralNode);
+            // 3D Viewport as its own window (LichtFeld-style): rounded corners, resizes with right sidebar
+            {
+                const float viewportW = viewport->Size.x - g_RightPanelWidth;
+                const float viewportH = viewport->Size.y - g_MainMenuHeight;
+                ImGui::SetNextWindowPos(ImVec2(viewport->Pos.x, viewport->Pos.y + g_MainMenuHeight), ImGuiCond_Always);
+                ImGui::SetNextWindowSize(ImVec2(viewportW > 0 ? viewportW : 1.0f, viewportH > 0 ? viewportH : 1.0f), ImGuiCond_Always);
 
-            //for viewporting
-            /*
-            // Set up a full-screen window
-            ImGui::SetNextWindowPos(viewport->Pos);
-            ImGui::SetNextWindowSize(viewport->Size);
-            ImGui::SetNextWindowViewport(viewport->ID);
+                ImGuiWindowFlags viewport_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize
+                    | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse
+                    | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing;
 
-            ImGuiWindowFlags docking_window_flags = ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoTitleBar |
-                ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize |
-                ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus |
-                ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_MenuBar;
+                const float viewport_rounding = 12.0f;
+                ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, viewport_rounding);
+                ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+                ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.0f);
+                ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0f, 0.0f, 0.0f, 0.0f)); // transparent so 3D shows through
+                ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.2f, 0.25f, 0.23f, 0.6f)); // subtle border
 
-            ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-            ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+                if (ImGui::Begin("##3DViewport", nullptr, viewport_flags))
+                {
+                    g_ViewportRectX = ImGui::GetWindowPos().x;
+                    g_ViewportRectY = ImGui::GetWindowPos().y;
+                    g_ViewportRectW = ImGui::GetWindowSize().x;
+                    g_ViewportRectH = ImGui::GetWindowSize().y;
+                    // Reserve content area so the window has correct size; 3D is drawn by bgfx into this rect
+                    ImGui::Dummy(ImGui::GetContentRegionAvail());
+                    // Draw gizmo in viewport window so it receives input when mouse is over viewport; use content rect for exact alignment
+                    if (selectedInstance)
+                    {
+                        ImVec2 rectMin = ImGui::GetItemRectMin();
+                        ImVec2 rectMax = ImGui::GetItemRectMax();
+                        float rectW = rectMax.x - rectMin.x;
+                        float rectH = rectMax.y - rectMin.y;
+                        if (rectW > 1.0f && rectH > 1.0f)
+                        {
+                            float view[16];
+                            bx::mtxLookAt(view, cameras[currentCameraIndex].position,
+                                bx::add(cameras[currentCameraIndex].position, cameras[currentCameraIndex].front),
+                                cameras[currentCameraIndex].up);
+                            float proj[16];
+                            bx::mtxProj(proj, cameras[currentCameraIndex].fov, rectW / rectH,
+                                cameras[currentCameraIndex].nearClip, cameras[currentCameraIndex].farClip,
+                                bgfx::getCaps()->homogeneousDepth);
+                            DrawGizmoForSelected(selectedInstance, rectMin.x, rectMin.y, view, proj, rectW, rectH);
+                        }
+                    }
+                }
+                ImGui::End();
 
-            ImGui::Begin("DockSpace Window", nullptr, docking_window_flags);
-            ImGui::PopStyleVar(3);
-
-            ImGuiID dockspace_id = ImGui::GetID("MainDockspace");
-            ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_PassthruCentralNode);
-
-            ImGui::End();*/
+                ImGui::PopStyleColor(2);
+                ImGui::PopStyleVar(3);
+            }
 
             // Use main menu bar so it stays on top and receives clicks (viewport menu bar, not a regular window)
             if (ImGui::BeginMainMenuBar())
@@ -6005,10 +6025,15 @@ int main(void)
 
         int width = static_cast<int>(viewport->Size.x);
         int height = static_cast<int>(viewport->Size.y);
+        // 3D viewport = dedicated window rect (LichtFeld-style)
+        int view3DWidth = static_cast<int>(g_ViewportRectW);
+        int view3DHeight = static_cast<int>(g_ViewportRectH);
+        if (view3DWidth < 1) view3DWidth = 1;
+        if (view3DHeight < 1) view3DHeight = 1;
         int mouseX_input = static_cast<int>(InputManager::getMouseX());
         int mouseY_input = static_cast<int>(InputManager::getMouseY());
-        float contentRight = (viewport->Size.x - g_RightPanelWidth);
-        bool mouseIn3DArea = (mouseX_input >= 0 && mouseX_input < (int)contentRight && mouseY_input >= (int)g_MainMenuHeight && mouseY_input < height);
+        bool mouseIn3DArea = (mouseX_input >= (int)g_ViewportRectX && mouseX_input < (int)(g_ViewportRectX + g_ViewportRectW)
+            && mouseY_input >= (int)g_ViewportRectY && mouseY_input < (int)(g_ViewportRectY + g_ViewportRectH));
 
         //Don't process movement input unless user is in the actual 3D editor
         if (!showMainMenu && !showCreditsPage)
@@ -6033,10 +6058,11 @@ int main(void)
 
         // --- Object Picking Pass ---
         // Only when in editor (past start menu), left click, not over UI, and mouse in 3D content area (exclude right sidebar).
+        // Skip picking when the mouse is over or using the gizmo so we don't change selection while interacting with it.
         if (!showMainMenu && !showCreditsPage)
         {
-            // Run picking when click is in 3D content area (mouseIn3DArea computed above)
-            if (InputManager::isMouseClicked(GLFW_MOUSE_BUTTON_LEFT) && mouseIn3DArea)
+            bool skipPickingForGizmo = ImGuizmo::IsOver() || ImGuizmo::IsUsing();
+            if (InputManager::isMouseClicked(GLFW_MOUSE_BUTTON_LEFT) && mouseIn3DArea && !skipPickingForGizmo)
             {
                 if (InputManager::getSkipPickingPass) {
                     // Use a dedicated view ID for picking (choose one not used by your normal rendering)
@@ -6049,7 +6075,7 @@ int main(void)
                     float view[16];
                     bx::mtxLookAt(view, activeCamera.position, bx::add(activeCamera.position, activeCamera.front), activeCamera.up);
                     float proj[16];
-                    bx::mtxProj(proj, activeCamera.fov, float(width) / float(height), activeCamera.nearClip, activeCamera.farClip, bgfx::getCaps()->homogeneousDepth);
+                    bx::mtxProj(proj, activeCamera.fov, float(view3DWidth) / float(view3DHeight), activeCamera.nearClip, activeCamera.farClip, bgfx::getCaps()->homogeneousDepth);
                     bgfx::setViewTransform(PICKING_VIEW_ID, view, proj);
 
                     // Render each instance with the picking shader.
@@ -6069,10 +6095,10 @@ int main(void)
 
                     // Detach the picking framebuffer by setting it to BGFX_INVALID_HANDLE.
                     bgfx::setViewFrameBuffer(0, BGFX_INVALID_HANDLE);
-                    // Reset the viewport to cover the full window.
-                    bgfx::setViewRect(0, 0, 0, uint16_t(width), uint16_t(height));
+                    // Reset the viewport to the 3D viewport window rect (view 1).
+                    bgfx::setViewRect(1, (uint16_t)g_ViewportRectX, (uint16_t)g_ViewportRectY, (uint16_t)view3DWidth, (uint16_t)view3DHeight);
                     // Reset the view transforms for your normal scene.
-                    bgfx::setViewTransform(0, view, proj);
+                    bgfx::setViewTransform(1, view, proj);
                     InputManager::toggleSkipPickingPass();
                 }
                 // Use a dedicated view ID for picking (choose one not used by your normal rendering)
@@ -6085,7 +6111,7 @@ int main(void)
                 float view[16];
                 bx::mtxLookAt(view, activeCamera.position, bx::add(activeCamera.position, activeCamera.front), activeCamera.up);
                 float proj[16];
-                bx::mtxProj(proj, activeCamera.fov, float(width) / float(height), activeCamera.nearClip, activeCamera.farClip, bgfx::getCaps()->homogeneousDepth);
+                bx::mtxProj(proj, activeCamera.fov, float(view3DWidth) / float(view3DHeight), activeCamera.nearClip, activeCamera.farClip, bgfx::getCaps()->homogeneousDepth);
                 bgfx::setViewTransform(PICKING_VIEW_ID, view, proj);
 
                 // Render each instance with the picking shader.
@@ -6103,11 +6129,12 @@ int main(void)
                 // Read back the texture data into s_pickingBlitData.
                 bgfx::readTexture(s_pickingReadTex, s_pickingBlitData);
 
-                // Convert the current mouse position to coordinates in the picking RT.
-                // Flip Y for framebuffer coords
-                int mouseY_flip = height - mouseY_input;
-                int pickX = (mouseX_input * PICKING_DIM) / width;
-                int pickY = (mouseY_flip * PICKING_DIM) / height;
+                // Convert mouse to viewport-window-local coords for picking.
+                float mouseLocalX = (float)(mouseX_input - (int)g_ViewportRectX);
+                float mouseLocalY = (float)(mouseY_input - (int)g_ViewportRectY);
+                int mouseY_flip = view3DHeight - (int)mouseLocalY;
+                int pickX = (int)(mouseLocalX * (float)PICKING_DIM / (float)view3DWidth);
+                int pickY = (mouseY_flip * PICKING_DIM) / view3DHeight;
 
                 // Clamp the coordinates.
                 pickX = std::max(0, std::min(pickX, PICKING_DIM - 1));
@@ -6136,10 +6163,10 @@ int main(void)
                 }
                 // Detach the picking framebuffer by setting it to BGFX_INVALID_HANDLE.
                 bgfx::setViewFrameBuffer(0, BGFX_INVALID_HANDLE);
-                // Reset the viewport to cover the full window.
-                bgfx::setViewRect(0, 0, 0, uint16_t(width), uint16_t(height));
+                // Reset the viewport to the 3D viewport window rect (view 1).
+                bgfx::setViewRect(1, (uint16_t)g_ViewportRectX, (uint16_t)g_ViewportRectY, (uint16_t)view3DWidth, (uint16_t)view3DHeight);
                 // Reset the view transforms for your normal scene.
-                bgfx::setViewTransform(0, view, proj);
+                bgfx::setViewTransform(1, view, proj);
             }
         }
 
@@ -6165,23 +6192,29 @@ int main(void)
         bgfx::setUniform(u_numLights, numLightsArr);
 
         bgfx::reset(width, height, BGFX_RESET_VSYNC);
-        bgfx::setViewRect(0, 0, 0, uint16_t(width), uint16_t(height));
+        // View 0: full-screen dark background so the 3D viewport window shape (rounded corners) is visible
+        bgfx::setViewRect(0, 0, 0, (uint16_t)width, (uint16_t)height);
+        bgfx::setViewClear(0, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, g_AppBackgroundColor, 1.0f, 0);
+        bgfx::touch(0);
+
+        // View 1: 3D scene only in the viewport window rect (LichtFeld-style, rounded window)
+        bgfx::setViewRect(1, (uint16_t)g_ViewportRectX, (uint16_t)g_ViewportRectY, (uint16_t)view3DWidth, (uint16_t)view3DHeight);
 
         float view[16];
         bx::mtxLookAt(view, activeCamera.position, bx::add(activeCamera.position, activeCamera.front), activeCamera.up);
 
         float proj[16];
-        bx::mtxProj(proj, activeCamera.fov, float(width) / float(height), activeCamera.nearClip, activeCamera.farClip, bgfx::getCaps()->homogeneousDepth);
-        bgfx::setViewTransform(0, view, proj);
+        bx::mtxProj(proj, activeCamera.fov, float(view3DWidth) / float(view3DHeight), activeCamera.nearClip, activeCamera.farClip, bgfx::getCaps()->homogeneousDepth);
+        bgfx::setViewTransform(1, view, proj);
 
         // Set model matrix
         float mtx[16];
         bx::mtxSRT(mtx, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
         bgfx::setTransform(mtx);
 
-        bgfx::setViewClear(0, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, 0x303030ff, 1.0f, 0);
+        bgfx::setViewClear(1, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, g_ViewportClearColor, 1.0f, 0);
 
-        bgfx::touch(0);
+        bgfx::touch(1);
 
 
         float viewPos[4] = { camera.position.x, camera.position.y, camera.position.z, 1.0f };
@@ -6230,7 +6263,7 @@ int main(void)
 
         const float tintBasic[4] = { 1.0f, 1.0f, 1.0f, 0.0f };
         bgfx::setUniform(u_tint, tintBasic);
-        bgfx::submit(0, defaultProgram);
+        bgfx::submit(1, defaultProgram);
 
         for (const auto& instance : instances)
         {
