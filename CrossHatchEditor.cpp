@@ -3218,7 +3218,7 @@ static void RenderRightSidebar()
         ImGui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_Separator]);
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, style.Colors[ImGuiCol_HeaderHovered]);
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, style.Colors[ImGuiCol_HeaderActive]);
-        ImGui::Button("##SplitObjInspector", ImVec2(-1.0f, splitter_h));
+        ImGui::Button("##SplitObjInspector", ImVec2(-1.0f, splitter_h)); 
         if (ImGui::IsItemActive())
         {
             g_ObjPanelRatio = ImClamp(
@@ -3486,7 +3486,8 @@ int main(void)
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
     io.Fonts->AddFontFromFileTTF("fonts/SNPro-Bold.ttf", 16.0f);
     ImFont* fontSmall = io.Fonts->AddFontFromFileTTF("fonts/SNPro-Bold.ttf", 28.0f);
-    ImFont* fontLarge = io.Fonts->AddFontFromFileTTF("fonts/SNPro-Bold.ttf", 64); // Baked at high res
+    ImFont* fontMedium = io.Fonts->AddFontFromFileTTF("fonts/SNPro-Bold.ttf", 46.0f); 
+    ImFont* fontLarge = io.Fonts->AddFontFromFileTTF("fonts/SNPro-Bold.ttf", 64.0f); // Baked at high res
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_Implbgfx_Init(255);
 
@@ -4610,11 +4611,13 @@ int main(void)
 
             // Title
             ImGui::SetCursorPosY(20);
-            ImGui::SetWindowFontScale(2.2f);
+            // ImGui::SetWindowFontScale(2.2f);
+            ImGui::PushFont(fontMedium);
             ImVec2 titleSize = ImGui::CalcTextSize("CREDITS");
             ImGui::SetCursorPosX((creditsWindowSize.x - titleSize.x) * 0.5f);
             ImGui::Text("CREDITS");
-            ImGui::SetWindowFontScale(1.0f);
+            ImGui::PopFont();
+            // ImGui::SetWindowFontScale(1.0f);
 
             ImGui::Dummy(ImVec2(0, 20));
 
@@ -4628,7 +4631,7 @@ int main(void)
 
             ImGui::BulletText("SACDALAN, JUSTIN MORRIE E - Developer");
             ImGui::BulletText("DELA CRUZ, DIEGO J. - Developer");
-            ImGui::BulletText("KHAN, RENEE ALTHEA F. -Developer");
+            ImGui::BulletText("KHAN, RENEE ALTHEA F. - Developer");
             ImGui::BulletText("NGO, WAY WE P. - Developer");
 
             ImGui::Dummy(ImVec2(0, 30));
