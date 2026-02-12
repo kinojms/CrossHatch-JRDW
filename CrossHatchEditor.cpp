@@ -218,6 +218,142 @@ static bgfx::UniformHandle u_id = BGFX_INVALID_HANDLE;
 // Program handle for the picking pass.
 static bgfx::ProgramHandle pickingProgram = BGFX_INVALID_HANDLE;
 
+// ------------------------------------------------------------
+// 3D viewport: world axes + "infinite" XZ grid
+// ------------------------------------------------------------
+struct LineVertex
+{
+    float x, y, z;
+    float nx, ny, nz;
+    uint32_t abgr;
+    float u, v;
+};
+
+static const bgfx::VertexLayout& GetLineVertexLayout()
+{
+    // Match the project's common mesh layout (Position/Normal/Color0/TexCoord0),
+    // so we can reuse `unlitColorProgram` which reads vertex color.
+    static bgfx::VertexLayout s_layout;
+    static bool s_inited = false;
+    if (!s_inited)
+    {
+        s_layout.begin()
+            .add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
+            .add(bgfx::Attrib::Normal, 3, bgfx::AttribType::Float)
+            .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true, true)
+            .add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float)
+            .end();
+        s_inited = true;
+    }
+    return s_layout;
+}
+
+static inline uint32_t PackAbgr(uint8_t a, uint8_t b, uint8_t g, uint8_t r)
+{
+    return (uint32_t(a) << 24) | (uint32_t(b) << 16) | (uint32_t(g) << 8) | uint32_t(r);
+}
+
+static void SubmitLineList(uint16_t viewId, bgfx::ProgramHandle program, const LineVertex* verts, uint32_t numVerts, uint64_t state)
+{
+    if (!bgfx::isValid(program) || verts == nullptr || numVerts < 2)
+        return;
+    if (!bgfx::getAvailTransientVertexBuffer(numVerts, GetLineVertexLayout()))
+        return;
+
+    bgfx::TransientVertexBuffer tvb;
+    bgfx::allocTransientVertexBuffer(&tvb, numVerts, GetLineVertexLayout());
+    std::memcpy(tvb.data, verts, sizeof(LineVertex) * numVerts);
+
+    float id[16];
+    bx::mtxIdentity(id);
+    bgfx::setTransform(id);
+    bgfx::setVertexBuffer(0, &tvb, 0, numVerts);
+    bgfx::setState(state);
+    bgfx::submit(viewId, program);
+}
+
+static void DrawWorldAxesAndGrid(uint16_t viewId, const Camera& cam, bgfx::ProgramHandle program)
+{
+    if (!bgfx::isValid(program))
+        return;
+
+    // "Infinite" look: rebuild grid around camera each frame.
+    // Keep the grid size tied to the camera far clip to avoid visible edges.
+    const float farClip = std::max(10.0f, cam.farClip);
+    const float gridRadius = std::min(5000.0f, farClip * 0.90f);
+
+    // Grid settings (units).
+    const float minorStep = 1.0f;
+    const int   halfLines = std::max(10, int(gridRadius / minorStep));
+
+    const float originX = std::floor(cam.position.x / minorStep) * minorStep;
+    const float originZ = std::floor(cam.position.z / minorStep) * minorStep;
+
+    const float zMin = originZ - halfLines * minorStep;
+    const float zMax = originZ + halfLines * minorStep;
+    const float xMin = originX - halfLines * minorStep;
+    const float xMax = originX + halfLines * minorStep;
+
+    // Colors (ABGR): X=red, Y=green, Z=blue.
+    const uint32_t gridColor = PackAbgr(0x55, 0x80, 0x80, 0x80); // subtle grey, alpha-blended
+    const uint32_t xColor    = PackAbgr(0xff, 0x00, 0x00, 0xff); // red (X)
+    const uint32_t yColor    = PackAbgr(0xff, 0x00, 0xff, 0x00); // green (Y)
+    const uint32_t zColor    = PackAbgr(0xff, 0xff, 0x00, 0x00); // blue (Z)
+
+    // Build vertices (two vertices per segment; line list).
+    const uint32_t gridLines = uint32_t(2 * (2 * halfLines + 1));
+    const uint32_t axisLines = 3;
+    const uint32_t totalVerts = (gridLines + axisLines) * 2;
+
+    std::vector<LineVertex> v;
+    v.reserve(totalVerts);
+
+    auto pushLine = [&](float x0, float y0, float z0, float x1, float y1, float z1, uint32_t abgr)
+    {
+        LineVertex a{};
+        a.x = x0; a.y = y0; a.z = z0;
+        a.nx = 0.0f; a.ny = 1.0f; a.nz = 0.0f;
+        a.abgr = abgr;
+        a.u = 0.0f; a.v = 0.0f;
+
+        LineVertex b{};
+        b.x = x1; b.y = y1; b.z = z1;
+        b.nx = 0.0f; b.ny = 1.0f; b.nz = 0.0f;
+        b.abgr = abgr;
+        b.u = 0.0f; b.v = 0.0f;
+
+        v.push_back(a);
+        v.push_back(b);
+    };
+
+    // Grid lines parallel to Z (vary X).
+    for (int i = -halfLines; i <= halfLines; ++i)
+    {
+        const float x = originX + float(i) * minorStep;
+        pushLine(x, 0.0f, zMin, x, 0.0f, zMax, gridColor);
+    }
+    // Grid lines parallel to X (vary Z).
+    for (int i = -halfLines; i <= halfLines; ++i)
+    {
+        const float z = originZ + float(i) * minorStep;
+        pushLine(xMin, 0.0f, z, xMax, 0.0f, z, gridColor);
+    }
+
+    // World axes through origin, stretched very far.
+    const float axisLen = std::min(200000.0f, farClip * 10.0f);
+    pushLine(-axisLen, 0.0f, 0.0f, +axisLen, 0.0f, 0.0f, xColor);
+    pushLine(0.0f, -axisLen, 0.0f, 0.0f, +axisLen, 0.0f, yColor);
+    pushLine(0.0f, 0.0f, -axisLen, 0.0f, 0.0f, +axisLen, zColor);
+
+    const uint64_t state =
+        BGFX_STATE_WRITE_RGB |
+        BGFX_STATE_DEPTH_TEST_LESS |
+        BGFX_STATE_PT_LINES |
+        BGFX_STATE_BLEND_ALPHA;
+
+    SubmitLineList(viewId, program, v.data(), uint32_t(v.size()), state);
+}
+
 struct TextureOption {
     std::string name;
     bgfx::TextureHandle handle;
@@ -6372,6 +6508,15 @@ int main(void)
         bgfx::setViewClear(1, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, g_ViewportClearColor, 1.0f, 0);
 
         bgfx::touch(1);
+
+        // World reference helpers (draw first so scene objects appear above in depth):
+        // - Red: X axis
+        // - Green: Y axis
+        // - Blue: Z axis
+        // - Grid: XZ plane (camera-relative "infinite" tiles)
+        // Prefer unlit vertex-color program; fall back to defaultProgram if unavailable.
+        bgfx::ProgramHandle gridProgram = bgfx::isValid(unlitColorProgram) ? unlitColorProgram : defaultProgram;
+        DrawWorldAxesAndGrid(1, activeCamera, gridProgram);
 
 
         float viewPos[4] = { camera.position.x, camera.position.y, camera.position.z, 1.0f };
