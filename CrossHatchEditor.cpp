@@ -5049,23 +5049,93 @@ int main(void)
                     g_ViewportRectH = ImGui::GetWindowSize().y;
                     // Reserve content area so the window has correct size; 3D is drawn by bgfx into this rect
                     ImGui::Dummy(ImGui::GetContentRegionAvail());
-                    // Draw gizmo in viewport window so it receives input when mouse is over viewport; use content rect for exact alignment
-                    if (selectedInstance)
+                    // Content rect in screen space for the 3D viewport area.
+                    ImVec2 rectMin = ImGui::GetItemRectMin();
+                    ImVec2 rectMax = ImGui::GetItemRectMax();
+                    float rectW = rectMax.x - rectMin.x;
+                    float rectH = rectMax.y - rectMin.y;
+
+                    if (rectW > 1.0f && rectH > 1.0f)
                     {
-                        ImVec2 rectMin = ImGui::GetItemRectMin();
-                        ImVec2 rectMax = ImGui::GetItemRectMax();
-                        float rectW = rectMax.x - rectMin.x;
-                        float rectH = rectMax.y - rectMin.y;
-                        if (rectW > 1.0f && rectH > 1.0f)
+                        // Build current camera view / projection matrices for the main scene
+                        // and the transform gizmo.
+                        float view[16];
+                        Camera& cam = cameras[currentCameraIndex];
+                        bx::mtxLookAt(view, cam.position,
+                            bx::add(cam.position, cam.front),
+                            cam.up);
+
+                        float proj[16];
+                        bx::mtxProj(proj, cam.fov, rectW / rectH,
+                            cam.nearClip, cam.farClip,
+                            bgfx::getCaps()->homogeneousDepth);
+
+                        // --- Viewport orientation gizmo (bottom-right), Blender-style ---
+                        // Dragging this small gizmo rotates the active camera, and clicking on
+                        // an axis/face snaps the view to that orientation.
+                        //
+                        // For a more intuitive behavior (the gizmo appears to rotate in the
+                        // same direction as the camera when you orbit using other controls),
+                        // we feed ViewManipulate a *mirrored* view matrix that looks along
+                        // -cam.front instead of +cam.front. The main scene and transform
+                        // gizmo still use the regular view.
                         {
-                            float view[16];
-                            bx::mtxLookAt(view, cameras[currentCameraIndex].position,
-                                bx::add(cameras[currentCameraIndex].position, cameras[currentCameraIndex].front),
-                                cameras[currentCameraIndex].up);
-                            float proj[16];
-                            bx::mtxProj(proj, cameras[currentCameraIndex].fov, rectW / rectH,
-                                cameras[currentCameraIndex].nearClip, cameras[currentCameraIndex].farClip,
-                                bgfx::getCaps()->homogeneousDepth);
+                            float viewForGizmo[16];
+                            bx::mtxLookAt(viewForGizmo, cam.position,
+                                bx::sub(cam.position, cam.front),
+                                cam.up);
+                            static float viewGizmoDistance = 10.0f;
+                            if (viewGizmoDistance <= 0.0f)
+                                viewGizmoDistance = 10.0f;
+
+                            const ImVec2 gizmoSize(96.0f, 96.0f);
+                            const float padding = 12.0f;
+                            ImVec2 gizmoPos(
+                                rectMax.x - gizmoSize.x - padding,
+                                rectMax.y - gizmoSize.y - padding);
+
+                            ImGuizmo::ViewManipulate(viewForGizmo, viewGizmoDistance, gizmoPos, gizmoSize, 0);
+
+                            // Only push changes back into the camera while the user is
+                            // actively manipulating the gizmo. This avoids fighting with
+                            // the normal camera-controls (InputManager::update) and
+                            // prevents jitter when idle.
+                            if (ImGuizmo::IsUsing())
+                            {
+                                // Update the active camera from the manipulated view matrix so that
+                                // the main 3D viewport follows the gizmo orientation.
+                                float invView[16];
+                                bx::mtxInverse(invView, viewForGizmo);
+
+                                // Extract camera basis from the inverse view (camera transform).
+                                // bx matrices are column-major: basis vectors are the first three columns,
+                                // translation is in the last column.
+                                cam.position = { invView[12], invView[13], invView[14] };
+                                cam.right    = { invView[0],  invView[4],  invView[8]  };
+                                cam.up       = { invView[1],  invView[5],  invView[9]  };
+                                bx::Vec3 forward = { -invView[2], -invView[6], -invView[10] };
+                                cam.front = forward;
+
+                                // Keep yaw / pitch in sync so other camera controls remain consistent.
+                                const float fx = forward.x;
+                                const float fy = forward.y;
+                                const float fz = forward.z;
+                                const float len = bx::sqrt(fx * fx + fy * fy + fz * fz);
+                                if (len > 0.0001f)
+                                {
+                                    const float nx = fx / len;
+                                    const float ny = fy / len;
+                                    const float nz = fz / len;
+                                    cam.yaw   = std::atan2(nz, nx) * 180.0f / 3.14159265f;
+                                    cam.pitch = std::asin(ny)      * 180.0f / 3.14159265f;
+                                }
+                            }
+                        }
+
+                        // Draw transform gizmo for the selected object (if any), using the same
+                        // camera matrices and viewport rect so input stays consistent.
+                        if (selectedInstance)
+                        {
                             DrawGizmoForSelected(selectedInstance, rectMin.x, rectMin.y, view, proj, rectW, rectH);
                         }
                     }
@@ -6329,10 +6399,16 @@ int main(void)
         bool mouseIn3DArea = (mouseX_input >= (int)g_ViewportRectX && mouseX_input < (int)(g_ViewportRectX + g_ViewportRectW)
             && mouseY_input >= (int)g_ViewportRectY && mouseY_input < (int)(g_ViewportRectY + g_ViewportRectH));
 
-        //Don't process movement input unless user is in the actual 3D editor
+        //Don't process movement input unless user is in the actual 3D editor.
+        //Also pause camera controls while using any ImGuizmo (transform or view gizmo)
+        //so they don't fight each other.
         if (!showMainMenu && !showCreditsPage)
         {
-            InputManager::update(activeCamera, 0.016f, mouseIn3DArea);
+            bool gizmoActive = ImGuizmo::IsOver() || ImGuizmo::IsUsing();
+            if (!gizmoActive)
+            {
+                InputManager::update(activeCamera, 0.016f, mouseIn3DArea);
+            }
 
             if (InputManager::isKeyToggled(GLFW_KEY_F2))
             {
