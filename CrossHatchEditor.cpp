@@ -5574,6 +5574,7 @@ int main(void)
                 ImGui::Text("Ctrl + Right Click - Pan Camera");
                 ImGui::Text("Shift - Move Down");
                 ImGui::Text("Space - Move Up");
+                ImGui::Text("Scroll - Zoom In / Out");
 
                 // Column 2
                 ImGui::TableNextColumn();
@@ -5999,10 +6000,17 @@ int main(void)
         //handle inputs
         Camera& activeCamera = cameras[currentCameraIndex];
 
-        //Donâ€™t process movement input unless user is in the actual 3D editor
+        int width = static_cast<int>(viewport->Size.x);
+        int height = static_cast<int>(viewport->Size.y);
+        int mouseX_input = static_cast<int>(InputManager::getMouseX());
+        int mouseY_input = static_cast<int>(InputManager::getMouseY());
+        float contentRight = (viewport->Size.x - g_RightPanelWidth);
+        bool mouseIn3DArea = (mouseX_input >= 0 && mouseX_input < (int)contentRight && mouseY_input >= (int)g_MainMenuHeight && mouseY_input < height);
+
+        //Don't process movement input unless user is in the actual 3D editor
         if (!showMainMenu && !showCreditsPage)
         {
-            InputManager::update(activeCamera, 0.016f);
+            InputManager::update(activeCamera, 0.016f, mouseIn3DArea);
 
             if (InputManager::isKeyToggled(GLFW_KEY_F2))
             {
@@ -6015,10 +6023,6 @@ int main(void)
             }
         }
 
-
-        int width = static_cast<int>(viewport->Size.x);
-        int height = static_cast<int>(viewport->Size.y);
-
         if (width == 0 || height == 0)
         {
             continue;
@@ -6028,11 +6032,7 @@ int main(void)
         // Only when in editor (past start menu), left click, not over UI, and mouse in 3D content area (exclude right sidebar).
         if (!showMainMenu && !showCreditsPage)
         {
-            int mouseX_pick = static_cast<int>(InputManager::getMouseX());
-            int mouseY_pick = static_cast<int>(InputManager::getMouseY());
-            float contentRight = (viewport->Size.x - g_RightPanelWidth);
-            bool mouseIn3DArea = (mouseX_pick >= 0 && mouseX_pick < (int)contentRight && mouseY_pick >= (int)g_MainMenuHeight && mouseY_pick < height);
-            // Run picking when click is in 3D content area; ignore WantCaptureMouse there so dock space doesn't block selection
+            // Run picking when click is in 3D content area (mouseIn3DArea computed above)
             if (InputManager::isMouseClicked(GLFW_MOUSE_BUTTON_LEFT) && mouseIn3DArea)
             {
                 if (InputManager::getSkipPickingPass) {
@@ -6102,8 +6102,8 @@ int main(void)
 
                 // Convert the current mouse position to coordinates in the picking RT.
                 // Flip Y for framebuffer coords
-                int mouseY_flip = height - mouseY_pick;
-                int pickX = (mouseX_pick * PICKING_DIM) / width;
+                int mouseY_flip = height - mouseY_input;
+                int pickX = (mouseX_input * PICKING_DIM) / width;
                 int pickY = (mouseY_flip * PICKING_DIM) / height;
 
                 // Clamp the coordinates.

@@ -9,7 +9,7 @@ public:
 	static void initialize(GLFWwindow* window);
 	static void destroy();
 
-	static void update(Camera& camera, float deltaTime);
+	static void update(Camera& camera, float deltaTime, bool mouseIn3DViewport = true);
 	static double getMouseX();
 	static double getMouseY();
 	static bool isKeyPressed(int key);
