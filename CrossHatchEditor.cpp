@@ -283,7 +283,7 @@ static void DrawWorldAxesAndGrid(uint16_t viewId, const Camera& cam, bgfx::Progr
     const float gridRadius = std::min(5000.0f, farClip * 0.90f);
 
     // Grid settings (units).
-    const float minorStep = 1.0f;
+    const float minorStep = 3.5f;
     const int   halfLines = std::max(10, int(gridRadius / minorStep));
 
     const float originX = std::floor(cam.position.x / minorStep) * minorStep;
@@ -295,10 +295,11 @@ static void DrawWorldAxesAndGrid(uint16_t viewId, const Camera& cam, bgfx::Progr
     const float xMax = originX + halfLines * minorStep;
 
     // Colors (ABGR): X=red, Y=green, Z=blue.
-    const uint32_t gridColor = PackAbgr(0x55, 0x80, 0x80, 0x80); // subtle grey, alpha-blended
-    const uint32_t xColor    = PackAbgr(0xff, 0x00, 0x00, 0xff); // red (X)
-    const uint32_t yColor    = PackAbgr(0xff, 0x00, 0xff, 0x00); // green (Y)
-    const uint32_t zColor    = PackAbgr(0xff, 0xff, 0x00, 0x00); // blue (Z)
+    // Make them bright and mostly independent of scene darkening.
+    const uint32_t gridColor = PackAbgr(0x88, 0xe0, 0xe0, 0xe0); // bright grid, semi-opaque
+    const uint32_t xColor    = PackAbgr(0xff, 0x20, 0x20, 0xff); // bright red (X)
+    const uint32_t yColor    = PackAbgr(0xff, 0x20, 0xff, 0x20); // bright green (Y)
+    const uint32_t zColor    = PackAbgr(0xff, 0xff, 0x20, 0x20); // bright blue (Z)
 
     // Build vertices (two vertices per segment; line list).
     const uint32_t gridLines = uint32_t(2 * (2 * halfLines + 1));
@@ -6514,8 +6515,11 @@ int main(void)
         // - Green: Y axis
         // - Blue: Z axis
         // - Grid: XZ plane (camera-relative "infinite" tiles)
-        // Prefer unlit vertex-color program; fall back to defaultProgram if unavailable.
-        bgfx::ProgramHandle gridProgram = bgfx::isValid(unlitColorProgram) ? unlitColorProgram : defaultProgram;
+        // Prefer unlit vertex-color program so axes/grid are bright and mostly
+        // independent from crosshatch shading, but fall back to defaultProgram
+        // if the unlit shaders are not available.
+        bgfx::ProgramHandle gridProgram =
+            bgfx::isValid(unlitColorProgram) ? unlitColorProgram : defaultProgram;
         DrawWorldAxesAndGrid(1, activeCamera, gridProgram);
 
 
