@@ -1,4 +1,4 @@
-﻿#include "Reconstructor.h"
+#include "Reconstructor.h"
 
 #include <opencv2/opencv.hpp>
 #include <imgui.h>
@@ -835,20 +835,24 @@ namespace Reconstructor {
             }
         }
 
-        ImGui::Begin("3D Reconstructor", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+        // Note: This function is called from within a child window in the sidebar,
+        // so we don't create our own window here. The window is managed by CrossHatchEditor.cpp
 
         // --- Start Choice UI ---
         if (!showStartChoice && !extracting && !removalDone && !showImageSelection && !showMethodChoice && !runningNeRF && !runningGaussian && !reconstructionComplete) {
+            float avail_width = ImGui::GetContentRegionAvail().x;
+            float button_width = std::min(avail_width - 10.0f, 300.0f); // Responsive but max 300px
+            
             ImGui::Text("Choose Input Method");
             ImGui::Spacing();
             ImGui::Text("How would you like to start the reconstruction?");
             ImGui::Spacing();
             
-            if (ImGui::Button("Extract Frames from Video", ImVec2(300, 50))) {
+            if (ImGui::Button("Extract Frames from Video", ImVec2(button_width, 50))) {
                 showStartChoice = true;
             }
             ImGui::Spacing();
-            if (ImGui::Button("Use Existing Image Dataset", ImVec2(300, 50))) {
+            if (ImGui::Button("Use Existing Image Dataset", ImVec2(button_width, 50))) {
                 std::string chosen = openFolderDialog();
                 if (!chosen.empty()) {
                     existingImagesDir = chosen;
@@ -872,7 +876,7 @@ namespace Reconstructor {
                 }
             }
             ImGui::Spacing();
-            if (ImGui::Button("Open Model Gallery", ImVec2(300, 50))) {
+            if (ImGui::Button("Open Model Gallery", ImVec2(button_width, 50))) {
                 ModelGallery::galleryOpen = true;
                 ModelGallery::LoadModelGallery();
             }
@@ -1059,7 +1063,8 @@ namespace Reconstructor {
             
             // Back button to return to start choice
             ImGui::Spacing();
-            if (ImGui::Button("Back to Start", ImVec2(150, 30))) {
+            float avail_width = ImGui::GetContentRegionAvail().x;
+            if (ImGui::Button("Back to Start", ImVec2(std::min(avail_width - 10.0f, 150.0f), 30))) {
                 showStartChoice = false;
                 videoPath.clear();
                 cap.release();
@@ -1084,18 +1089,21 @@ namespace Reconstructor {
             ImGui::Text("You can now review and select images to delete before reconstruction.");
             ImGui::Spacing();
             
-            if (ImGui::Button("Select Images", ImVec2(200, 50))) {
+            float avail_width = ImGui::GetContentRegionAvail().x;
+            float button_width = std::min(avail_width - 10.0f, 200.0f); // Responsive but max 200px
+            
+            if (ImGui::Button("Select Images", ImVec2(button_width, 50))) {
                 FrameGallery::galleryOpen = true;
             }
             ImGui::Spacing();
-            if (ImGui::Button("Skip Image Selection", ImVec2(200, 50))) {
+            if (ImGui::Button("Skip Image Selection", ImVec2(button_width, 50))) {
                 showImageSelection = false;
                 showMethodChoice = true;
             }
             
             // Back button to return to start choice
             ImGui::Spacing();
-            if (ImGui::Button("Back to Start", ImVec2(150, 30))) {
+            if (ImGui::Button("Back to Start", ImVec2(std::min(avail_width - 10.0f, 150.0f), 30))) {
                 showImageSelection = false;
                 showStartChoice = false;
                 videoPath.clear();
@@ -1116,15 +1124,18 @@ namespace Reconstructor {
 
         // --- Choose Reconstruction Method (NeRF or GS) ---
         if (showMethodChoice && !runningNeRF && !runningGaussian) {
+            float avail_width = ImGui::GetContentRegionAvail().x;
+            float button_width = std::min(avail_width - 10.0f, 300.0f); // Responsive but max 300px
+            
             ImGui::Text("Choose Reconstruction Method");
             ImGui::Spacing();
             
-            if (ImGui::Button("NeRF (Neural Radiance Fields)", ImVec2(300, 40))) {
+            if (ImGui::Button("NeRF (Neural Radiance Fields)", ImVec2(button_width, 40))) {
                 showMethodChoice = false;
                 runNeRFAutomation();
             }
             ImGui::Spacing();
-            if (ImGui::Button("Gaussian Splatting (Coming Soon)", ImVec2(300, 40))) {
+            if (ImGui::Button("Gaussian Splatting (Coming Soon)", ImVec2(button_width, 40))) {
 				// TODO: Integrate another open source GS implementation
                 ImGui::Text("Gaussian Splatting will be implemented next time.");
             }
@@ -1171,7 +1182,10 @@ namespace Reconstructor {
             ImGui::Text("The reconstruction process has finished successfully.");
             ImGui::Spacing();
             
-            if (ImGui::Button("Reconstruct Again", ImVec2(200, 50))) {
+            float avail_width = ImGui::GetContentRegionAvail().x;
+            float button_width = std::min(avail_width - 10.0f, 200.0f); // Responsive but max 200px
+            
+            if (ImGui::Button("Reconstruct Again", ImVec2(button_width, 50))) {
                 // Reset after reconstruction is complete
                 extracting = false;
                 extractionDone = false;
@@ -1241,13 +1255,11 @@ namespace Reconstructor {
             }
             ImGui::EndPopup();
         }
-
-        ImGui::End();
         
-        // Draw the frame gallery if it should be shown
+        // Draw the frame gallery if it should be shown (separate window)
         FrameGallery::DrawFrameGallery();
         
-        // Draw the model gallery if it should be shown
+        // Draw the model gallery if it should be shown (separate window)
         ModelGallery::DrawModelGallery();
     } 
 

@@ -105,7 +105,7 @@ static bool show_Controls = false;         // hidden by default
 static bool show_Screenshot = false;       // hidden by default
 static bool show_CameraSettings = false;   // hidden by default
 static bool show_Cameras = false;          // hidden by default
-static bool show_LogConsole = true;
+static bool show_LogConsole = false;  // hidden by default
 
 // Forward declaration so we can use Instance* in globals before its full definition.
 struct Instance;
@@ -3094,6 +3094,7 @@ static void SetupLichtFeldLikeStyle()
 
 // Shared layout state for fixed-right LichtFeld-like sidebar
 static float g_MainMenuHeight   = 32.0f;   // Updated each frame from the menu window height
+static float g_LeftPanelWidth   = 64.0f;   // Left toolbar width in pixels
 static float g_RightPanelWidth  = 420.0f;  // Sidebar width in pixels
 static float g_ObjPanelRatio    = 0.33f;   // Fraction of sidebar height for Object List
 static float g_InspectorRatio   = 0.34f;   // Fraction for Inspector (rest goes to Reconstructor)
@@ -3107,6 +3108,163 @@ static const uint32_t g_ViewportClearColor  = 0x303030ff;  // 3D world clear (un
 
 // Full inspector UI body (transform, light, material, delete, etc.). Used by the right sidebar only.
 static void RenderInspectorBody(Instance* selectedInstance, std::vector<Instance*>& instances);
+
+// Fixed-layout left sidebar: operation toolbar (Translate/Rotate/Scale) with icon buttons.
+static void RenderLeftSidebar()
+{
+    const ImGuiViewport* vp = ImGui::GetMainViewport();
+
+    const float panel_h = vp->WorkSize.y - g_MainMenuHeight;
+    if (panel_h <= 0.0f)
+        return;
+
+    const float panel_x = vp->WorkPos.x;
+    const float panel_y = vp->WorkPos.y + g_MainMenuHeight;
+
+    // Clamp width to something sensible so it never eats the whole screen.
+    const float min_w = 44.0f;
+    const float max_w = ImMax(44.0f, vp->WorkSize.x * 0.25f);
+    g_LeftPanelWidth = ImClamp(g_LeftPanelWidth, min_w, max_w);
+
+    ImGui::SetNextWindowPos(ImVec2(panel_x, panel_y), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(g_LeftPanelWidth, panel_h), ImGuiCond_Always);
+
+    ImGuiWindowFlags flags =
+        ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoCollapse |
+        ImGuiWindowFlags_NoResize |
+        ImGuiWindowFlags_NoDocking |
+        ImGuiWindowFlags_NoTitleBar;
+
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8.0f, 8.0f));
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.06f, 0.07f, 0.08f, 0.95f));
+
+    if (ImGui::Begin("##LeftSidebar", nullptr, flags))
+    {
+        const ImU32 accent = ImGui::GetColorU32(ImGuiCol_CheckMark);
+
+        const float button_sz = ImClamp(g_LeftPanelWidth - 16.0f, 28.0f, 48.0f);
+        const float icon_pad = 7.0f;
+        const float circle_r = 4.0f;
+
+        auto draw_translate_icon = [](ImDrawList* dl, ImVec2 p0, ImVec2 p1, ImU32 col)
+        {
+            const ImVec2 c((p0.x + p1.x) * 0.5f, (p0.y + p1.y) * 0.5f);
+            const float w = (p1.x - p0.x);
+            const float h = (p1.y - p0.y);
+            const float len = ImMin(w, h) * 0.28f;
+            const float ah = ImMin(w, h) * 0.10f;
+            const float thick = 2.0f;
+
+            // Horizontal line + arrows
+            dl->AddLine(ImVec2(c.x - len, c.y), ImVec2(c.x + len, c.y), col, thick);
+            dl->AddTriangleFilled(ImVec2(c.x + len, c.y), ImVec2(c.x + len - ah, c.y - ah), ImVec2(c.x + len - ah, c.y + ah), col);
+            dl->AddTriangleFilled(ImVec2(c.x - len, c.y), ImVec2(c.x - len + ah, c.y - ah), ImVec2(c.x - len + ah, c.y + ah), col);
+
+            // Vertical line + arrows
+            dl->AddLine(ImVec2(c.x, c.y - len), ImVec2(c.x, c.y + len), col, thick);
+            dl->AddTriangleFilled(ImVec2(c.x, c.y - len), ImVec2(c.x - ah, c.y - len + ah), ImVec2(c.x + ah, c.y - len + ah), col);
+            dl->AddTriangleFilled(ImVec2(c.x, c.y + len), ImVec2(c.x - ah, c.y + len - ah), ImVec2(c.x + ah, c.y + len - ah), col);
+        };
+
+        auto draw_rotate_icon = [](ImDrawList* dl, ImVec2 p0, ImVec2 p1, ImU32 col)
+        {
+            const ImVec2 c((p0.x + p1.x) * 0.5f, (p0.y + p1.y) * 0.5f);
+            const float w = (p1.x - p0.x);
+            const float h = (p1.y - p0.y);
+            const float r = ImMin(w, h) * 0.25f;
+            const float thick = 2.0f;
+
+            dl->AddCircle(c, r, col, 24, thick);
+            // Arrow head at top-right quadrant
+            const ImVec2 tip(c.x + r * 0.70f, c.y - r * 0.70f);
+            const float ah = ImMin(w, h) * 0.10f;
+            dl->AddTriangleFilled(tip, ImVec2(tip.x - ah, tip.y), ImVec2(tip.x, tip.y + ah), col);
+        };
+
+        auto draw_scale_icon = [](ImDrawList* dl, ImVec2 p0, ImVec2 p1, ImU32 col)
+        {
+            const ImVec2 c((p0.x + p1.x) * 0.5f, (p0.y + p1.y) * 0.5f);
+            const float w = (p1.x - p0.x);
+            const float h = (p1.y - p0.y);
+            const float s = ImMin(w, h) * 0.40f;
+            const float thick = 2.0f;
+
+            ImVec2 a(c.x - s * 0.5f, c.y - s * 0.5f);
+            ImVec2 b(c.x + s * 0.5f, c.y + s * 0.5f);
+            dl->AddRect(a, b, col, 0.0f, 0, thick);
+
+            // Diagonal arrow (bottom-left -> top-right)
+            const ImVec2 p_from(c.x - s * 0.35f, c.y + s * 0.35f);
+            const ImVec2 p_to(c.x + s * 0.35f, c.y - s * 0.35f);
+            dl->AddLine(p_from, p_to, col, thick);
+            const float ah = ImMin(w, h) * 0.10f;
+            dl->AddTriangleFilled(p_to, ImVec2(p_to.x - ah, p_to.y), ImVec2(p_to.x, p_to.y + ah), col);
+        };
+
+        auto operation_button = [&](const char* id, const char* tooltip, ImGuizmo::OPERATION op, bool enabled, auto&& draw_icon)
+        {
+            const bool selected = (currentGizmoOperation == op);
+
+            if (!enabled)
+                ImGui::BeginDisabled();
+
+            if (ImGui::Button(id, ImVec2(button_sz, button_sz)))
+                currentGizmoOperation = op;
+
+            const ImRect r(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
+            ImDrawList* dl = ImGui::GetWindowDrawList();
+
+            if (selected)
+            {
+                dl->AddCircleFilled(ImVec2(r.Min.x + 8.0f, r.Min.y + 8.0f), circle_r, accent);
+            }
+
+            const ImU32 icon_col = enabled ? ImGui::GetColorU32(ImGuiCol_Text) : ImGui::GetColorU32(ImGuiCol_TextDisabled);
+            const ImVec2 icon0(r.Min.x + icon_pad, r.Min.y + icon_pad);
+            const ImVec2 icon1(r.Max.x - icon_pad, r.Max.y - icon_pad);
+            draw_icon(dl, icon0, icon1, icon_col);
+
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
+                ImGui::SetTooltip("%s", tooltip);
+
+            if (!enabled)
+                ImGui::EndDisabled();
+        };
+
+        const bool hasSelection = (selectedInstance != nullptr);
+        const bool isLight = (selectedInstance && selectedInstance->isLight);
+
+        // If a light is selected, force a valid operation (rotate is not supported for lights in this editor UI).
+        if (hasSelection && isLight && currentGizmoOperation == ImGuizmo::ROTATE)
+            currentGizmoOperation = ImGuizmo::TRANSLATE;
+
+        // Keep behavior consistent with the inspector gizmo controls:
+        // - Translate always available
+        // - Rotate hidden/disabled for lights
+        // - Scale available (matches existing inspector UI)
+        operation_button("##op_translate", "Translate (1)", ImGuizmo::TRANSLATE, true, draw_translate_icon);
+        ImGui::Spacing();
+        operation_button("##op_rotate", "Rotate (2)", ImGuizmo::ROTATE, hasSelection && !isLight, draw_rotate_icon);
+        ImGui::Spacing();
+        operation_button("##op_scale", "Scale (3)", ImGuizmo::SCALE, true, draw_scale_icon);
+
+        // If nothing is selected, hint that the toolbar still affects the gizmo once an object is picked.
+        if (!hasSelection)
+        {
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+            ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + button_sz);
+            ImGui::TextDisabled("Select an object to use the gizmo.");
+            ImGui::PopTextWrapPos();
+        }
+    }
+
+    ImGui::End();
+    ImGui::PopStyleColor();
+    ImGui::PopStyleVar();
+}
 
 // Fixed-layout right sidebar, no docking/tabs, LichtFeld-like.
 static void RenderRightSidebar()
@@ -3204,7 +3362,7 @@ static void RenderRightSidebar()
         {
             if (ImGui::BeginChild("##ObjPanel", ImVec2(0, obj_h), ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground))
             {
-                draw_section_header("Object List");
+                draw_section_header("Objects");
 
                 ImGui::SetNextItemOpen(true, ImGuiCond_Once);
                 if (ImGui::CollapsingHeader("##ObjectListTree", ImGuiTreeNodeFlags_DefaultOpen))
@@ -4734,9 +4892,9 @@ int main(void)
 
             // 3D Viewport as its own window (LichtFeld-style): rounded corners, resizes with right sidebar
             {
-                const float viewportW = viewport->Size.x - g_RightPanelWidth;
+                const float viewportW = viewport->Size.x - g_LeftPanelWidth - g_RightPanelWidth;
                 const float viewportH = viewport->Size.y - g_MainMenuHeight;
-                ImGui::SetNextWindowPos(ImVec2(viewport->Pos.x, viewport->Pos.y + g_MainMenuHeight), ImGuiCond_Always);
+                ImGui::SetNextWindowPos(ImVec2(viewport->Pos.x + g_LeftPanelWidth, viewport->Pos.y + g_MainMenuHeight), ImGuiCond_Always);
                 ImGui::SetNextWindowSize(ImVec2(viewportW > 0 ? viewportW : 1.0f, viewportH > 0 ? viewportH : 1.0f), ImGuiCond_Always);
 
                 ImGuiWindowFlags viewport_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize
@@ -5497,10 +5655,10 @@ int main(void)
                 // VIEW MENU
                 if (ImGui::BeginMenu("View", true))
                 {
-                    ImGui::MenuItem("Inspector", nullptr, &show_Inspector);
-                    ImGui::MenuItem("Object List", nullptr, &show_ObjectList);
+                    // ImGui::MenuItem("Inspector", nullptr, &show_Inspector);
+                    // ImGui::MenuItem("Object List", nullptr, &show_ObjectList);
                     ImGui::MenuItem("Gallery", nullptr, &show_Gallery);
-                    ImGui::MenuItem("3D Reconstructor", nullptr, &show_Reconstructor);
+                    // ImGui::MenuItem("3D Reconstructor", nullptr, &show_Reconstructor);
                     ImGui::MenuItem("Info", nullptr, &show_Info);
                     ImGui::MenuItem("Controls", nullptr, &show_Controls);
                     ImGui::MenuItem("Screenshot", nullptr, &show_Screenshot);
@@ -5513,6 +5671,9 @@ int main(void)
             }
             else
             { g_MainMenuHeight = 32.0f; }
+
+            // Fixed left-hand toolbar (operations: translate/rotate/scale)
+            RenderLeftSidebar();
 
             // Fixed right-hand sidebar (Object List / Inspector / Reconstructor),
             // in a LichtFeld-like stacked layout with no tabs or docking.
