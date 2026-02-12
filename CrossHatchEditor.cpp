@@ -3388,7 +3388,7 @@ static void RenderLeftSidebar()
             ImGui::Separator();
             ImGui::Spacing();
             ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + button_sz);
-            ImGui::TextDisabled("Select an object to use the gizmo.");
+            // ImGui::TextDisabled("Select an object to use the gizmo.");
             ImGui::PopTextWrapPos();
         }
     }
