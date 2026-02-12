@@ -1,0 +1,2550 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\api\common\vertex_pulling_config.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\api\helpers\generate_bindings.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\api\tint.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\binary_op.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\constant\composite.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\constant\eval.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\constant\invalid.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\constant\manager.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\constant\node.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\constant\scalar.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\constant\splat.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\constant\string.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\constant\value.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\enums.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\intrinsic\ctor_conv.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\intrinsic\data.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\intrinsic\table.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\access.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\analysis\for_loop_analysis.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\analysis\integer_range_analysis.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\analysis\loop_analysis.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\analysis\subgroup_matrix.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\binary.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\binary\decode.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\binary\encode.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\bitcast.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\block.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\block_param.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\break_if.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\builder.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\builtin_call.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\call.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\clone_context.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\const_param_validator.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\constant.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\constexpr_if.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\construct.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\continue.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\control_instruction.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\convert.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\core_binary.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\core_builtin_call.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\core_unary.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\disassembler.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\discard.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\evaluator.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\exit.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\exit_if.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\exit_loop.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\exit_switch.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\function.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\function_param.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\if.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\instruction.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\instruction_result.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\let.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\load.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\load_vector_element.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\loop.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\member_builtin_call.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\module.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\multi_in_block.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\next_iteration.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\operand_instruction.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\override.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\phony.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\reflection.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\return.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\store.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\store_vector_element.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\switch.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\swizzle.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\terminate_invocation.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\terminator.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\array_length_from_immediate.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\array_length_from_uniform.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\bgra8unorm_polyfill.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\binary_polyfill.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\binding_remapper.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\block_decorated_structs.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\builtin_polyfill.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\builtin_scalarize.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\change_immediate_to_uniform.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\combine_access_instructions.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\conversion_polyfill.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\dead_code_elimination.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\decompose_uniform_access.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\demote_to_helper.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\direct_variable_access.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\multiplanar_external_texture.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\prepare_immediate_data.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\preserve_padding.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\prevent_infinite_loops.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\remove_continue_in_switch.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\remove_terminator_args.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\remove_uniform_vector_component_loads.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\rename_conflicts.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\resource_table.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\resource_table_helper.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\robustness.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\shader_io.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\signed_integer_polyfill.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\single_entry_point.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\std140.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\substitute_overrides.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\value_to_let.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\vectorize_scalar_matrix_constructors.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\vertex_pulling.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\zero_init_workgroup_memory.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\type\array_count.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\unary.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\unreachable.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\unused.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\user_call.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\validator.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\value.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\var.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\number.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\abstract_float.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\abstract_int.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\abstract_numeric.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\array.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\array_count.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\atomic.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\binding_array.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\bool.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\buffer.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\builtin_structs.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\depth_multisampled_texture.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\depth_texture.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\external_texture.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\f16.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\f32.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\function.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\i32.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\i8.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\input_attachment.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\invalid.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\manager.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\matrix.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\memory_view.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\multisampled_texture.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\node.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\numeric_scalar.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\pointer.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\reference.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\resource_type.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\sampled_texture.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\sampler.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\sampler_kind.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\scalar.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\storage_texture.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\string.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\struct.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\subgroup_matrix.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\texel_buffer.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\texture.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\texture_dimension.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\type.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\u32.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\u64.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\u8.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\unique_node.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\vector.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\void.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\unary_op.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\null\writer\common\options.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\null\writer\common\output.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\null\writer\raise\raise.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\null\writer\writer.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\builtin_fn.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\intrinsic\data.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\ir\binary.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\ir\builtin_call.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\ir\copy_logical.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\ir\literal_operand.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\reader\common\common.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\reader\lower\atomics.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\reader\lower\builtins.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\reader\lower\decompose_strided_array.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\reader\lower\decompose_strided_matrix.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\reader\lower\lower.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\reader\lower\shader_io.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\reader\lower\texture.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\reader\lower\transpose_row_major.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\reader\lower\vector_element_pointer.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\reader\parser\parser.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\reader\reader.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\type\explicit_layout_array.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\type\image.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\type\resource_table.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\type\sampled_image.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\validate\validate.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\common\binary_writer.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\common\function.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\common\instruction.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\common\module.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\common\operand.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\common\option_helper.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\common\output.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\printer\printer.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\raise\builtin_polyfill.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\raise\case_switch_to_if_else.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\raise\expand_implicit_splats.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\raise\fork_explicit_layout_types.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\raise\handle_matrix_arithmetic.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\raise\keep_binding_array_as_pointer.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\raise\merge_return.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\raise\pass_matrix_by_pointer.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\raise\raise.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\raise\remove_unreachable_in_loop_continuing.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\raise\resource_table.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\raise\shader_io.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\raise\unary_polyfill.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\raise\var_for_dynamic_index.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\writer.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\accessor_expression.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\alias.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\assignment_statement.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\attribute.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\binary_expression.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\binding_attribute.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\blend_src_attribute.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\block_statement.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\bool_literal_expression.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\break_if_statement.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\break_statement.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\builder.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\builtin_attribute.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\call_expression.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\call_statement.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\case_selector.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\case_statement.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\color_attribute.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\compound_assignment_statement.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\const.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\const_assert.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\continue_statement.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\diagnostic_attribute.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\diagnostic_control.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\diagnostic_directive.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\diagnostic_rule_name.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\discard_statement.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\enable.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\expression.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\extension.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\float_literal_expression.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\for_loop_statement.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\function.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\group_attribute.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\id_attribute.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\identifier.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\identifier_expression.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\if_statement.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\increment_decrement_statement.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\index_accessor_expression.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\input_attachment_index_attribute.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\int_literal_expression.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\interpolate_attribute.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\invariant_attribute.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\let.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\literal_expression.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\location_attribute.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\loop_statement.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\member_accessor_expression.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\module.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\must_use_attribute.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\node.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\override.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\parameter.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\phony_expression.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\pipeline_stage.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\requires.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\return_statement.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\stage_attribute.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\statement.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\struct.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\struct_member.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\struct_member_align_attribute.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\struct_member_size_attribute.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\subgroup_size_attribute.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\switch_statement.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\templated_identifier.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\type_decl.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\unary_op_expression.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\var.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\variable.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\variable_decl_statement.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\while_statement.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\workgroup_attribute.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\enums.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\feature_status.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\inspector\entry_point.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\inspector\inspector.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\inspector\resource_binding.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\inspector\scalar.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\intrinsic\ctor_conv.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\intrinsic\data.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ir\builtin_call.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ir\unary.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\program\program.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\program\program_builder.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\reader\lower\lower.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\reader\parser\classify_template_args.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\reader\parser\lexer.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\reader\parser\parser.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\reader\parser\token.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\reader\program_to_ir\program_to_ir.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\reader\reader.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\reserved_words.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\resolver\dependency_graph.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\resolver\incomplete_type.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\resolver\resolve.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\resolver\resolver.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\resolver\sem_helper.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\resolver\uniformity.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\resolver\unresolved_identifier.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\resolver\validator.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\accessor_expression.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\array.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\array_count.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\behavior.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\block_statement.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\break_if_statement.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\builtin_enum_expression.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\builtin_fn.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\call.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\call_target.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\expression.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\for_loop_statement.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\function.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\function_expression.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\if_statement.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\index_accessor_expression.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\info.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\load.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\loop_statement.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\materialize.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\member_accessor_expression.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\module.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\node.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\statement.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\struct.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\switch_statement.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\type_expression.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\value_constructor.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\value_conversion.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\value_expression.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\variable.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\while_statement.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\writer\ast_printer\ast_printer.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\writer\common\common.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\writer\ir_to_program\ir_to_program.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\writer\output.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\writer\raise\ptr_to_ref.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\writer\raise\raise.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\writer\raise\value_to_let.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\writer\writer.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\bytes\buffer_reader.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\bytes\reader.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\containers\containers.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\diagnostic\diagnostic.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\diagnostic\formatter.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\diagnostic\source.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\ice\debugger.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\ice\ice.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\macros\macros.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\math\math.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\memory\memory.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\protos\ir\ir.pb.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\reflection.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\result.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\rtti\castable.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\rtti\switch.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\strconv\float_to_string.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\strconv\parse_num.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\symbol\generation_id.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\symbol\symbol.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\symbol\symbol_table.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\text\base64.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\text\color_mode.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\text\string.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\text\string_stream.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\text\styled_text.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\text\styled_text_printer.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\text\styled_text_printer_ansi.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\text\styled_text_theme.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\text\unicode.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\text_generator\text_generator.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\api\common\binding_point.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\api\common\bindings.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\api\common\override_id.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\api\common\resource_table_config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\api\common\resource_type.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\api\common\subgroup_matrix.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\api\common\substitute_overrides_config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\api\common\vertex_pulling_config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\api\helpers\generate_bindings.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\api\tint.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\binary_op.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\constant\clone_context.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\constant\composite.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\constant\eval.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\constant\invalid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\constant\manager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\constant\node.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\constant\scalar.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\constant\splat.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\constant\string.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\constant\value.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\enums.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\evaluation_stage.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\fluent_types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\interpolation.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\intrinsic\ctor_conv.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\intrinsic\dialect.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\intrinsic\table.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\intrinsic\table_data.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\intrinsic\type_matchers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\io_attributes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\access.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\analysis\for_loop_analysis.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\analysis\integer_range_analysis.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\analysis\loop_analysis.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\analysis\subgroup_matrix.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\binary.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\binary\decode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\binary\encode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\bitcast.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\block.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\block_param.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\break_if.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\builder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\builtin_call.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\call.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\clone_context.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\const_param_validator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\constant.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\constexpr_if.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\construct.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\continue.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\control_instruction.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\convert.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\core_binary.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\core_builtin_call.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\core_unary.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\disassembler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\discard.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\evaluator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\exit.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\exit_if.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\exit_loop.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\exit_switch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\function.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\function_param.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\if.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\instruction.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\instruction_result.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\let.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\load.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\load_vector_element.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\loop.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\member_builtin_call.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\module.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\multi_in_block.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\next_iteration.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\operand_instruction.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\override.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\phony.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\referenced_functions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\referenced_module_decls.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\referenced_module_vars.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\reflection.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\return.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\store.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\store_vector_element.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\switch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\swizzle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\terminate_invocation.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\terminator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\array_length_from_immediate.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\array_length_from_uniform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\bgra8unorm_polyfill.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\binary_polyfill.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\binding_remapper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\block_decorated_structs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\builtin_polyfill.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\builtin_scalarize.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\change_immediate_to_uniform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\combine_access_instructions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\conversion_polyfill.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\dead_code_elimination.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\decompose_uniform_access.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\demote_to_helper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\direct_variable_access.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\multiplanar_external_texture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\multiplanar_options.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\prepare_immediate_data.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\preserve_padding.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\prevent_infinite_loops.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\remove_continue_in_switch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\remove_terminator_args.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\remove_uniform_vector_component_loads.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\rename_conflicts.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\resource_table.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\resource_table_helper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\robustness.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\shader_io.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\signed_integer_polyfill.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\single_entry_point.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\std140.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\substitute_overrides.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\value_to_let.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\vectorize_scalar_matrix_constructors.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\vertex_pulling.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\transform\zero_init_workgroup_memory.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\traverse.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\type\array_count.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\unary.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\unreachable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\unused.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\user_call.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\validator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\value.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\ir\var.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\number.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\abstract_float.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\abstract_int.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\abstract_numeric.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\array.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\array_count.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\atomic.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\binding_array.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\bool.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\buffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\builtin_structs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\clone_context.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\depth_multisampled_texture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\depth_texture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\external_texture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\f16.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\f32.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\function.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\i32.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\i8.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\input_attachment.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\invalid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\manager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\matrix.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\memory_view.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\multisampled_texture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\node.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\numeric_scalar.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\pointer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\reference.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\resource_type.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\sampled_texture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\sampler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\sampler_kind.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\scalar.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\storage_texture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\string.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\struct.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\subgroup_matrix.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\texel_buffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\texture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\texture_dimension.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\type.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\u32.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\u64.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\u8.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\unique_node.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\vector.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\type\void.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\core\unary_op.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\null\writer\common\options.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\null\writer\common\output.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\null\writer\raise\raise.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\null\writer\writer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\builtin_fn.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\intrinsic\dialect.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\intrinsic\type_matchers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\ir\binary.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\ir\builtin_call.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\ir\copy_logical.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\ir\literal_operand.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\reader\common\options.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\reader\lower\atomics.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\reader\lower\builtins.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\reader\lower\decompose_strided_array.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\reader\lower\decompose_strided_matrix.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\reader\lower\lower.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\reader\lower\shader_io.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\reader\lower\texture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\reader\lower\transpose_row_major.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\reader\lower\vector_element_pointer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\reader\parser\parser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\reader\reader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\type\explicit_layout_array.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\type\image.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\type\resource_table.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\type\sampled_image.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\validate\validate.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\common\binary_writer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\common\function.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\common\instruction.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\common\module.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\common\operand.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\common\option_helpers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\common\options.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\common\output.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\printer\printer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\raise\builtin_polyfill.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\raise\case_switch_to_if_else.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\raise\expand_implicit_splats.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\raise\fork_explicit_layout_types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\raise\handle_matrix_arithmetic.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\raise\keep_binding_array_as_pointer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\raise\merge_return.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\raise\pass_matrix_by_pointer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\raise\raise.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\raise\remove_unreachable_in_loop_continuing.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\raise\resource_table.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\raise\shader_io.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\raise\unary_polyfill.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\raise\var_for_dynamic_index.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\spirv\writer\writer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\allowed_features.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\accessor_expression.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\alias.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\assignment_statement.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\attribute.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\binary_expression.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\binding_attribute.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\blend_src_attribute.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\block_statement.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\bool_literal_expression.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\break_if_statement.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\break_statement.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\builder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\builtin_attribute.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\call_expression.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\call_statement.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\case_selector.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\case_statement.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\color_attribute.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\compound_assignment_statement.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\const.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\const_assert.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\continue_statement.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\diagnostic_attribute.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\diagnostic_control.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\diagnostic_directive.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\diagnostic_rule_name.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\discard_statement.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\enable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\expression.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\extension.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\float_literal_expression.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\for_loop_statement.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\function.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\group_attribute.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\id_attribute.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\identifier.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\identifier_expression.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\if_statement.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\increment_decrement_statement.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\index_accessor_expression.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\input_attachment_index_attribute.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\int_literal_expression.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\interpolate_attribute.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\invariant_attribute.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\let.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\literal_expression.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\location_attribute.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\loop_statement.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\member_accessor_expression.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\module.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\must_use_attribute.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\node.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\node_id.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\override.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\parameter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\phony_expression.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\pipeline_stage.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\requires.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\return_statement.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\stage_attribute.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\statement.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\struct.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\struct_member.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\struct_member_align_attribute.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\struct_member_size_attribute.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\subgroup_size_attribute.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\switch_statement.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\templated_identifier.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\traverse_expressions.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\type.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\type_decl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\unary_op_expression.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\var.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\variable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\variable_decl_statement.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\while_statement.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ast\workgroup_attribute.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\enums.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\feature_status.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\inspector\entry_point.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\inspector\inspector.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\inspector\resource_binding.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\inspector\resource_binding_info.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\inspector\scalar.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\intrinsic\ctor_conv.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\intrinsic\dialect.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\intrinsic\type_matchers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ir\builtin_call.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\ir\unary.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\program\program.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\program\program_builder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\reader\lower\lower.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\reader\options.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\reader\parser\classify_template_args.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\reader\parser\detail.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\reader\parser\lexer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\reader\parser\parser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\reader\parser\token.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\reader\program_to_ir\program_to_ir.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\reader\reader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\reserved_words.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\resolver\dependency_graph.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\resolver\incomplete_type.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\resolver\resolve.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\resolver\resolver.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\resolver\sem_helper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\resolver\uniformity.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\resolver\unresolved_identifier.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\resolver\validator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\accessor_expression.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\array.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\array_count.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\behavior.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\block_statement.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\break_if_statement.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\builtin_enum_expression.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\builtin_fn.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\call.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\call_target.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\expression.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\for_loop_statement.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\function.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\function_expression.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\if_statement.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\index_accessor_expression.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\info.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\load.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\loop_statement.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\materialize.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\member_accessor_expression.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\module.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\node.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\pipeline_stage_set.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\sampler_texture_pair.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\statement.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\struct.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\switch_statement.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\type_expression.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\type_mappings.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\value_constructor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\value_conversion.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\value_expression.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\variable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\sem\while_statement.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\writer\ast_printer\ast_printer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\writer\common\options.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\writer\ir_to_program\ir_to_program.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\writer\output.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\writer\raise\ptr_to_ref.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\writer\raise\raise.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\writer\raise\value_to_let.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\lang\wgsl\writer\writer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\bytes\buffer_reader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\bytes\decoder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\bytes\endianness.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\bytes\reader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\bytes\swap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\containers\bitset.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\containers\enum_set.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\containers\filtered_iterator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\containers\hashmap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\containers\hashmap_base.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\containers\hashset.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\containers\map.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\containers\predicates.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\containers\reverse.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\containers\scope_stack.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\containers\slice.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\containers\transform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\containers\unique_allocator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\containers\unique_vector.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\containers\vector.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\diagnostic\diagnostic.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\diagnostic\formatter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\diagnostic\source.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\ice\debugger.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\ice\ice.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\internal_limits.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\macros\compiler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\macros\concat.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\macros\defer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\macros\foreach.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\macros\scoped_assignment.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\macros\static_init.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\math\crc32.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\math\hash.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\math\math.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\memory\aligned_storage.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\memory\bitcast.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\memory\block_allocator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\memory\bump_allocator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\protos\ir\ir.pb.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\reflection.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\result.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\rtti\castable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\rtti\ignore.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\rtti\switch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\rtti\traits.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\strconv\float_to_string.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\strconv\parse_num.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\symbol\generation_id.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\symbol\symbol.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\symbol\symbol_table.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\system\env.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\system\executable_path.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\system\terminal.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\text\base64.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\text\color_mode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\text\string.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\text\string_stream.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\text\styled_text.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\text\styled_text_printer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\text\styled_text_theme.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\text\text_style.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\text\unicode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\bgfx\3rdparty\dawn\src\tint\utils\text_generator\text_generator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="E:\Development\School_Projects\Thesis\CrossHatch-JRDW\bgfx.cmake\cmake\bgfx\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{827A62C4-8B75-3E75-9386-5BF3ECDB5776}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{5EBC9113-EA5B-3106-BD42-3EA51A3227E9}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

@@ -1,4 +1,4 @@
-﻿// CrossHatchEditor.cpp : Defines the entry point for the application.
+// CrossHatchEditor.cpp : Defines the entry point for the application.
 //
 #include "CrossHatchEditor.h"
 #include "Reconstructor.h"
@@ -95,17 +95,30 @@ static bgfx::ProgramHandle unlitColorProgram = BGFX_INVALID_HANDLE;
 
 static bool useGlobalCrosshatchSettings = true;
 
-// Window visibility toggles
+// Window visibility toggles (defaults: some windows hidden)
 static bool show_Inspector = true;
 static bool show_ObjectList = true;
-static bool show_Gallery = true;
+static bool show_Gallery = false;          // hidden by default
 static bool show_Reconstructor = true;
-static bool show_Info = true;
-static bool show_Controls = true;
-static bool show_Screenshot = true;
-static bool show_CameraSettings = true;
-static bool show_Cameras = true;
-static bool show_LogConsole = true;
+static bool show_Info = false;             // hidden by default
+static bool show_Controls = false;         // hidden by default
+static bool show_Screenshot = false;       // hidden by default
+static bool show_CameraSettings = false;   // hidden by default
+static bool show_Cameras = false;          // hidden by default
+static bool show_LogConsole = false;  // hidden by default
+
+// Forward declaration so we can use Instance* in globals before its full definition.
+struct Instance;
+
+// Pointer to the current editor instances vector used by UI helpers (e.g. right sidebar).
+// Set once in main after creating the local instances vector.
+static std::vector<Instance*>* g_Instances = nullptr;
+
+// Set in main() for use by RenderInspectorBody (right sidebar).
+static bgfx::VertexBufferHandle g_vbh_sphere = BGFX_INVALID_HANDLE;
+static bgfx::IndexBufferHandle g_ibh_sphere = BGFX_INVALID_HANDLE;
+static bgfx::VertexBufferHandle g_vbh_cone = BGFX_INVALID_HANDLE;
+static bgfx::IndexBufferHandle g_ibh_cone = BGFX_INVALID_HANDLE;
 
 // (Define TAU in C++ too)
 const float TAU = 6.28318530718f;
@@ -205,10 +218,150 @@ static bgfx::UniformHandle u_id = BGFX_INVALID_HANDLE;
 // Program handle for the picking pass.
 static bgfx::ProgramHandle pickingProgram = BGFX_INVALID_HANDLE;
 
+// ------------------------------------------------------------
+// 3D viewport: world axes + "infinite" XZ grid
+// ------------------------------------------------------------
+struct LineVertex
+{
+    float x, y, z;
+    float nx, ny, nz;
+    uint32_t abgr;
+    float u, v;
+};
+
+static const bgfx::VertexLayout& GetLineVertexLayout()
+{
+    // Match the project's common mesh layout (Position/Normal/Color0/TexCoord0),
+    // so we can reuse `unlitColorProgram` which reads vertex color.
+    static bgfx::VertexLayout s_layout;
+    static bool s_inited = false;
+    if (!s_inited)
+    {
+        s_layout.begin()
+            .add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
+            .add(bgfx::Attrib::Normal, 3, bgfx::AttribType::Float)
+            .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true, true)
+            .add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float)
+            .end();
+        s_inited = true;
+    }
+    return s_layout;
+}
+
+static inline uint32_t PackAbgr(uint8_t a, uint8_t b, uint8_t g, uint8_t r)
+{
+    return (uint32_t(a) << 24) | (uint32_t(b) << 16) | (uint32_t(g) << 8) | uint32_t(r);
+}
+
+static void SubmitLineList(uint16_t viewId, bgfx::ProgramHandle program, const LineVertex* verts, uint32_t numVerts, uint64_t state)
+{
+    if (!bgfx::isValid(program) || verts == nullptr || numVerts < 2)
+        return;
+    if (!bgfx::getAvailTransientVertexBuffer(numVerts, GetLineVertexLayout()))
+        return;
+
+    bgfx::TransientVertexBuffer tvb;
+    bgfx::allocTransientVertexBuffer(&tvb, numVerts, GetLineVertexLayout());
+    std::memcpy(tvb.data, verts, sizeof(LineVertex) * numVerts);
+
+    float id[16];
+    bx::mtxIdentity(id);
+    bgfx::setTransform(id);
+    bgfx::setVertexBuffer(0, &tvb, 0, numVerts);
+    bgfx::setState(state);
+    bgfx::submit(viewId, program);
+}
+
+static void DrawWorldAxesAndGrid(uint16_t viewId, const Camera& cam, bgfx::ProgramHandle program)
+{
+    if (!bgfx::isValid(program))
+        return;
+
+    // "Infinite" look: rebuild grid around camera each frame.
+    // Keep the grid size tied to the camera far clip to avoid visible edges.
+    const float farClip = std::max(10.0f, cam.farClip);
+    const float gridRadius = std::min(5000.0f, farClip * 0.90f);
+
+    // Grid settings (units).
+    const float minorStep = 3.5f;
+    const int   halfLines = std::max(10, int(gridRadius / minorStep));
+
+    const float originX = std::floor(cam.position.x / minorStep) * minorStep;
+    const float originZ = std::floor(cam.position.z / minorStep) * minorStep;
+
+    const float zMin = originZ - halfLines * minorStep;
+    const float zMax = originZ + halfLines * minorStep;
+    const float xMin = originX - halfLines * minorStep;
+    const float xMax = originX + halfLines * minorStep;
+
+    // Colors (ABGR): X=red, Y=green, Z=blue.
+    // Make them bright and mostly independent of scene darkening.
+    const uint32_t gridColor = PackAbgr(0x88, 0xe0, 0xe0, 0xe0); // bright grid, semi-opaque
+    const uint32_t xColor    = PackAbgr(0xff, 0x20, 0x20, 0xff); // bright red (X)
+    const uint32_t yColor    = PackAbgr(0xff, 0x20, 0xff, 0x20); // bright green (Y)
+    const uint32_t zColor    = PackAbgr(0xff, 0xff, 0x20, 0x20); // bright blue (Z)
+
+    // Build vertices (two vertices per segment; line list).
+    const uint32_t gridLines = uint32_t(2 * (2 * halfLines + 1));
+    const uint32_t axisLines = 3;
+    const uint32_t totalVerts = (gridLines + axisLines) * 2;
+
+    std::vector<LineVertex> v;
+    v.reserve(totalVerts);
+
+    auto pushLine = [&](float x0, float y0, float z0, float x1, float y1, float z1, uint32_t abgr)
+    {
+        LineVertex a{};
+        a.x = x0; a.y = y0; a.z = z0;
+        a.nx = 0.0f; a.ny = 1.0f; a.nz = 0.0f;
+        a.abgr = abgr;
+        a.u = 0.0f; a.v = 0.0f;
+
+        LineVertex b{};
+        b.x = x1; b.y = y1; b.z = z1;
+        b.nx = 0.0f; b.ny = 1.0f; b.nz = 0.0f;
+        b.abgr = abgr;
+        b.u = 0.0f; b.v = 0.0f;
+
+        v.push_back(a);
+        v.push_back(b);
+    };
+
+    // Grid lines parallel to Z (vary X).
+    for (int i = -halfLines; i <= halfLines; ++i)
+    {
+        const float x = originX + float(i) * minorStep;
+        pushLine(x, 0.0f, zMin, x, 0.0f, zMax, gridColor);
+    }
+    // Grid lines parallel to X (vary Z).
+    for (int i = -halfLines; i <= halfLines; ++i)
+    {
+        const float z = originZ + float(i) * minorStep;
+        pushLine(xMin, 0.0f, z, xMax, 0.0f, z, gridColor);
+    }
+
+    // World axes through origin, stretched very far.
+    const float axisLen = std::min(200000.0f, farClip * 10.0f);
+    pushLine(-axisLen, 0.0f, 0.0f, +axisLen, 0.0f, 0.0f, xColor);
+    pushLine(0.0f, -axisLen, 0.0f, 0.0f, +axisLen, 0.0f, yColor);
+    pushLine(0.0f, 0.0f, -axisLen, 0.0f, 0.0f, +axisLen, zColor);
+
+    const uint64_t state =
+        BGFX_STATE_WRITE_RGB |
+        BGFX_STATE_DEPTH_TEST_LESS |
+        BGFX_STATE_PT_LINES |
+        BGFX_STATE_BLEND_ALPHA;
+
+    SubmitLineList(viewId, program, v.data(), uint32_t(v.size()), state);
+}
+
 struct TextureOption {
     std::string name;
     bgfx::TextureHandle handle;
 };
+
+// Set in main() for use by RenderInspectorBody (right sidebar).
+static std::vector<TextureOption>* g_availableTextures = nullptr;
 
 std::vector<TextureOption> availableNoiseTextures;
 int currentNoiseIndex = 0; // which noise texture is selected by the user
@@ -263,7 +416,7 @@ struct Instance
     // NEW: Animation parameters for lights.
     LightAnimation lightAnim;
 
-    // NEW: For light objects only – determines if the debug visual (the sphere)
+    // NEW: For light objects only â€“ determines if the debug visual (the sphere)
     // is drawn. (Default true.)
     bool showDebugVisual = true;
 
@@ -602,7 +755,7 @@ void BuildWorldMatrix(const Instance* inst, float* outMatrix) {
 }
 void BuildMatrixFromInstance_ImGuizmo(const Instance* inst, float* outMatrix)
 {
-    // 1) Copy your instance’s data into the arrays ImGuizmo expects:
+    // 1) Copy your instanceâ€™s data into the arrays ImGuizmo expects:
     float translation[3] = { inst->position[0], inst->position[1], inst->position[2] };
     float rotationDeg[3] = {
         RadToDeg(inst->rotation[0]),
@@ -638,7 +791,7 @@ void DecomposeMatrixToInstance_ImGuizmo(const float* matrix, Instance* inst)
     inst->scale[2] = scl[2];
 }
 
-void DrawGizmoForSelected(Instance* selectedInstance, float originX, float originY, const float* view, const float* proj)
+void DrawGizmoForSelected(Instance* selectedInstance, float originX, float originY, const float* view, const float* proj, float rectWidth, float rectHeight)
 {
     // Static state for this function:
     static bool wasUsing = false;
@@ -652,9 +805,9 @@ void DrawGizmoForSelected(Instance* selectedInstance, float originX, float origi
     float matrix[16];
     BuildWorldMatrix(selectedInstance, matrix);
 
-    // 2) Setup ImGuizmo
-    ImGuiIO& io = ImGui::GetIO();
-    ImGuizmo::SetRect(originX, originY, io.DisplaySize.x, io.DisplaySize.y);
+    // 2) Draw and hit-test in the current window (viewport); required for correct input when gizmo is in its own window
+    ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
+    ImGuizmo::SetRect(originX, originY, rectWidth, rectHeight);
 
     // 3) Store the original object's local transform before manipulation
     float localMatrix[16];
@@ -663,8 +816,9 @@ void DrawGizmoForSelected(Instance* selectedInstance, float originX, float origi
         selectedInstance->rotation[0], selectedInstance->rotation[1], selectedInstance->rotation[2],
         selectedInstance->position[0], selectedInstance->position[1], selectedInstance->position[2]);
 
-    // Check if CTRL is held down to enable snapping
-    bool useSnap = io.KeyAlt; //changed to alt
+    ImGuiIO& io = ImGui::GetIO();
+    // Check if ALT is held down to enable snapping
+    bool useSnap = io.KeyAlt;
 
     // Define snap settings for different operations (x, y, z for each operation)
     float snapTranslation[3] = { 0.5f, 0.5f, 0.5f };  // Snap all axes to 0.5 units
@@ -1362,7 +1516,7 @@ bgfx::TextureHandle loadTextureFile(const char* filePath)
         // We now have width * height * 4 bytes (RGBA).
         const bgfx::Memory* mem = bgfx::copy(data, width * height * 4);
 
-        // Free stb_image’s data
+        // Free stb_imageâ€™s data
         stbi_image_free(data);
 
         // Create a 2D texture from that memory
@@ -1575,7 +1729,7 @@ void drawInstance(Instance* instance, bgfx::ProgramHandle defaultProgram, bgfx::
 
             if (bgfx::isValid(unlitColorProgram))
             {
-                bgfx::submit(0, unlitColorProgram);
+                bgfx::submit(1, unlitColorProgram);
             }
             else
             {
@@ -1583,7 +1737,7 @@ void drawInstance(Instance* instance, bgfx::ProgramHandle defaultProgram, bgfx::
                 OutputDebugStringA("[AttributeMode] unlitColorProgram is invalid, falling back to defaultProgram.\n");
 #endif
                 bgfx::setState(BGFX_STATE_DEFAULT);
-                bgfx::submit(0, defaultProgram);
+                bgfx::submit(1, defaultProgram);
             }
         }
         else
@@ -1645,21 +1799,21 @@ void drawInstance(Instance* instance, bgfx::ProgramHandle defaultProgram, bgfx::
                     // Enable alpha blending for text rendering
                     bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A |
                         BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_SRC_ALPHA, BGFX_STATE_BLEND_INV_SRC_ALPHA));
-                    bgfx::submit(0, textProgram);
+                    bgfx::submit(1, textProgram);
                 }
                 else if (instance->type == "comicborder" || instance->type == "comicbubble") {
                     bgfx::setState(BGFX_STATE_DEFAULT);
 
                     // Set the comic color uniform (see below for how it's updated via ImGui).
                     bgfx::setUniform(u_comicColor, comicColor);
-                    bgfx::submit(0, comicProgram);
+                    bgfx::submit(1, comicProgram);
                 }
                 else
                 {
                     // Use default or debug shader
                     bgfx::setState(BGFX_STATE_DEFAULT);
 
-                    bgfx::submit(0, (instance->type == "light") ? lightDebugProgram : defaultProgram);
+                    bgfx::submit(1, (instance->type == "light") ? lightDebugProgram : defaultProgram);
                 }
             }
         }
@@ -1669,7 +1823,7 @@ void drawInstance(Instance* instance, bgfx::ProgramHandle defaultProgram, bgfx::
     const float* childParentColor = (!IsWhite(effectiveColor)) ? effectiveColor : nullptr;
     // For children, propagate the override:
     // If the inherited texture is already valid, continue propagating that.
-    // Otherwise, use the current instance’s texture as the inherited texture.
+    // Otherwise, use the current instanceâ€™s texture as the inherited texture.
     bgfx::TextureHandle newInheritedTexture = inheritedTexture;
     if (inheritedTexture.idx == bgfx::kInvalidHandle)
     {
@@ -1736,7 +1890,7 @@ void ShowInstanceTree(
     if (ImGui::IsItemClicked())
         selectedInstance = instance;
 
-    // ---------- Double-click → focus camera ----------
+    // ---------- Double-click â†’ focus camera ----------
     if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
     {
         selectedInstance = instance;
@@ -1813,7 +1967,7 @@ void ShowInstanceTree(
     {
         ImGui::SameLine();
 
-        ImGui::PushID(instance); // 🔴 IMPORTANT: avoid ID collision
+        ImGui::PushID(instance); // ðŸ”´ IMPORTANT: avoid ID collision
         ImGui::SetNextItemWidth(160);
         ImGui::SetKeyboardFocusHere();
 
@@ -1829,7 +1983,7 @@ void ShowInstanceTree(
             renamingInstance = nullptr;
         }
 
-        // Click outside → cancel
+        // Click outside â†’ cancel
         if (!ImGui::IsItemActive() && ImGui::IsMouseClicked(0))
             renamingInstance = nullptr;
 
@@ -2207,7 +2361,7 @@ void processNode(const aiScene* scene, aiNode* node, const aiMatrix4x4& parentTr
             computeNormals(meshData.vertices, meshData.indices);
         }
 
-        // Create an ImportedMesh to store this mesh’s data.
+        // Create an ImportedMesh to store this meshâ€™s data.
         ImportedMesh impMesh;
         impMesh.meshData = meshData;
         impMesh.transform = globalTransform;
@@ -2313,7 +2467,7 @@ std::vector<ImportedMesh> loadImportedMeshes(const std::string& filePath) {
     std::string baseDir = modelPath.parent_path().string();
     processNode(scene, scene->mRootNode, identity, baseDir, importedMeshes);
 
-    // ---- Per–Mesh Recentering (as before) ----
+    // ---- Perâ€“Mesh Recentering (as before) ----
     for (auto& impMesh : importedMeshes) {
         aiVector3D localMin(FLT_MAX, FLT_MAX, FLT_MAX);
         aiVector3D localMax(-FLT_MAX, -FLT_MAX, -FLT_MAX);
@@ -3010,6 +3164,565 @@ void ResetCrosshatchSettings()
 
 }
 
+static void SetupLichtFeldLikeStyle()
+{
+    ImGui::StyleColorsDark();
+    ImGuiStyle& style = ImGui::GetStyle();
+
+    // General look â€“ slightly rounded, compact, editor-like.
+    style.WindowRounding    = 4.0f;
+    style.FrameRounding     = 3.0f;
+    style.PopupRounding     = 4.0f;
+    style.ScrollbarRounding = 3.0f;
+    style.TabRounding       = 4.0f;
+    style.WindowBorderSize  = 1.0f;
+    style.FrameBorderSize   = 1.0f;
+
+    style.WindowPadding     = ImVec2(10.0f, 8.0f);
+    style.FramePadding      = ImVec2(6.0f, 4.0f);
+    style.ItemSpacing       = ImVec2(8.0f, 6.0f);
+    style.ItemInnerSpacing  = ImVec2(6.0f, 4.0f);
+
+    ImVec4* colors = style.Colors;
+
+    // Base palette: dark neutral background, subtle panel separation.
+    colors[ImGuiCol_WindowBg]        = ImVec4(0.08f, 0.08f, 0.09f, 1.00f);
+    colors[ImGuiCol_ChildBg]         = ImVec4(0.10f, 0.10f, 0.11f, 1.00f);
+    colors[ImGuiCol_PopupBg]         = ImVec4(0.09f, 0.09f, 0.10f, 1.00f);
+
+    colors[ImGuiCol_Border]          = ImVec4(0.19f, 0.21f, 0.24f, 1.00f);
+    colors[ImGuiCol_Separator]       = ImVec4(0.20f, 0.24f, 0.28f, 1.00f);
+
+    colors[ImGuiCol_FrameBg]         = ImVec4(0.16f, 0.18f, 0.20f, 1.00f);
+    colors[ImGuiCol_FrameBgHovered]  = ImVec4(0.19f, 0.23f, 0.26f, 1.00f);
+    colors[ImGuiCol_FrameBgActive]   = ImVec4(0.21f, 0.27f, 0.30f, 1.00f);
+
+    colors[ImGuiCol_TitleBg]         = ImVec4(0.06f, 0.10f, 0.09f, 1.00f);
+    colors[ImGuiCol_TitleBgActive]   = ImVec4(0.07f, 0.13f, 0.11f, 1.00f);
+    colors[ImGuiCol_TitleBgCollapsed]= colors[ImGuiCol_TitleBg];
+    colors[ImGuiCol_MenuBarBg]       = ImVec4(0.07f, 0.08f, 0.09f, 1.00f);
+
+    // Accent color â€“ keep your green accent.
+    ImVec4 accent      = ImVec4(0.173f, 0.796f, 0.435f, 1.00f);
+    ImVec4 accent_dark = ImVec4(0.078f, 0.361f, 0.282f, 1.00f);
+
+    colors[ImGuiCol_CheckMark]       = accent;
+    colors[ImGuiCol_SliderGrab]      = accent;
+    colors[ImGuiCol_SliderGrabActive]= ImVec4(0.200f, 1.000f, 0.500f, 1.00f);
+
+    colors[ImGuiCol_Button]          = accent_dark;
+    colors[ImGuiCol_ButtonHovered]   = accent;
+    colors[ImGuiCol_ButtonActive]    = accent;
+
+    colors[ImGuiCol_Tab]             = accent_dark;
+    colors[ImGuiCol_TabHovered]      = accent;
+    colors[ImGuiCol_TabActive]       = accent;
+    colors[ImGuiCol_TabUnfocused]    = accent_dark;
+    colors[ImGuiCol_TabUnfocusedActive] = accent;
+
+    colors[ImGuiCol_Header]          = accent_dark;
+    colors[ImGuiCol_HeaderHovered]   = accent;
+    colors[ImGuiCol_HeaderActive]    = accent;
+
+    colors[ImGuiCol_ResizeGrip]      = ImVec4(0.16f, 0.24f, 0.22f, 0.80f);
+    colors[ImGuiCol_ResizeGripHovered]=accent;
+    colors[ImGuiCol_ResizeGripActive]= accent;
+}
+
+// Shared layout state for fixed-right LichtFeld-like sidebar
+static float g_MainMenuHeight   = 32.0f;   // Updated each frame from the menu window height
+static float g_LeftPanelWidth   = 64.0f;   // Left toolbar width in pixels
+static float g_RightPanelWidth  = 420.0f;  // Sidebar width in pixels
+static float g_ObjPanelRatio    = 0.33f;   // Fraction of sidebar height for Object List
+static float g_InspectorRatio   = 0.34f;   // Fraction for Inspector (rest goes to Reconstructor)
+
+// 3D Viewport window rect (LichtFeld-style: its own window with rounded corners), set each frame when the window is built
+static float g_ViewportRectX = 0.0f, g_ViewportRectY = 0.0f, g_ViewportRectW = 800.0f, g_ViewportRectH = 600.0f;
+
+// Application background: dark so the 3D viewport window shape (rounded corners) is visible (0xRRGGBBAA)
+static const uint32_t g_AppBackgroundColor = 0x0d0d0dff;
+static const uint32_t g_ViewportClearColor  = 0x303030ff;  // 3D world clear (unchanged)
+
+// Full inspector UI body (transform, light, material, delete, etc.). Used by the right sidebar only.
+static void RenderInspectorBody(Instance* selectedInstance, std::vector<Instance*>& instances);
+
+// Fixed-layout left sidebar: operation toolbar (Translate/Rotate/Scale) with icon buttons.
+static void RenderLeftSidebar()
+{
+    const ImGuiViewport* vp = ImGui::GetMainViewport();
+
+    const float panel_h = vp->WorkSize.y - g_MainMenuHeight;
+    if (panel_h <= 0.0f)
+        return;
+
+    const float panel_x = vp->WorkPos.x;
+    const float panel_y = vp->WorkPos.y + g_MainMenuHeight;
+
+    // Clamp width to something sensible so it never eats the whole screen.
+    const float min_w = 44.0f;
+    const float max_w = ImMax(44.0f, vp->WorkSize.x * 0.25f);
+    g_LeftPanelWidth = ImClamp(g_LeftPanelWidth, min_w, max_w);
+
+    ImGui::SetNextWindowPos(ImVec2(panel_x, panel_y), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(g_LeftPanelWidth, panel_h), ImGuiCond_Always);
+
+    ImGuiWindowFlags flags =
+        ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoCollapse |
+        ImGuiWindowFlags_NoResize |
+        ImGuiWindowFlags_NoDocking |
+        ImGuiWindowFlags_NoTitleBar;
+
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8.0f, 8.0f));
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.06f, 0.07f, 0.08f, 0.95f));
+
+    if (ImGui::Begin("##LeftSidebar", nullptr, flags))
+    {
+        const ImU32 accent = ImGui::GetColorU32(ImGuiCol_CheckMark);
+
+        const float button_sz = ImClamp(g_LeftPanelWidth - 16.0f, 28.0f, 48.0f);
+        const float icon_pad = 7.0f;
+        const float circle_r = 4.0f;
+
+        auto draw_translate_icon = [](ImDrawList* dl, ImVec2 p0, ImVec2 p1, ImU32 col)
+        {
+            const ImVec2 c((p0.x + p1.x) * 0.5f, (p0.y + p1.y) * 0.5f);
+            const float w = (p1.x - p0.x);
+            const float h = (p1.y - p0.y);
+            const float len = ImMin(w, h) * 0.28f;
+            const float ah = ImMin(w, h) * 0.10f;
+            const float thick = 2.0f;
+
+            // Horizontal line + arrows
+            dl->AddLine(ImVec2(c.x - len, c.y), ImVec2(c.x + len, c.y), col, thick);
+            dl->AddTriangleFilled(ImVec2(c.x + len, c.y), ImVec2(c.x + len - ah, c.y - ah), ImVec2(c.x + len - ah, c.y + ah), col);
+            dl->AddTriangleFilled(ImVec2(c.x - len, c.y), ImVec2(c.x - len + ah, c.y - ah), ImVec2(c.x - len + ah, c.y + ah), col);
+
+            // Vertical line + arrows
+            dl->AddLine(ImVec2(c.x, c.y - len), ImVec2(c.x, c.y + len), col, thick);
+            dl->AddTriangleFilled(ImVec2(c.x, c.y - len), ImVec2(c.x - ah, c.y - len + ah), ImVec2(c.x + ah, c.y - len + ah), col);
+            dl->AddTriangleFilled(ImVec2(c.x, c.y + len), ImVec2(c.x - ah, c.y + len - ah), ImVec2(c.x + ah, c.y + len - ah), col);
+        };
+
+        auto draw_rotate_icon = [](ImDrawList* dl, ImVec2 p0, ImVec2 p1, ImU32 col)
+        {
+            const ImVec2 c((p0.x + p1.x) * 0.5f, (p0.y + p1.y) * 0.5f);
+            const float w = (p1.x - p0.x);
+            const float h = (p1.y - p0.y);
+            const float r = ImMin(w, h) * 0.25f;
+            const float thick = 2.0f;
+
+            dl->AddCircle(c, r, col, 24, thick);
+            // Arrow head at top-right quadrant
+            const ImVec2 tip(c.x + r * 0.70f, c.y - r * 0.70f);
+            const float ah = ImMin(w, h) * 0.10f;
+            dl->AddTriangleFilled(tip, ImVec2(tip.x - ah, tip.y), ImVec2(tip.x, tip.y + ah), col);
+        };
+
+        auto draw_scale_icon = [](ImDrawList* dl, ImVec2 p0, ImVec2 p1, ImU32 col)
+        {
+            const ImVec2 c((p0.x + p1.x) * 0.5f, (p0.y + p1.y) * 0.5f);
+            const float w = (p1.x - p0.x);
+            const float h = (p1.y - p0.y);
+            const float s = ImMin(w, h) * 0.40f;
+            const float thick = 2.0f;
+
+            ImVec2 a(c.x - s * 0.5f, c.y - s * 0.5f);
+            ImVec2 b(c.x + s * 0.5f, c.y + s * 0.5f);
+            dl->AddRect(a, b, col, 0.0f, 0, thick);
+
+            // Diagonal arrow (bottom-left -> top-right)
+            const ImVec2 p_from(c.x - s * 0.35f, c.y + s * 0.35f);
+            const ImVec2 p_to(c.x + s * 0.35f, c.y - s * 0.35f);
+            dl->AddLine(p_from, p_to, col, thick);
+            const float ah = ImMin(w, h) * 0.10f;
+            dl->AddTriangleFilled(p_to, ImVec2(p_to.x - ah, p_to.y), ImVec2(p_to.x, p_to.y + ah), col);
+        };
+
+        auto operation_button = [&](const char* id, const char* tooltip, ImGuizmo::OPERATION op, bool enabled, auto&& draw_icon)
+        {
+            const bool selected = (currentGizmoOperation == op);
+
+            if (!enabled)
+                ImGui::BeginDisabled();
+
+            if (ImGui::Button(id, ImVec2(button_sz, button_sz)))
+                currentGizmoOperation = op;
+
+            const ImRect r(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
+            ImDrawList* dl = ImGui::GetWindowDrawList();
+
+            if (selected)
+            {
+                dl->AddCircleFilled(ImVec2(r.Min.x + 8.0f, r.Min.y + 8.0f), circle_r, accent);
+            }
+
+            const ImU32 icon_col = enabled ? ImGui::GetColorU32(ImGuiCol_Text) : ImGui::GetColorU32(ImGuiCol_TextDisabled);
+            const ImVec2 icon0(r.Min.x + icon_pad, r.Min.y + icon_pad);
+            const ImVec2 icon1(r.Max.x - icon_pad, r.Max.y - icon_pad);
+            draw_icon(dl, icon0, icon1, icon_col);
+
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
+                ImGui::SetTooltip("%s", tooltip);
+
+            if (!enabled)
+                ImGui::EndDisabled();
+        };
+
+        const bool hasSelection = (selectedInstance != nullptr);
+
+        // Keep behavior consistent with the inspector gizmo controls:
+        // - Translate always available
+        // - Rotate available for any selected object (including lights)
+        // - Scale available (matches existing inspector UI)
+        operation_button("##op_translate", "Translate (1)", ImGuizmo::TRANSLATE, hasSelection, draw_translate_icon);
+        ImGui::Spacing();
+        operation_button("##op_rotate", "Rotate (2)", ImGuizmo::ROTATE, hasSelection, draw_rotate_icon);
+        ImGui::Spacing();
+        operation_button("##op_scale", "Scale (3)", ImGuizmo::SCALE, hasSelection, draw_scale_icon);
+
+        // If nothing is selected, hint that the toolbar still affects the gizmo once an object is picked.
+        if (!hasSelection)
+        {
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+            ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + button_sz);
+            // ImGui::TextDisabled("Select an object to use the gizmo.");
+            ImGui::PopTextWrapPos();
+        }
+    }
+
+    ImGui::End();
+    ImGui::PopStyleColor();
+    ImGui::PopStyleVar();
+}
+
+// Fixed-layout right sidebar, no docking/tabs, LichtFeld-like.
+static void RenderRightSidebar()
+{
+    if (!show_ObjectList && !show_Inspector && !show_Reconstructor)
+        return;
+
+    // Ensure we have a valid instances vector to work with.
+    if (!g_Instances)
+        return;
+
+    auto& instances = *g_Instances;
+
+    const ImGuiViewport* vp = ImGui::GetMainViewport();
+
+    // Compute sidebar rect under the main menu bar.
+    const float panel_h = vp->WorkSize.y - g_MainMenuHeight;
+    if (panel_h <= 0.0f)
+        return;
+
+    // Clamp sidebar width.
+    const float min_w = 280.0f;
+    const float max_w = vp->WorkSize.x * 0.5f;
+    g_RightPanelWidth = ImClamp(g_RightPanelWidth, min_w, max_w);
+
+    const float panel_x = vp->WorkPos.x + vp->WorkSize.x - g_RightPanelWidth;
+    const float panel_y = vp->WorkPos.y + g_MainMenuHeight;
+
+    // Allow horizontal resize by grabbing the left edge.
+    const float EDGE_GRAB_W = 6.0f;
+    const ImVec2 mouse = ImGui::GetIO().MousePos;
+    const bool hovering_edge =
+        mouse.x >= panel_x - EDGE_GRAB_W && mouse.x <= panel_x + EDGE_GRAB_W &&
+        mouse.y >= panel_y && mouse.y <= panel_y + panel_h;
+
+    static bool resizing_panel = false;
+    if (hovering_edge && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+        resizing_panel = true;
+    if (resizing_panel && !ImGui::IsMouseDown(ImGuiMouseButton_Left))
+        resizing_panel = false;
+    if (resizing_panel)
+        g_RightPanelWidth = ImClamp(g_RightPanelWidth - ImGui::GetIO().MouseDelta.x, min_w, max_w);
+    if (hovering_edge || resizing_panel)
+        ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
+
+    ImGui::SetNextWindowPos(ImVec2(panel_x, panel_y), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(g_RightPanelWidth, panel_h), ImGuiCond_Always);
+
+    ImGuiWindowFlags flags =
+        ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoCollapse |
+        ImGuiWindowFlags_NoResize |
+        ImGuiWindowFlags_NoDocking |
+        ImGuiWindowFlags_NoTitleBar;
+
+    ImGuiStyle& style = ImGui::GetStyle();
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8.0f, 8.0f));
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.06f, 0.07f, 0.08f, 0.95f));
+
+    if (ImGui::Begin("##RightSidebar", nullptr, flags))
+    {
+        const float avail_h = ImGui::GetContentRegionAvail().y;
+        const float splitter_h = 5.0f;
+        const float min_h = 80.0f;
+
+        // Ensure ratios stay in a useful range.
+        g_ObjPanelRatio      = ImClamp(g_ObjPanelRatio, 0.15f, 0.7f);
+        g_InspectorRatio     = ImClamp(g_InspectorRatio, 0.15f, 0.7f);
+        const float sum_ratio = g_ObjPanelRatio + g_InspectorRatio;
+        if (sum_ratio > 0.9f)
+        {
+            g_ObjPanelRatio      *= 0.9f / sum_ratio;
+            g_InspectorRatio     *= 0.9f / sum_ratio;
+        }
+
+        float obj_h        = avail_h * g_ObjPanelRatio;
+        float inspector_h  = avail_h * g_InspectorRatio;
+        float recon_h      = avail_h - obj_h - inspector_h - 2.0f * splitter_h;
+
+        obj_h       = ImClamp(obj_h, min_h, avail_h - 2.0f * min_h - 2.0f * splitter_h);
+        inspector_h = ImClamp(inspector_h, min_h, avail_h - obj_h - min_h - 2.0f * splitter_h);
+        recon_h     = ImClamp(recon_h, min_h, avail_h - obj_h - inspector_h - 2.0f * splitter_h);
+
+        // Helper to draw a section header.
+        auto draw_section_header = [](const char* label)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Separator, ImVec4(0.19f, 0.21f, 0.24f, 1.0f));
+            ImGui::Separator();
+            ImGui::PopStyleColor();
+            ImGui::TextUnformatted(label);
+        };
+
+        // OBJECT LIST
+        if (show_ObjectList && obj_h > 0.0f)
+        {
+            if (ImGui::BeginChild("##ObjPanel", ImVec2(0, obj_h), ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground))
+            {
+                draw_section_header("Objects");
+
+                ImGui::SetNextItemOpen(true, ImGuiCond_Once);
+                if (ImGui::CollapsingHeader("##ObjectListTree", ImGuiTreeNodeFlags_DefaultOpen))
+                {
+                    // For each top-level instance, show its tree.
+                    for (Instance* instance : instances)
+                    {
+                        ShowInstanceTree(instance, selectedInstance, instances);
+                    }
+
+                    // Now, show the drop target region for reparenting to top-level.
+                    ShowTopLevelDropTarget(instances);
+                }
+            }
+            ImGui::EndChild();
+        }
+
+        // Splitter between Object List and Inspector
+        ImGui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_Separator]);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, style.Colors[ImGuiCol_HeaderHovered]);
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, style.Colors[ImGuiCol_HeaderActive]);
+        ImGui::Button("##SplitObjInspector", ImVec2(-1.0f, splitter_h)); 
+        if (ImGui::IsItemActive())
+        {
+            g_ObjPanelRatio = ImClamp(
+                g_ObjPanelRatio + ImGui::GetIO().MouseDelta.y / avail_h,
+                0.15f, 0.7f);
+        }
+        if (ImGui::IsItemHovered())
+            ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeNS);
+        ImGui::PopStyleColor(3);
+
+        // INSPECTOR
+        if (show_Inspector && inspector_h > 0.0f)
+        {
+            if (ImGui::BeginChild("##InspectorPanel", ImVec2(0, inspector_h), ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground))
+            {
+                draw_section_header("Inspector");
+                // Inline body of previous Inspector window
+                ImGui::SetWindowFontScale(0.85f);
+
+                // If an instance is selected, show its transform controls.
+                if (selectedInstance)
+                {
+                    // Gizmo is drawn in the 3D viewport window (##3DViewport) so it receives input and aligns with the scene
+                    ImGui::SetNextItemOpen(true, ImGuiCond_Once);//collapsing header set to open initially
+                    if (ImGui::CollapsingHeader("Transform Controls/Gizmo"))
+                    {
+                        ImGui::Separator();
+                        ImGui::Text("Selected: %s", selectedInstance->name.c_str());
+                        RenderInspectorBody(selectedInstance, instances);
+                    }
+                }
+            }
+            ImGui::EndChild();
+        }
+
+        // Splitter between Inspector and Reconstructor
+        ImGui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_Separator]);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, style.Colors[ImGuiCol_HeaderHovered]);
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, style.Colors[ImGuiCol_HeaderActive]);
+        ImGui::Button("##SplitInspectorRecon", ImVec2(-1.0f, splitter_h));
+        if (ImGui::IsItemActive())
+        {
+            g_InspectorRatio = ImClamp(
+                g_InspectorRatio + ImGui::GetIO().MouseDelta.y / avail_h,
+                0.15f, 0.7f);
+        }
+        if (ImGui::IsItemHovered())
+            ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeNS);
+        ImGui::PopStyleColor(3);
+
+        // RECONSTRUCTOR
+        if (show_Reconstructor && recon_h > 0.0f)
+        {
+            if (ImGui::BeginChild("##ReconPanel", ImVec2(0, recon_h), ImGuiChildFlags_None, ImGuiWindowFlags_NoBackground))
+            {
+                draw_section_header("3D Reconstructor");
+                Reconstructor::Draw();
+            }
+            ImGui::EndChild();
+        }
+    }
+
+    ImGui::End();
+    ImGui::PopStyleColor();
+    ImGui::PopStyleVar();
+}
+
+static void RenderInspectorBody(Instance* selectedInstance, std::vector<Instance*>& instances)
+{
+    if (!selectedInstance) return;
+    float avail_width = ImGui::GetContentRegionAvail().x;
+    float label_width = 110.0f;
+    float input_width = avail_width - label_width;
+
+    // Gizmo operation selection
+    if (ImGui::RadioButton("Translate##op", currentGizmoOperation == ImGuizmo::TRANSLATE))
+        currentGizmoOperation = ImGuizmo::TRANSLATE;
+    ImGui::SameLine(0, 15);
+    if (ImGui::RadioButton("Rotate##op", currentGizmoOperation == ImGuizmo::ROTATE))
+        currentGizmoOperation = ImGuizmo::ROTATE;
+    ImGui::SameLine(0, 15);
+    if (ImGui::RadioButton("Scale##op", currentGizmoOperation == ImGuizmo::SCALE))
+        currentGizmoOperation = ImGuizmo::SCALE;
+
+    ImGui::Spacing();
+    ImGui::AlignTextToFramePadding();
+    ImGui::Text("Position");
+    ImGui::SameLine(label_width);
+    ImGui::SetNextItemWidth(input_width);
+    ImGui::DragFloat3("##pos", selectedInstance->position, 0.01f);
+
+    // Rotation is now editable for any selected object (including lights).
+    {
+        float rotDeg[3] = { bx::toDeg(selectedInstance->rotation[0]), bx::toDeg(selectedInstance->rotation[1]), bx::toDeg(selectedInstance->rotation[2]) };
+        ImGui::AlignTextToFramePadding();
+        ImGui::Text("Rotation");
+        ImGui::SameLine(label_width);
+        ImGui::SetNextItemWidth(input_width);
+        if (ImGui::DragFloat3("##rot", rotDeg, 0.1f))
+        {
+            selectedInstance->rotation[0] = bx::toRad(rotDeg[0]);
+            selectedInstance->rotation[1] = bx::toRad(rotDeg[1]);
+            selectedInstance->rotation[2] = bx::toRad(rotDeg[2]);
+        }
+    }
+
+    if (!selectedInstance->isLight)
+    {
+        ImGui::AlignTextToFramePadding();
+        ImGui::Text("Scale");
+        ImGui::SameLine(label_width);
+        ImGui::SetNextItemWidth(input_width);
+        ImGui::DragFloat3("##scale", selectedInstance->scale, 0.01f);
+    }
+
+    ImGui::Spacing();
+    if (currentGizmoOperation != ImGuizmo::SCALE)
+    {
+        if (ImGui::RadioButton("World##mode", currentGizmoMode == ImGuizmo::WORLD)) currentGizmoMode = ImGuizmo::WORLD;
+        ImGui::SameLine(0, 15);
+        if (ImGui::RadioButton("Local##mode", currentGizmoMode == ImGuizmo::LOCAL)) currentGizmoMode = ImGuizmo::LOCAL;
+    }
+
+    ImGui::Separator();
+    if (selectedInstance->isLight)
+    {
+        if (ImGui::CollapsingHeader("Light Settings"))
+        {
+            const char* lightTypes[] = { "Directional", "Point", "Spot" };
+            int currentType = static_cast<int>(selectedInstance->lightProps.type);
+            ImGui::AlignTextToFramePadding();
+            ImGui::Text("Type");
+            ImGui::SameLine(label_width);
+            ImGui::SetNextItemWidth(input_width);
+            if (ImGui::Combo("##lighttype", &currentType, lightTypes, IM_ARRAYSIZE(lightTypes)))
+            {
+                selectedInstance->lightProps.type = static_cast<LightType>(currentType);
+                if (selectedInstance->lightProps.type == LightType::Point)
+                { selectedInstance->vertexBuffer = g_vbh_sphere; selectedInstance->indexBuffer = g_ibh_sphere; }
+                else if (selectedInstance->lightProps.type == LightType::Spot || selectedInstance->lightProps.type == LightType::Directional)
+                { selectedInstance->vertexBuffer = g_vbh_cone; selectedInstance->indexBuffer = g_ibh_cone; }
+            }
+            ImGui::AlignTextToFramePadding();
+            ImGui::Text("Color");
+            ImGui::SameLine(label_width);
+            ImGui::SetNextItemWidth(input_width);
+            ImGui::ColorEdit4("##lightcol", selectedInstance->lightProps.color);
+            ImGui::AlignTextToFramePadding();
+            ImGui::Text("Intensity");
+            ImGui::SameLine(label_width);
+            ImGui::SetNextItemWidth(input_width);
+            ImGui::DragFloat("##intensity", &selectedInstance->lightProps.intensity, 0.01f, 0.0f, 10.0f);
+            bool debugVisible = selectedInstance->showDebugVisual;
+            if (ImGui::Checkbox("Show Light Debug Visual", &debugVisible)) selectedInstance->showDebugVisual = debugVisible;
+        }
+    }
+    else
+    {
+        if (ImGui::Checkbox("Attribute (Unlit Vertex Color) Mode", &useAttributeMode)) { }
+        ImGui::AlignTextToFramePadding();
+        ImGui::Text("Object Color");
+        ImGui::SameLine(label_width);
+        ImGui::SetNextItemWidth(input_width);
+        ImGui::ColorEdit3("##objcolor", selectedInstance->objectColor);
+        if (ImGui::CollapsingHeader("Material Editor") && g_availableTextures)
+        {
+            ImGui::BeginChild("TextureSelection", ImVec2(0, 80), true, ImGuiWindowFlags_HorizontalScrollbar);
+            for (size_t i = 0; i < g_availableTextures->size(); i++)
+            {
+                ImTextureID texID = static_cast<ImTextureID>(static_cast<uintptr_t>((*g_availableTextures)[i].handle.idx));
+                if (ImGui::ImageButton(std::to_string(i).c_str(), texID, ImVec2(64, 64)))
+                    selectedInstance->diffuseTexture = (*g_availableTextures)[i].handle;
+                if (i < g_availableTextures->size() - 1) ImGui::SameLine();
+            }
+            ImGui::EndChild();
+            if (ImGui::Button("Clear Texture"))
+            {
+                selectedInstance->diffuseTexture = BGFX_INVALID_HANDLE;
+                selectedInstance->material.tiling[0] = selectedInstance->material.tiling[1] = 1.0f;
+                selectedInstance->material.offset[0] = selectedInstance->material.offset[1] = 0.0f;
+                selectedInstance->material.albedo[0] = selectedInstance->material.albedo[1] = selectedInstance->material.albedo[2] = selectedInstance->material.albedo[3] = 1.0f;
+            }
+        }
+    }
+
+    ImGui::Spacing();
+    if (ImGui::Button("Delete Object"))
+    {
+        if (selectedInstance->parent)
+        {
+            auto it = std::find(selectedInstance->parent->children.begin(), selectedInstance->parent->children.end(), selectedInstance);
+            if (it != selectedInstance->parent->children.end())
+                gCmdManager.executeCommand(std::make_unique<DeleteInstanceCommand>(selectedInstance, selectedInstance->parent, std::distance(selectedInstance->parent->children.begin(), it)));
+        }
+        else
+        {
+            auto it = std::find(instances.begin(), instances.end(), selectedInstance);
+            if (it != instances.end())
+                gCmdManager.executeCommand(std::make_unique<DeleteInstanceCommand>(selectedInstance, &instances, std::distance(instances.begin(), it)));
+        }
+        selectedInstance = nullptr;
+    }
+    bool highlighted = highlightVisible;
+    if (ImGui::Checkbox("Show highlight tint", &highlighted)) highlightVisible = highlighted;
+}
+
 int main(void)
 {
     // Initialize GLFW
@@ -3043,20 +3756,23 @@ int main(void)
     //Initialize ImGui
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
+    SetupLichtFeldLikeStyle();                // <<< new
+
     // Load saved window visibility state (if any)
     LoadWindowVisibilityConfig("window_visibility.cfg");
     ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.IniFilename = "imgui.ini";
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     ImGuiWindowFlags window_flags = 0;
-    //window_flags |= ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDocking;
-    window_flags |= ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoCollapse;
+    // Base flags for tool windows: no collapse, not movable (LichtFeld-like fixed layout), but resizable.
+    window_flags |= ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
-    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
-    io.Fonts->AddFontFromFileTTF("fonts/Inter.ttf", 16.0f);
-    ImFont* fontSmall = io.Fonts->AddFontFromFileTTF("fonts/Inter.ttf", 28.0f);
-    ImFont* fontLarge = io.Fonts->AddFontFromFileTTF("fonts/Inter.ttf", 64); // Baked at high res
+    io.Fonts->AddFontFromFileTTF("fonts/SNPro-Bold.ttf", 16.0f);
+    ImFont* fontSmall = io.Fonts->AddFontFromFileTTF("fonts/SNPro-Bold.ttf", 28.0f);
+    ImFont* fontMedium = io.Fonts->AddFontFromFileTTF("fonts/SNPro-Bold.ttf", 46.0f); 
+    ImFont* fontLarge = io.Fonts->AddFontFromFileTTF("fonts/SNPro-Bold.ttf", 64.0f); // Baked at high res
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_Implbgfx_Init(255);
 
@@ -3094,7 +3810,7 @@ int main(void)
         BGFX_TEXTURE_BLIT_DST | BGFX_TEXTURE_READ_BACK | BGFX_SAMPLER_MAG_POINT | BGFX_SAMPLER_MIP_POINT | BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP
     );
 
-    // Create the uniform for picking – this will be set per-object.
+    // Create the uniform for picking â€“ this will be set per-object.
     u_id = bgfx::createUniform("u_id", bgfx::UniformType::Vec4);
 
     // Load the picking shader program.
@@ -3190,6 +3906,11 @@ int main(void)
     bgfx::IndexBufferHandle ibh_sphere = bgfx::createIndexBuffer(
         bgfx::makeRef(sphereIndices.data(), sizeof(uint16_t) * sphereIndices.size())
     );
+
+    g_vbh_sphere = vbh_sphere;
+    g_ibh_sphere = ibh_sphere;
+    g_vbh_cone = vbh_cone;
+    g_ibh_cone = ibh_cone;
 
     //cornell box generation
     bgfx::VertexBufferHandle vbh_cornell = bgfx::createVertexBuffer(
@@ -3379,7 +4100,7 @@ int main(void)
     bgfx::setDebug(BGFX_DEBUG_TEXT); // <-- Add this line here
 
     bgfx::setViewRect(0, 0, 0, WNDW_WIDTH, WNDW_HEIGHT);
-    bgfx::setViewClear(0, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, 0x303030ff, 1.0f, 0);
+    bgfx::setViewClear(0, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, g_AppBackgroundColor, 1.0f, 0);
 
     InputManager::initialize(window);
 
@@ -3389,6 +4110,8 @@ int main(void)
     cameras.push_back(camera);
     std::vector<Instance*> instances;
     instances.reserve(100);
+    // Expose the instances vector to UI helpers such as the fixed right sidebar.
+    g_Instances = &instances;
 
     // Set up Reconstructor import callback
     Reconstructor::SetImportCallback([&instances, &importedObjMap](const std::string& objPath) {
@@ -3774,7 +4497,7 @@ int main(void)
         std::cout << "Loaded texture '" << tex.name << "' with handle: " << tex.handle.idx << std::endl;
         availableTextures.push_back(tex);
     }
-
+    g_availableTextures = &availableTextures;
 
     //plane
     bgfx::TextureHandle planeTexture = loadTextureDDS("shaders\\texture2.dds");
@@ -3978,15 +4701,16 @@ int main(void)
         ImGui_ImplGlfw_NewFrame();
         ImGui_Implbgfx_NewFrame();
         ImGui::NewFrame();
+
         if (selectedInstance && !ImGui::GetIO().WantCaptureKeyboard)
         {
             if (ImGui::IsKeyPressed(ImGuiKey_1)) {
                 currentGizmoOperation = ImGuizmo::TRANSLATE;
             }
-            if (ImGui::IsKeyPressed(ImGuiKey_2) && !selectedInstance->isLight) {
+            if (ImGui::IsKeyPressed(ImGuiKey_2)) {
                 currentGizmoOperation = ImGuizmo::ROTATE;
             }
-            if (ImGui::IsKeyPressed(ImGuiKey_3) && !selectedInstance->isLight) {
+            if (ImGui::IsKeyPressed(ImGuiKey_3)) {
                 currentGizmoOperation = ImGuizmo::SCALE;
             }
             // Delete selected instance with Delete key (undoable)
@@ -4172,11 +4896,13 @@ int main(void)
 
             // Title
             ImGui::SetCursorPosY(20);
-            ImGui::SetWindowFontScale(2.2f);
+            // ImGui::SetWindowFontScale(2.2f);
+            ImGui::PushFont(fontMedium);
             ImVec2 titleSize = ImGui::CalcTextSize("CREDITS");
             ImGui::SetCursorPosX((creditsWindowSize.x - titleSize.x) * 0.5f);
             ImGui::Text("CREDITS");
-            ImGui::SetWindowFontScale(1.0f);
+            ImGui::PopFont();
+            // ImGui::SetWindowFontScale(1.0f);
 
             ImGui::Dummy(ImVec2(0, 20));
 
@@ -4188,10 +4914,10 @@ int main(void)
                 NGO, WAY WE P.
                 SACDALAN, JUSTIN MORRIE E.*/
 
-            ImGui::BulletText("SACDALAN, JUSTIN MORRIE E - Developer");
-            ImGui::BulletText("DELA CRUZ, DIEGO J. - Developer");
-            ImGui::BulletText("KHAN, RENEE ALTHEA F. -Developer");
-            ImGui::BulletText("NGO, WAY WE P. - Developer");
+            ImGui::BulletText("SACDALAN, JUSTIN MORRIE E");
+            ImGui::BulletText("DELA CRUZ, DIEGO J.");
+            ImGui::BulletText("KHAN, RENEE ALTHEA F.");
+            ImGui::BulletText("NGO, WAY WE P.");
 
             ImGui::Dummy(ImVec2(0, 30));
 
@@ -4285,8 +5011,9 @@ int main(void)
 				showGallery = true; // Show gallery again
             }
         }
-        // Always render main UI if not taking screenshot (except for credits/gallery overlays)
-        if (!takingScreenshot && !showCreditsPage && !showGallery && !Gallery::fullscreenOpen)
+        // Only render main editor (menu bar, sidebar, dock, tool windows) when past the start menu.
+        // This avoids drawing two layers (start menu + editor) and keeps the top bar interactable after Start.
+        if (!showMainMenu && !takingScreenshot && !showCreditsPage && !showGallery && !Gallery::fullscreenOpen)
         {
             //imgui loop
             //ImGui_ImplGlfw_NewFrame();
@@ -4296,46 +5023,133 @@ int main(void)
             //transformation gizmo
             ImGuizmo::BeginFrame();
 
-            ImGuiID dockspace_id = viewport->ID;
-            ImGui::DockSpaceOverViewport(dockspace_id, viewport, ImGuiDockNodeFlags_PassthruCentralNode);
-
-            //for viewporting
-            /*
-            // Set up a full-screen window
-            ImGui::SetNextWindowPos(viewport->Pos);
-            ImGui::SetNextWindowSize(viewport->Size);
-            ImGui::SetNextWindowViewport(viewport->ID);
-
-            ImGuiWindowFlags docking_window_flags = ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoTitleBar |
-                ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize |
-                ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus |
-                ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_MenuBar;
-
-            ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-            ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-
-            ImGui::Begin("DockSpace Window", nullptr, docking_window_flags);
-            ImGui::PopStyleVar(3);
-
-            ImGuiID dockspace_id = ImGui::GetID("MainDockspace");
-            ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_PassthruCentralNode);
-
-            ImGui::End();*/
-
-            ImGuiWindowFlags menu_flags =
-                ImGuiWindowFlags_MenuBar |
-                ImGuiWindowFlags_NoCollapse |
-                ImGuiWindowFlags_NoResize |
-                ImGuiWindowFlags_AlwaysAutoResize |
-                ImGuiWindowFlags_NoMove |
-                ImGuiWindowFlags_NoBringToFrontOnFocus; // Prevent bringing it forward
-
-            ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
-            ImGui::SetNextWindowSize(ImVec2(ImGui::GetIO().DisplaySize.x, 0)); // full width
-            ImGui::Begin("AnitoScan", p_open, menu_flags);
-            if (ImGui::BeginMenuBar())
+            // 3D Viewport as its own window (LichtFeld-style): rounded corners, resizes with right sidebar
             {
+                const float viewportW = viewport->Size.x - g_LeftPanelWidth - g_RightPanelWidth;
+                const float viewportH = viewport->Size.y - g_MainMenuHeight;
+                ImGui::SetNextWindowPos(ImVec2(viewport->Pos.x + g_LeftPanelWidth, viewport->Pos.y + g_MainMenuHeight), ImGuiCond_Always);
+                ImGui::SetNextWindowSize(ImVec2(viewportW > 0 ? viewportW : 1.0f, viewportH > 0 ? viewportH : 1.0f), ImGuiCond_Always);
+
+                ImGuiWindowFlags viewport_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize
+                    | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse
+                    | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing;
+
+                const float viewport_rounding = 12.0f;
+                ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, viewport_rounding);
+                ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+                ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.0f);
+                ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0f, 0.0f, 0.0f, 0.0f)); // transparent so 3D shows through
+                ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.2f, 0.25f, 0.23f, 0.6f)); // subtle border
+
+                if (ImGui::Begin("##3DViewport", nullptr, viewport_flags))
+                {
+                    g_ViewportRectX = ImGui::GetWindowPos().x;
+                    g_ViewportRectY = ImGui::GetWindowPos().y;
+                    g_ViewportRectW = ImGui::GetWindowSize().x;
+                    g_ViewportRectH = ImGui::GetWindowSize().y;
+                    // Reserve content area so the window has correct size; 3D is drawn by bgfx into this rect
+                    ImGui::Dummy(ImGui::GetContentRegionAvail());
+                    // Content rect in screen space for the 3D viewport area.
+                    ImVec2 rectMin = ImGui::GetItemRectMin();
+                    ImVec2 rectMax = ImGui::GetItemRectMax();
+                    float rectW = rectMax.x - rectMin.x;
+                    float rectH = rectMax.y - rectMin.y;
+
+                    if (rectW > 1.0f && rectH > 1.0f)
+                    {
+                        // Build current camera view / projection matrices for the main scene
+                        // and the transform gizmo.
+                        float view[16];
+                        Camera& cam = cameras[currentCameraIndex];
+                        bx::mtxLookAt(view, cam.position,
+                            bx::add(cam.position, cam.front),
+                            cam.up);
+
+                        float proj[16];
+                        bx::mtxProj(proj, cam.fov, rectW / rectH,
+                            cam.nearClip, cam.farClip,
+                            bgfx::getCaps()->homogeneousDepth);
+
+                        // --- Viewport orientation gizmo (bottom-right), Blender-style ---
+                        // Dragging this small gizmo rotates the active camera, and clicking on
+                        // an axis/face snaps the view to that orientation.
+                        //
+                        // For a more intuitive behavior (the gizmo appears to rotate in the
+                        // same direction as the camera when you orbit using other controls),
+                        // we feed ViewManipulate a *mirrored* view matrix that looks along
+                        // -cam.front instead of +cam.front. The main scene and transform
+                        // gizmo still use the regular view.
+                        {
+                            float viewForGizmo[16];
+                            bx::mtxLookAt(viewForGizmo, cam.position,
+                                bx::sub(cam.position, cam.front),
+                                cam.up);
+                            static float viewGizmoDistance = 10.0f;
+                            if (viewGizmoDistance <= 0.0f)
+                                viewGizmoDistance = 10.0f;
+
+                            const ImVec2 gizmoSize(96.0f, 96.0f);
+                            const float padding = 12.0f;
+                            ImVec2 gizmoPos(
+                                rectMax.x - gizmoSize.x - padding,
+                                rectMax.y - gizmoSize.y - padding);
+
+                            ImGuizmo::ViewManipulate(viewForGizmo, viewGizmoDistance, gizmoPos, gizmoSize, 0);
+
+                            // Only push changes back into the camera while the user is
+                            // actively manipulating the gizmo. This avoids fighting with
+                            // the normal camera-controls (InputManager::update) and
+                            // prevents jitter when idle.
+                            if (ImGuizmo::IsUsing())
+                            {
+                                // Update the active camera from the manipulated view matrix so that
+                                // the main 3D viewport follows the gizmo orientation.
+                                float invView[16];
+                                bx::mtxInverse(invView, viewForGizmo);
+
+                                // Extract camera basis from the inverse view (camera transform).
+                                // bx matrices are column-major: basis vectors are the first three columns,
+                                // translation is in the last column.
+                                cam.position = { invView[12], invView[13], invView[14] };
+                                cam.right    = { invView[0],  invView[4],  invView[8]  };
+                                cam.up       = { invView[1],  invView[5],  invView[9]  };
+                                bx::Vec3 forward = { -invView[2], -invView[6], -invView[10] };
+                                cam.front = forward;
+
+                                // Keep yaw / pitch in sync so other camera controls remain consistent.
+                                const float fx = forward.x;
+                                const float fy = forward.y;
+                                const float fz = forward.z;
+                                const float len = bx::sqrt(fx * fx + fy * fy + fz * fz);
+                                if (len > 0.0001f)
+                                {
+                                    const float nx = fx / len;
+                                    const float ny = fy / len;
+                                    const float nz = fz / len;
+                                    cam.yaw   = std::atan2(nz, nx) * 180.0f / 3.14159265f;
+                                    cam.pitch = std::asin(ny)      * 180.0f / 3.14159265f;
+                                }
+                            }
+                        }
+
+                        // Draw transform gizmo for the selected object (if any), using the same
+                        // camera matrices and viewport rect so input stays consistent.
+                        if (selectedInstance)
+                        {
+                            DrawGizmoForSelected(selectedInstance, rectMin.x, rectMin.y, view, proj, rectW, rectH);
+                        }
+                    }
+                }
+                ImGui::End();
+
+                ImGui::PopStyleColor(2);
+                ImGui::PopStyleVar(3);
+            }
+
+            // Use main menu bar so it stays on top and receives clicks (viewport menu bar, not a regular window)
+            if (ImGui::BeginMainMenuBar())
+            {
+                g_MainMenuHeight = ImGui::GetWindowSize().y;
                 
                 
                 if (ImGui::BeginMenu("File", true))
@@ -5044,10 +5858,10 @@ int main(void)
                 // VIEW MENU
                 if (ImGui::BeginMenu("View", true))
                 {
-                    ImGui::MenuItem("Inspector", nullptr, &show_Inspector);
-                    ImGui::MenuItem("Object List", nullptr, &show_ObjectList);
+                    // ImGui::MenuItem("Inspector", nullptr, &show_Inspector);
+                    // ImGui::MenuItem("Object List", nullptr, &show_ObjectList);
                     ImGui::MenuItem("Gallery", nullptr, &show_Gallery);
-                    ImGui::MenuItem("3D Reconstructor", nullptr, &show_Reconstructor);
+                    // ImGui::MenuItem("3D Reconstructor", nullptr, &show_Reconstructor);
                     ImGui::MenuItem("Info", nullptr, &show_Info);
                     ImGui::MenuItem("Controls", nullptr, &show_Controls);
                     ImGui::MenuItem("Screenshot", nullptr, &show_Screenshot);
@@ -5056,491 +5870,20 @@ int main(void)
                     ImGui::MenuItem("Log Console", nullptr, &show_LogConsole);
                     ImGui::EndMenu();
                 }
-                ImGui::EndMenuBar();
+            ImGui::EndMainMenuBar();
             }
-            ImGui::End();
+            else
+            { g_MainMenuHeight = 32.0f; }
 
-            //IMGUI WINDOW FOR CONTROLS - FIXED LAYOUT
-            //FOR REFERENCE USE THIS: https://pthom.github.io/imgui_manual_online/manual/imgui_manual.html
-            if (show_Inspector)
-            {
-            ImGui::Begin("Inspector", &show_Inspector, window_flags);
-            ImGui::SetWindowFontScale(0.85f);
+            // Fixed left-hand toolbar (operations: translate/rotate/scale)
+            RenderLeftSidebar();
 
-            // If an instance is selected, show its transform controls.
-            if (selectedInstance)
-            {
-                int width = static_cast<int>(viewport->Size.x);
-                int height = static_cast<int>(viewport->Size.y);
-                float view[16];
-                bx::mtxLookAt(view, cameras[currentCameraIndex].position, bx::add(cameras[currentCameraIndex].position, cameras[currentCameraIndex].front), cameras[currentCameraIndex].up);
+            // Fixed right-hand sidebar (Object List / Inspector / Reconstructor),
+            // in a LichtFeld-like stacked layout with no tabs or docking.
+            RenderRightSidebar();
 
-                float proj[16];
-                bx::mtxProj(proj, cameras[currentCameraIndex].fov, float(width) / float(height), cameras[currentCameraIndex].nearClip, cameras[currentCameraIndex].farClip, bgfx::getCaps()->homogeneousDepth);
-
-                //default gizmo draw
-                DrawGizmoForSelected(selectedInstance, 0.0f, 0.0f, view, proj);
-
-                ImGui::SetNextItemOpen(true, ImGuiCond_Once);//collapsing header set to open initially
-                if (ImGui::CollapsingHeader("Transform Controls/Gizmo"))
-                {
-                    ImGui::Separator();
-                    ImGui::Text("Selected: %s", selectedInstance->name.c_str());
-                    
-                    // Gizmo operation selection - horizontal layout
-                    if (ImGui::RadioButton("Translate##op", currentGizmoOperation == ImGuizmo::TRANSLATE))
-                        currentGizmoOperation = ImGuizmo::TRANSLATE;
-                    if (!selectedInstance->isLight)
-                    {
-                        ImGui::SameLine(0, 15);
-                        if (ImGui::RadioButton("Rotate##op", currentGizmoOperation == ImGuizmo::ROTATE))
-                            currentGizmoOperation = ImGuizmo::ROTATE;
-                        ImGui::SameLine(0, 15);
-                    }
-                    if (ImGui::RadioButton("Scale##op", currentGizmoOperation == ImGuizmo::SCALE))
-                        currentGizmoOperation = ImGuizmo::SCALE;
-
-                    ImGui::Spacing();
-
-                    // Calculate available width for inputs
-                    float avail_width = ImGui::GetContentRegionAvail().x;
-                    float label_width = 110.0f;
-                    float input_width = avail_width - label_width;
-
-                    // Position/Translation
-                    ImGui::AlignTextToFramePadding();
-                    ImGui::Text("Position");
-                    ImGui::SameLine(label_width);
-                    ImGui::SetNextItemWidth(input_width);
-                    ImGui::DragFloat3("##pos", selectedInstance->position, 0.01f);
-
-                    // Rotation
-                    if (!selectedInstance->isLight) {
-                        float rotDeg[3] = {
-                            bx::toDeg(selectedInstance->rotation[0]),
-                            bx::toDeg(selectedInstance->rotation[1]),
-                            bx::toDeg(selectedInstance->rotation[2]),
-                        };
-                        ImGui::AlignTextToFramePadding();
-                        ImGui::Text("Rotation");
-                        ImGui::SameLine(label_width);
-                        ImGui::SetNextItemWidth(input_width);
-                        if (ImGui::DragFloat3("##rot", rotDeg, 0.1f)) {
-                            selectedInstance->rotation[0] = bx::toRad(rotDeg[0]);
-                            selectedInstance->rotation[1] = bx::toRad(rotDeg[1]);
-                            selectedInstance->rotation[2] = bx::toRad(rotDeg[2]);
-                        }
-
-                        // Scale
-                        ImGui::AlignTextToFramePadding();
-                        ImGui::Text("Scale");
-                        ImGui::SameLine(label_width);
-                        ImGui::SetNextItemWidth(input_width);
-                        ImGui::DragFloat3("##scale", selectedInstance->scale, 0.01f);
-                    }
-
-                    ImGui::Spacing();
-
-                    // Gizmo mode
-                    ImGui::AlignTextToFramePadding();
-                    ImGui::Text("Mode");
-                    ImGui::SameLine(label_width);
-                    if (currentGizmoOperation != ImGuizmo::SCALE) {
-                        if (ImGui::RadioButton("World##mode", currentGizmoMode == ImGuizmo::WORLD))
-                            currentGizmoMode = ImGuizmo::WORLD;
-                        ImGui::SameLine(0, 15);
-                        if (ImGui::RadioButton("Local##mode", currentGizmoMode == ImGuizmo::LOCAL))
-                            currentGizmoMode = ImGuizmo::LOCAL;
-                    }
-
-                    ImGui::Separator();
-                    ImGui::Text("Snapping Options:");
-                    if (!selectedInstance->isLight) {
-                        ImGui::BulletText("Hold ALT while rotating to snap to 90°");
-                    }
-                    ImGui::BulletText("Hold ALT while translating for 0.5 unit snapping");
-                    if (!selectedInstance->isLight) {
-                        ImGui::BulletText("Hold ALT while scaling for 0.5 unit snapping");
-                    }
-
-                    // Display current snap status
-                    bool isSnapping = ImGui::GetIO().KeyAlt; //changed to alt
-                    ImGui::TextColored(
-                        isSnapping ? ImVec4(0.2f, 0.8f, 0.2f, 1.0f) : ImVec4(0.5f, 0.5f, 0.5f, 1.0f),
-                        isSnapping ? "Snapping ENABLED (ALT held)" : "Snapping disabled (hold ALT to enable)"
-                    );
-
-                    if (selectedInstance->isLight)
-                    {
-                        ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing();
-                        ImGui::SetNextItemOpen(true, ImGuiCond_Once);//collapsing header set to open initially
-                        if (ImGui::CollapsingHeader("Light Settings"))
-                        {
-                            ImGui::Separator();
-                            ImGui::Text("Light Properties:");
-                            const char* lightTypes[] = { "Directional", "Point", "Spot" };
-                            int currentType = static_cast<int>(selectedInstance->lightProps.type);
-                            
-                            ImGui::AlignTextToFramePadding();
-                            ImGui::Text("Type");
-                            ImGui::SameLine(label_width);
-                            ImGui::SetNextItemWidth(input_width);
-                            if (ImGui::Combo("##lighttype", &currentType, lightTypes, IM_ARRAYSIZE(lightTypes)))
-                            {
-                                selectedInstance->lightProps.type = static_cast<LightType>(currentType);
-
-                                if (selectedInstance->lightProps.type == LightType::Point)
-                                {
-                                    selectedInstance->vertexBuffer = vbh_sphere;
-                                    selectedInstance->indexBuffer = ibh_sphere;
-                                }
-                                else if (selectedInstance->lightProps.type == LightType::Spot ||
-                                    selectedInstance->lightProps.type == LightType::Directional)
-                                {
-                                    selectedInstance->vertexBuffer = vbh_cone;
-                                    selectedInstance->indexBuffer = ibh_cone;
-                                }
-                            }
-                            
-                            if (selectedInstance->lightProps.type == LightType::Directional ||
-                                selectedInstance->lightProps.type == LightType::Spot)
-                            {
-                                ImGui::AlignTextToFramePadding();
-                                ImGui::Text("Direction");
-                                ImGui::SameLine(label_width);
-                                ImGui::SetNextItemWidth(input_width);
-                                ImGui::DragFloat3("##lightdir", selectedInstance->lightProps.direction, 0.1f);
-                            }
-                            
-                            if (selectedInstance->lightProps.type == LightType::Point ||
-                                selectedInstance->lightProps.type == LightType::Spot)
-                            {
-                                ImGui::AlignTextToFramePadding();
-                                ImGui::Text("Position");
-                                ImGui::SameLine(label_width);
-                                ImGui::SetNextItemWidth(input_width);
-                                ImGui::DragFloat3("##lightpos", selectedInstance->position, 0.1f);
-                                
-                                ImGui::AlignTextToFramePadding();
-                                ImGui::Text("Range");
-                                ImGui::SameLine(label_width);
-                                ImGui::SetNextItemWidth(input_width);
-                                ImGui::DragFloat("##range", &selectedInstance->lightProps.range, 0.1f, 0.0f, 1000.0f);
-                            }
-                            
-                            ImGui::AlignTextToFramePadding();
-                            ImGui::Text("Color");
-                            ImGui::SameLine(label_width);
-                            ImGui::SetNextItemWidth(input_width);
-                            ImGui::ColorEdit4("##lightcol", selectedInstance->lightProps.color);
-                            
-                            ImGui::AlignTextToFramePadding();
-                            ImGui::Text("Intensity");
-                            ImGui::SameLine(label_width);
-                            ImGui::SetNextItemWidth(input_width);
-                            ImGui::DragFloat("##intensity", &selectedInstance->lightProps.intensity, 0.01f, 0.0f, 10.0f);
-                            
-                            if (selectedInstance->lightProps.type == LightType::Spot)
-                            {
-                                ImGui::AlignTextToFramePadding();
-                                ImGui::Text("Cone Angle");
-                                ImGui::SameLine(label_width);
-                                ImGui::SetNextItemWidth(input_width);
-                                ImGui::DragFloat("##coneangle", &selectedInstance->lightProps.coneAngle, 0.1f, 0.0f, 3.14f);
-                            }
-
-                            if (selectedInstance->lightProps.type == LightType::Point ||
-                                selectedInstance->lightProps.type == LightType::Spot)
-                            {
-                                ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing();
-                                ImGui::SetNextItemOpen(true, ImGuiCond_Once);
-                                if (ImGui::CollapsingHeader("Light Animation Settings"))
-                                {
-                                    ImGui::Separator();
-                                    // Animate Light control:
-                                    bool animEnabled = selectedInstance->lightAnim.enabled;
-                                    if (ImGui::Checkbox("Animate Light", &animEnabled))
-                                    {
-                                        // When the user toggles the checkbox, update the instance's animation state.
-                                        selectedInstance->lightAnim.enabled = animEnabled;
-                                        // If animation has just been enabled, set the base position to the current position.
-                                        if (animEnabled)
-                                        {
-                                            for (int i = 0; i < 3; i++)
-                                            {
-                                                selectedInstance->basePosition[i] = selectedInstance->position[i];
-                                            }
-                                        }
-                                    }
-                                    ImGui::AlignTextToFramePadding();
-                                    ImGui::Text("Amplitude");
-                                    ImGui::SameLine(label_width);
-                                    ImGui::SetNextItemWidth(input_width);
-                                    ImGui::DragFloat3("##amp", selectedInstance->lightAnim.amplitude, 0.1f, 0.0f, 10.0f);
-                                    
-                                    ImGui::AlignTextToFramePadding();
-                                    ImGui::Text("Frequency");
-                                    ImGui::SameLine(label_width);
-                                    ImGui::SetNextItemWidth(input_width);
-                                    ImGui::DragFloat3("##freq", selectedInstance->lightAnim.frequency, 0.1f, 0.0f, 10.0f);
-                                    
-                                    ImGui::AlignTextToFramePadding();
-                                    ImGui::Text("Phase");
-                                    ImGui::SameLine(label_width);
-                                    ImGui::SetNextItemWidth(input_width);
-                                    ImGui::DragFloat3("##phase", selectedInstance->lightAnim.phase, 0.1f, 0.0f, 10.0f);
-                                }
-                            }
-
-                            ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing();
-                            // Add a checkbox to show or hide the debug visual of the light.
-                            bool debugVisible = selectedInstance->showDebugVisual;
-                            if (ImGui::Checkbox("Show Light Debug Visual", &debugVisible))
-                            {
-                                selectedInstance->showDebugVisual = debugVisible;
-                            }
-                            ImGui::Separator();
-                            if (selectedInstance->name.find("rotating_light") != std::string::npos) {
-                                ImGui::Text("Rotating Light Properties:");
-                                ImGui::AlignTextToFramePadding();
-                                ImGui::Text("Radius");
-                                ImGui::SameLine(label_width);
-                                ImGui::SetNextItemWidth(input_width);
-                                ImGui::DragFloat("##radius", &selectedInstance->radius, 0.1f, 0.0f, 100.0f);
-                                
-                                ImGui::AlignTextToFramePadding();
-                                ImGui::Text("Center X");
-                                ImGui::SameLine(label_width);
-                                ImGui::SetNextItemWidth(input_width);
-                                ImGui::DragFloat("##centerx", &selectedInstance->centerX, 0.1f);
-                                
-                                ImGui::AlignTextToFramePadding();
-                                ImGui::Text("Center Z");
-                                ImGui::SameLine(label_width);
-                                ImGui::SetNextItemWidth(input_width);
-                                ImGui::DragFloat("##centerz", &selectedInstance->centerZ, 0.1f);
-                                
-                                ImGui::AlignTextToFramePadding();
-                                ImGui::Text("Rotation Speed");
-                                ImGui::SameLine(label_width);
-                                ImGui::SetNextItemWidth(input_width);
-                                ImGui::DragFloat("##rotspeed", &selectedInstance->rotationSpeed, 0.1f);
-                            }
-
-                        }
-                    }
-                    else {
-                        //Object color Selection
-                        ImGui::Separator();
-                        ImGui::Spacing(); ImGui::Spacing();
-
-                        // Per-object shading options
-                        ImGui::Text("Shading");
-                        if (ImGui::Checkbox("Attribute (Unlit Vertex Color) Mode", &useAttributeMode))
-                        {
-#ifdef _WIN32
-                            char dbg[128];
-                            sprintf_s(dbg, "[AttributeMode] Checkbox toggled. Now %s.\n",
-                                useAttributeMode ? "ON" : "OFF");
-                            OutputDebugStringA(dbg);
-#endif
-                        }
-                        ImGui::Spacing(); ImGui::Spacing();
-
-                        ImGui::AlignTextToFramePadding();
-                        ImGui::Text("Object Color");
-                        ImGui::SameLine(label_width);
-                        ImGui::SetNextItemWidth(input_width);
-                        ImGui::ColorEdit3("##objcolor", selectedInstance->objectColor);
-                        
-                        ImGui::Spacing(); ImGui::Spacing();
-                        ImGui::Separator();
-                        // --- Texture/Material Editor ---
-                        ImGui::SetNextItemOpen(true, ImGuiCond_Once);//collapsing header set to open initially
-                        if (ImGui::CollapsingHeader("Material Editor")) {
-                            ImGui::Spacing(); ImGui::Spacing();
-
-                            ImGui::Text("Available Material:"); ImGui::Spacing(); ImGui::Spacing();
-                            ImGui::BeginChild("TextureSelection", ImVec2(0, 80), true, ImGuiWindowFlags_HorizontalScrollbar);
-                            for (size_t i = 0; i < availableTextures.size(); i++) {
-                                // Convert your BGFX texture handle to an ImGui texture ID.
-                                ImTextureID texID = static_cast<ImTextureID>(static_cast<uintptr_t>(availableTextures[i].handle.idx));
-                                // Display each texture as an image button (64x64 pixels).
-                                if (ImGui::ImageButton(std::to_string(i).c_str(), texID, ImVec2(64, 64)))
-                                {
-                                    // When clicked, update your selected texture.
-                                    // For example, assign it to the currently selected instance.
-                                    selectedInstance->diffuseTexture = availableTextures[i].handle;
-                                }
-                                if (i < availableTextures.size() - 1)
-                                {
-                                    // Use SameLine to arrange buttons horizontally.
-                                    ImGui::SameLine();
-                                }
-                            }
-
-                            ImGui::EndChild();
-                            // Add a button to clear the selected texture.
-                            if (ImGui::Button("Clear Texture"))
-                            {
-                                selectedInstance->diffuseTexture = BGFX_INVALID_HANDLE;
-
-                                // Reset material parameters to defaults:
-                                selectedInstance->material.tiling[0] = 1.0f;
-                                selectedInstance->material.tiling[1] = 1.0f;
-                                selectedInstance->material.offset[0] = 0.0f;
-                                selectedInstance->material.offset[1] = 0.0f;
-                                selectedInstance->material.albedo[0] = 1.0f;
-                                selectedInstance->material.albedo[1] = 1.0f;
-                                selectedInstance->material.albedo[2] = 1.0f;
-                                selectedInstance->material.albedo[3] = 1.0f;
-                            }
-
-                            ImGui::Separator(); ImGui::Spacing(); ImGui::Spacing();
-
-                            if (selectedInstance->diffuseTexture.idx != bgfx::kInvalidHandle) {
-                                ImGui::Text("Material Parameters:");
-                                // Let the user edit the UV tiling.
-                                ImGui::AlignTextToFramePadding();
-                                ImGui::Text("Tiling");
-                                ImGui::SameLine(label_width);
-                                ImGui::SetNextItemWidth(input_width);
-                                ImGui::DragFloat2("##tiling", selectedInstance->material.tiling, 0.01f, 0.0f, 10.0f);
-                                
-                                // Let the user edit the UV offset.
-                                ImGui::AlignTextToFramePadding();
-                                ImGui::Text("Offset");
-                                ImGui::SameLine(label_width);
-                                ImGui::SetNextItemWidth(input_width);
-                                ImGui::DragFloat2("##offset", selectedInstance->material.offset, 0.01f, -10.0f, 10.0f);
-                                
-                                // Let the user edit the albedo (color tint).
-                                ImGui::AlignTextToFramePadding();
-                                ImGui::Text("Albedo");
-                                ImGui::SameLine(label_width);
-                                ImGui::SetNextItemWidth(input_width);
-                                ImGui::ColorEdit4("##albedo", selectedInstance->material.albedo);
-
-                                ImGui::Separator(); ImGui::Spacing(); ImGui::Spacing();
-                                ImGui::Text("Raw Material Preview:");
-
-                                ImTextureID texID = static_cast<ImTextureID>(static_cast<uintptr_t>(selectedInstance->diffuseTexture.idx));
-                                ImGui::Image(texID, ImVec2(256, 256));
-                                ImGui::Separator();
-                            }
-                            else {
-                                //ImGui::Text("No texture applied.");
-                            }
-
-                        }
-
-                    }
-                    if (selectedInstance->type == "text")
-                    {
-                        ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing();
-                        ImGui::SetNextItemOpen(true, ImGuiCond_Once);//collapsing header set to open initially
-                        // Place these static variables (they persist between frames).
-                        static int s_lastSelectedInstanceId = -1;
-                        static char s_textBuffer[31] = "";
-                        if (ImGui::CollapsingHeader("Comic Bubble Settings")) {
-                            ImGui::Text("Text Character Limit is: 30 Chars");
-                            // If the selected instance has changed, reinitialize the persistent buffer.
-                            if (selectedInstance->id != s_lastSelectedInstanceId)
-                            {
-                                strncpy(s_textBuffer, selectedInstance->textContent.c_str(), sizeof(s_textBuffer) - 1);
-                                s_textBuffer[sizeof(s_textBuffer) - 1] = '\0';
-                                s_lastSelectedInstanceId = selectedInstance->id;
-                            }
-
-                            ImGui::AlignTextToFramePadding();
-                            ImGui::Text("Content");
-                            ImGui::SameLine(label_width);
-                            ImGui::SetNextItemWidth(input_width);
-                            ImGui::InputText("##textcontent", s_textBuffer, sizeof(s_textBuffer));
-                            if (ImGui::Button("Update Text"))
-                            {
-                                // Update the instance's text content and re-generate its texture.
-                                selectedInstance->textContent = std::string(s_textBuffer);
-                                updateTextTexture(selectedInstance);
-                            }
-                        }
-                    }
-
-                    //ImGui::Separator();
-                    // You can add a button to remove the selected instance from the hierarchy.
-                    ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing();
-                    if (ImGui::Button("Delete Object"))
-                    {
-                        if (selectedInstance)
-                        {
-                            if (selectedInstance->parent)
-                            {
-                                Instance* parent = selectedInstance->parent;
-                                auto it = std::find(parent->children.begin(), parent->children.end(), selectedInstance);
-                                if (it != parent->children.end())
-                                {
-                                    size_t idx = std::distance(parent->children.begin(), it);
-                                    gCmdManager.executeCommand(
-                                        std::make_unique<DeleteInstanceCommand>(selectedInstance, parent, idx)
-                                    );
-                                }
-                            }
-                            else
-                            {
-                                auto it = std::find(instances.begin(), instances.end(), selectedInstance);
-                                if (it != instances.end())
-                                {
-                                    size_t idx = std::distance(instances.begin(), it);
-                                    gCmdManager.executeCommand(
-                                        std::make_unique<DeleteInstanceCommand>(selectedInstance, &instances, idx)
-                                    );
-                                }
-                            }
-                            selectedInstance = nullptr;
-                        }
-                    }
-                    bool highlighted = highlightVisible;
-                    if (ImGui::Checkbox("Show highlight tint", &highlighted))
-                    {
-                        highlightVisible = highlighted;
-                    }
-                }
-            }
-
-
-
-            ImGui::End();
-            }
-
-            if (show_LogConsole)
-            {
-                Logger::GetInstance().DrawImGuiLogger(&show_LogConsole);
-            }
-
-            if (show_ObjectList)
-            {
-            ImGui::Begin("Object List", &show_ObjectList, window_flags);
-            static int selectedInstanceIndex = -1;
-
-            ImGui::SetNextItemOpen(true, ImGuiCond_Once);//collapsing header set to open initially
-            if (ImGui::CollapsingHeader("Object List"))
-            {
-                // For each top-level instance, show its tree.
-                for (Instance* instance : instances)
-                {
-                    ShowInstanceTree(instance, selectedInstance, instances);
-
-                }
-
-                // Now, show the drop target region for reparenting to top-level.
-                ShowTopLevelDropTarget(instances);
-
-
-            }
-            ImGui::End();
-            }
-
-            /*-------------------------------------------------------------------------------------*/
+            // Inspector and Reconstructor are drawn only in the right sidebar (see RenderRightSidebar).
+            // Removed floating Inspector window to avoid duplicate UI and imgui.ini restoring old layout.
 
             if (show_LogConsole)
             {
@@ -5554,14 +5897,7 @@ int main(void)
             ImGui::End();
             }
 
-            if (show_Reconstructor)
-            {
-            ImGui::Begin("3D Reconstructor", &show_Reconstructor, window_flags);
-           
-            Reconstructor::Draw();
-            
-            ImGui::End();
-            }
+            // 3D Reconstructor is now rendered inside the fixed right sidebar (RenderRightSidebar)
 
             /*-------------------------------------------------------------------------------------*/
 
@@ -5625,6 +5961,7 @@ int main(void)
                 ImGui::Text("Ctrl + Right Click - Pan Camera");
                 ImGui::Text("Shift - Move Down");
                 ImGui::Text("Space - Move Up");
+                ImGui::Text("Scroll - Zoom In / Out");
 
                 // Column 2
                 ImGui::TableNextColumn();
@@ -5993,7 +6330,7 @@ int main(void)
             // Position/orientation info
             ImGui::Separator();
             ImGui::Text("Position: %.2f, %.2f, %.2f", activeCamera.position.x, activeCamera.position.y, activeCamera.position.z);
-            ImGui::Text("Rotation: Yaw %.2f°, Pitch %.2f°", activeCamera.yaw, activeCamera.pitch);
+            ImGui::Text("Rotation: Yaw %.2fÂ°, Pitch %.2fÂ°", activeCamera.yaw, activeCamera.pitch);
 
             static int current_preset = 0;
             const char* presets[] = { "Default", "Wide Angle", "Telephoto" };
@@ -6043,17 +6380,35 @@ int main(void)
             //ImGui_Implbgfx_RenderDrawLists(ImGui::GetDrawData());
         }
 
-        // Always call these last — after all ImGui windows
+        // Always call these last â€” after all ImGui windows
         ImGui::Render();
         ImGui_Implbgfx_RenderDrawLists(ImGui::GetDrawData());
 
         //handle inputs
         Camera& activeCamera = cameras[currentCameraIndex];
 
-        //Don’t process movement input unless user is in the actual 3D editor
+        int width = static_cast<int>(viewport->Size.x);
+        int height = static_cast<int>(viewport->Size.y);
+        // 3D viewport = dedicated window rect (LichtFeld-style)
+        int view3DWidth = static_cast<int>(g_ViewportRectW);
+        int view3DHeight = static_cast<int>(g_ViewportRectH);
+        if (view3DWidth < 1) view3DWidth = 1;
+        if (view3DHeight < 1) view3DHeight = 1;
+        int mouseX_input = static_cast<int>(InputManager::getMouseX());
+        int mouseY_input = static_cast<int>(InputManager::getMouseY());
+        bool mouseIn3DArea = (mouseX_input >= (int)g_ViewportRectX && mouseX_input < (int)(g_ViewportRectX + g_ViewportRectW)
+            && mouseY_input >= (int)g_ViewportRectY && mouseY_input < (int)(g_ViewportRectY + g_ViewportRectH));
+
+        //Don't process movement input unless user is in the actual 3D editor.
+        //Also pause camera controls while using any ImGuizmo (transform or view gizmo)
+        //so they don't fight each other.
         if (!showMainMenu && !showCreditsPage)
         {
-            InputManager::update(activeCamera, 0.016f);
+            bool gizmoActive = ImGuizmo::IsOver() || ImGuizmo::IsUsing();
+            if (!gizmoActive)
+            {
+                InputManager::update(activeCamera, 0.016f, mouseIn3DArea);
+            }
 
             if (InputManager::isKeyToggled(GLFW_KEY_F2))
             {
@@ -6066,21 +6421,18 @@ int main(void)
             }
         }
 
-
-        int width = static_cast<int>(viewport->Size.x);
-        int height = static_cast<int>(viewport->Size.y);
-
         if (width == 0 || height == 0)
         {
             continue;
         }
 
         // --- Object Picking Pass ---
-        // Only execute picking when the left mouse button is clicked and ImGui is not capturing the mouse.
-        // Don’t process input unless user is in the actual 3D editor
+        // Only when in editor (past start menu), left click, not over UI, and mouse in 3D content area (exclude right sidebar).
+        // Skip picking when the mouse is over or using the gizmo so we don't change selection while interacting with it.
         if (!showMainMenu && !showCreditsPage)
         {
-            if (InputManager::isMouseClicked(GLFW_MOUSE_BUTTON_LEFT) && !ImGui::GetIO().WantCaptureMouse)
+            bool skipPickingForGizmo = ImGuizmo::IsOver() || ImGuizmo::IsUsing();
+            if (InputManager::isMouseClicked(GLFW_MOUSE_BUTTON_LEFT) && mouseIn3DArea && !skipPickingForGizmo)
             {
                 if (InputManager::getSkipPickingPass) {
                     // Use a dedicated view ID for picking (choose one not used by your normal rendering)
@@ -6093,7 +6445,7 @@ int main(void)
                     float view[16];
                     bx::mtxLookAt(view, activeCamera.position, bx::add(activeCamera.position, activeCamera.front), activeCamera.up);
                     float proj[16];
-                    bx::mtxProj(proj, activeCamera.fov, float(width) / float(height), activeCamera.nearClip, activeCamera.farClip, bgfx::getCaps()->homogeneousDepth);
+                    bx::mtxProj(proj, activeCamera.fov, float(view3DWidth) / float(view3DHeight), activeCamera.nearClip, activeCamera.farClip, bgfx::getCaps()->homogeneousDepth);
                     bgfx::setViewTransform(PICKING_VIEW_ID, view, proj);
 
                     // Render each instance with the picking shader.
@@ -6113,10 +6465,10 @@ int main(void)
 
                     // Detach the picking framebuffer by setting it to BGFX_INVALID_HANDLE.
                     bgfx::setViewFrameBuffer(0, BGFX_INVALID_HANDLE);
-                    // Reset the viewport to cover the full window.
-                    bgfx::setViewRect(0, 0, 0, uint16_t(width), uint16_t(height));
+                    // Reset the viewport to the 3D viewport window rect (view 1).
+                    bgfx::setViewRect(1, (uint16_t)g_ViewportRectX, (uint16_t)g_ViewportRectY, (uint16_t)view3DWidth, (uint16_t)view3DHeight);
                     // Reset the view transforms for your normal scene.
-                    bgfx::setViewTransform(0, view, proj);
+                    bgfx::setViewTransform(1, view, proj);
                     InputManager::toggleSkipPickingPass();
                 }
                 // Use a dedicated view ID for picking (choose one not used by your normal rendering)
@@ -6129,7 +6481,7 @@ int main(void)
                 float view[16];
                 bx::mtxLookAt(view, activeCamera.position, bx::add(activeCamera.position, activeCamera.front), activeCamera.up);
                 float proj[16];
-                bx::mtxProj(proj, activeCamera.fov, float(width) / float(height), activeCamera.nearClip, activeCamera.farClip, bgfx::getCaps()->homogeneousDepth);
+                bx::mtxProj(proj, activeCamera.fov, float(view3DWidth) / float(view3DHeight), activeCamera.nearClip, activeCamera.farClip, bgfx::getCaps()->homogeneousDepth);
                 bgfx::setViewTransform(PICKING_VIEW_ID, view, proj);
 
                 // Render each instance with the picking shader.
@@ -6147,14 +6499,12 @@ int main(void)
                 // Read back the texture data into s_pickingBlitData.
                 bgfx::readTexture(s_pickingReadTex, s_pickingBlitData);
 
-                // Convert the current mouse position to coordinates in the picking RT.
-                int mouseX = static_cast<int>(InputManager::getMouseX());
-                int mouseY = static_cast<int>(InputManager::getMouseY());
-
-                // Flip Y coordinate if needed:
-                mouseY = height - mouseY;
-                int pickX = (mouseX * PICKING_DIM) / width;
-                int pickY = (mouseY * PICKING_DIM) / height;
+                // Convert mouse to viewport-window-local coords for picking.
+                float mouseLocalX = (float)(mouseX_input - (int)g_ViewportRectX);
+                float mouseLocalY = (float)(mouseY_input - (int)g_ViewportRectY);
+                int mouseY_flip = view3DHeight - (int)mouseLocalY;
+                int pickX = (int)(mouseLocalX * (float)PICKING_DIM / (float)view3DWidth);
+                int pickY = (mouseY_flip * PICKING_DIM) / view3DHeight;
 
                 // Clamp the coordinates.
                 pickX = std::max(0, std::min(pickX, PICKING_DIM - 1));
@@ -6183,10 +6533,10 @@ int main(void)
                 }
                 // Detach the picking framebuffer by setting it to BGFX_INVALID_HANDLE.
                 bgfx::setViewFrameBuffer(0, BGFX_INVALID_HANDLE);
-                // Reset the viewport to cover the full window.
-                bgfx::setViewRect(0, 0, 0, uint16_t(width), uint16_t(height));
+                // Reset the viewport to the 3D viewport window rect (view 1).
+                bgfx::setViewRect(1, (uint16_t)g_ViewportRectX, (uint16_t)g_ViewportRectY, (uint16_t)view3DWidth, (uint16_t)view3DHeight);
                 // Reset the view transforms for your normal scene.
-                bgfx::setViewTransform(0, view, proj);
+                bgfx::setViewTransform(1, view, proj);
             }
         }
 
@@ -6212,23 +6562,41 @@ int main(void)
         bgfx::setUniform(u_numLights, numLightsArr);
 
         bgfx::reset(width, height, BGFX_RESET_VSYNC);
-        bgfx::setViewRect(0, 0, 0, uint16_t(width), uint16_t(height));
+        // View 0: full-screen dark background so the 3D viewport window shape (rounded corners) is visible
+        bgfx::setViewRect(0, 0, 0, (uint16_t)width, (uint16_t)height);
+        bgfx::setViewClear(0, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, g_AppBackgroundColor, 1.0f, 0);
+        bgfx::touch(0);
+
+        // View 1: 3D scene only in the viewport window rect (LichtFeld-style, rounded window)
+        bgfx::setViewRect(1, (uint16_t)g_ViewportRectX, (uint16_t)g_ViewportRectY, (uint16_t)view3DWidth, (uint16_t)view3DHeight);
 
         float view[16];
         bx::mtxLookAt(view, activeCamera.position, bx::add(activeCamera.position, activeCamera.front), activeCamera.up);
 
         float proj[16];
-        bx::mtxProj(proj, activeCamera.fov, float(width) / float(height), activeCamera.nearClip, activeCamera.farClip, bgfx::getCaps()->homogeneousDepth);
-        bgfx::setViewTransform(0, view, proj);
+        bx::mtxProj(proj, activeCamera.fov, float(view3DWidth) / float(view3DHeight), activeCamera.nearClip, activeCamera.farClip, bgfx::getCaps()->homogeneousDepth);
+        bgfx::setViewTransform(1, view, proj);
 
         // Set model matrix
         float mtx[16];
         bx::mtxSRT(mtx, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
         bgfx::setTransform(mtx);
 
-        bgfx::setViewClear(0, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, 0x303030ff, 1.0f, 0);
+        bgfx::setViewClear(1, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, g_ViewportClearColor, 1.0f, 0);
 
-        bgfx::touch(0);
+        bgfx::touch(1);
+
+        // World reference helpers (draw first so scene objects appear above in depth):
+        // - Red: X axis
+        // - Green: Y axis
+        // - Blue: Z axis
+        // - Grid: XZ plane (camera-relative "infinite" tiles)
+        // Prefer unlit vertex-color program so axes/grid are bright and mostly
+        // independent from crosshatch shading, but fall back to defaultProgram
+        // if the unlit shaders are not available.
+        bgfx::ProgramHandle gridProgram =
+            bgfx::isValid(unlitColorProgram) ? unlitColorProgram : defaultProgram;
+        DrawWorldAxesAndGrid(1, activeCamera, gridProgram);
 
 
         float viewPos[4] = { camera.position.x, camera.position.y, camera.position.z, 1.0f };
@@ -6277,7 +6645,7 @@ int main(void)
 
         const float tintBasic[4] = { 1.0f, 1.0f, 1.0f, 0.0f };
         bgfx::setUniform(u_tint, tintBasic);
-        bgfx::submit(0, defaultProgram);
+        bgfx::submit(1, defaultProgram);
 
         for (const auto& instance : instances)
         {

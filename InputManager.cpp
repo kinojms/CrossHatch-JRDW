@@ -44,26 +44,36 @@ void InputManager::scrollCallback(GLFWwindow* window, double xoffset, double yof
     ImGuiIO& io = ImGui::GetIO();
     io.AddMouseWheelEvent((float)xoffset, (float)yoffset);
 
-    if (!io.WantCaptureMouse) {
-        m_scrollDelta = static_cast<float>(yoffset);
-    }
-    else {
-        m_scrollDelta = 0.0f;
-    }
+    // Always store scroll; zoom is applied in update() only when mouse is in 3D viewport
+    m_scrollDelta = static_cast<float>(yoffset);
 }
 
-void InputManager::update(Camera& camera, float deltaTime)
+void InputManager::update(Camera& camera, float deltaTime, bool mouseIn3DViewport)
 {
     const float cameraSpeed = camera.movementSpeed * deltaTime;
     double x, y;
 
-    // Check middle mouse button state
-    bool wasMiddleMousePressed = m_rightClickMousePressed;
+    // Check right mouse button state (used for rotate/pan)
+    bool wasRightMousePressed = m_rightClickMousePressed;
     m_rightClickMousePressed = glfwGetMouseButton(m_window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
+
+    // Always reset orbit/pan state when right button is released
+    if (!m_rightClickMousePressed) {
+        m_isOrbiting = false;
+        m_isPanning = false;
+        glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    }
+
+    // Only process camera controls when mouse is in the 3D viewport (so UI doesn't steal input)
+    if (!mouseIn3DViewport) {
+        m_scrollDelta = 0.0f;  // Consume scroll when over UI
+        return;
+    }
+
     bool ctrlPressed = isKeyPressed(GLFW_KEY_LEFT_CONTROL) || isKeyPressed(GLFW_KEY_RIGHT_CONTROL);
 
-    // Initialize mouse position when starting to drag
-    if (m_rightClickMousePressed && !wasMiddleMousePressed) {
+    // Initialize mouse position when starting to drag (right-click in viewport)
+    if (m_rightClickMousePressed && !wasRightMousePressed) {
         m_FirstMouse = true;
         glfwGetCursorPos(m_window, &m_mouseX, &m_mouseY);
 
@@ -82,7 +92,7 @@ void InputManager::update(Camera& camera, float deltaTime)
         }
     }
 
-    // Handle middle mouse
+    // Handle right-click rotate / Ctrl+right-click pan
     if (m_rightClickMousePressed)
     {
         getMouseMovement(&x, &y);
@@ -123,15 +133,8 @@ void InputManager::update(Camera& camera, float deltaTime)
             camera.up = bx::normalize(bx::cross(camera.right, camera.front));
         }
     }
-    else
-    {
-        // Reset states when right mouse button is released
-        m_isOrbiting = false;
-        m_isPanning = false;
-        glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-    }
 
-    // Scroll Wheel Zooming
+    // Scroll wheel zoom (only when in viewport)
     if (m_scrollDelta != 0.0f) {
         const float zoomSpeed = 2.0f;
         float zoomAmount = m_scrollDelta * zoomSpeed;
@@ -145,9 +148,9 @@ void InputManager::update(Camera& camera, float deltaTime)
 
         m_scrollDelta = 0.0f;
     }
-    ImGuiIO& io = ImGui::GetIO();
-    // Optional WASD Controls
-    if (!m_rightClickMousePressed && !io.WantCaptureKeyboard) {
+
+    // WASD / Space / Shift - when in viewport, always allow (ignore ImGui keyboard capture)
+    if (!m_rightClickMousePressed) {
         if (isKeyPressed(GLFW_KEY_W))
             camera.position = bx::mad(camera.front, bx::Vec3(cameraSpeed, cameraSpeed, cameraSpeed), camera.position);
         if (isKeyPressed(GLFW_KEY_S))
@@ -158,7 +161,8 @@ void InputManager::update(Camera& camera, float deltaTime)
             camera.position = bx::mad(camera.right, bx::Vec3(cameraSpeed, cameraSpeed, cameraSpeed), camera.position);
         if (isKeyPressed(GLFW_KEY_SPACE))
             camera.position = bx::mad(camera.up, bx::Vec3(cameraSpeed, cameraSpeed, cameraSpeed), camera.position);
-        if (isKeyPressed(GLFW_KEY_LEFT_SHIFT))
+        // Shift - Move Down (both left and right Shift)
+        if (isKeyPressed(GLFW_KEY_LEFT_SHIFT) || isKeyPressed(GLFW_KEY_RIGHT_SHIFT))
             camera.position = bx::mad(camera.up, bx::Vec3(-cameraSpeed, -cameraSpeed, -cameraSpeed), camera.position);
     }
 }
