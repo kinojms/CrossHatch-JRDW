@@ -765,7 +765,7 @@ namespace Reconstructor {
             std::cout << "[FrameExtractor] Starting NeRF training..." << std::endl;
             nerfProgressFile = (fs::path(outputDir) / "nerf_progress.json").string();
             std::string pyngpPath = (fs::path(projectRoot) / "pyngp").string();
-            std::string nerfCmd = "set PYTHONPATH=" + pyngpPath + "&& python \"" + (fs::path(projectRoot) / "nerf_pipeline.py").string() + "\" \"" + bgRemovedDir + "\" \"" + (fs::path(outputDir) / "model.ingp").string() + "\" 10000 \"" + nerfProgressFile + "\"";
+            std::string nerfCmd = "set PYTHONPATH=" + pyngpPath + "&& python \"" + (fs::path(projectRoot) / "nerf_pipeline.py").string() + "\" \"" + outputDir + "\" \"" + (fs::path(outputDir) / "model.ingp").string() + "\" 10000 \"" + nerfProgressFile + "\"";
             runShellCommand(nerfCmd);
             nerfProgress = 90;
             
