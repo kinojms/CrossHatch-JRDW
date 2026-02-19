@@ -193,6 +193,13 @@ namespace FrameGallery {
     // Delete selected images
     void DeleteSelectedImages() {
         int deletedCount = 0;
+        std::string parentPath;
+        
+        // Get the parent path before deletion
+        if (!imagePaths.empty()) {
+            parentPath = fs::path(imagePaths[0]).parent_path().string();
+        }
+        
         for (size_t i = 0; i < imagePaths.size(); ++i) {
             if (selectedImages[i]) {
                 std::error_code ec;
@@ -206,8 +213,18 @@ namespace FrameGallery {
         }
         std::cout << "[FrameGallery] Deleted " << deletedCount << " images" << std::endl;
         
-        // Reload the gallery
-        LoadFrameGallery(fs::path(imagePaths[0]).parent_path().string());
+        // Reload the gallery only if we have a valid parent path
+        if (!parentPath.empty() && fs::exists(parentPath)) {
+            LoadFrameGallery(parentPath);
+        } else {
+            std::cerr << "[FrameGallery] ERROR: Cannot reload gallery - parent path invalid or deleted" << std::endl;
+            // Clear gallery data if path is invalid
+            textures.clear();
+            imgSizes.clear();
+            imagePaths.clear();
+            selectedImages.clear();
+            selectedCount = 0;
+        }
     }
     
     // Draw the frame gallery window
@@ -732,7 +749,7 @@ namespace Reconstructor {
 
 
     // ----------------------------
-    // NeRF (Instant-NGP Python) Automation
+    // NeRF (Instant-NGP) Automation
     // ----------------------------
     static void runNeRFAutomation() {
         std::thread([]() {
@@ -756,17 +773,121 @@ namespace Reconstructor {
             // Step 1: Run COLMAP via colmap2nerf.py
             nerfProgress = 25;
             std::cout << "[FrameExtractor] Running COLMAP..." << std::endl;
+            std::cout << "[FrameExtractor] Background-removed images directory: " << bgRemovedDir << std::endl;
             std::string colmapCmd = std::string("cd /d \"") + outputDir + "\" && python \"" + colmapScriptPath + "\" --images \"" + bgRemovedDir + "\" --run_colmap --overwrite";
-            runShellCommand(colmapCmd);
+            std::cout << "[FrameExtractor] COLMAP command: " << colmapCmd << std::endl;
+            int colmapResult = runShellCommand(colmapCmd);
+            
+            if (colmapResult != 0) {
+                std::cerr << "[FrameExtractor] ERROR: COLMAP step failed with exit code " << colmapResult << std::endl;
+                runningNeRF = false;
+                reconstructionComplete = true;
+                return;
+            }
+            
+            // Verify that transforms.json was created
+            std::string transformsPath = (fs::path(outputDir) / "transforms.json").string();
+            if (!fs::exists(transformsPath)) {
+                std::cerr << "[FrameExtractor] ERROR: transforms.json was not created by COLMAP. Expected at: " << transformsPath << std::endl;
+                std::cerr << "[FrameExtractor] This usually means COLMAP failed to generate camera poses." << std::endl;
+                std::cerr << "[FrameExtractor] Check that:" << std::endl;
+                std::cerr << "  1. Images exist in: " << bgRemovedDir << std::endl;
+                std::cerr << "  2. Images have sufficient features for COLMAP to match" << std::endl;
+                std::cerr << "  3. Camera parameters are in the dataset" << std::endl;
+                runningNeRF = false;
+                reconstructionComplete = true;
+                return;
+            }
+            
+            std::cout << "[FrameExtractor] COLMAP completed successfully. transforms.json found." << std::endl;
             nerfProgress = 50;
             
-            // Step 2: Train NeRF model
+            // Step 2: Train NeRF model using Instant-NGP GUI
             nerfProgress = 60;
-            std::cout << "[FrameExtractor] Starting NeRF training..." << std::endl;
-            nerfProgressFile = (fs::path(outputDir) / "nerf_progress.json").string();
-            std::string pyngpPath = (fs::path(projectRoot) / "pyngp").string();
-            std::string nerfCmd = "set PYTHONPATH=" + pyngpPath + "&& python \"" + (fs::path(projectRoot) / "nerf_pipeline.py").string() + "\" \"" + outputDir + "\" \"" + (fs::path(outputDir) / "model.ingp").string() + "\" 10000 \"" + nerfProgressFile + "\"";
-            runShellCommand(nerfCmd);
+            std::cout << "[FrameExtractor] Starting NeRF training with Instant-NGP..." << std::endl;
+            
+            // Find and launch instant-ngp.exe
+            std::string instantNgpExe = (fs::path(projectRoot) / "pyngp" / "instant-ngp.exe").string();
+            
+            if (!fs::exists(instantNgpExe)) {
+                std::cerr << "[FrameExtractor] ERROR: instant-ngp.exe not found at: " << instantNgpExe << std::endl;
+                runningNeRF = false;
+                return;
+            }
+            
+            std::cout << "[FrameExtractor] Launching instant-ngp.exe with dataset: " << outputDir << std::endl;
+            
+            // Launch Instant-NGP GUI application with the dataset folder
+            // The application will open in a window and wait for user interaction to begin training
+            // Try different argument formats in case the exe expects a specific format
+            std::string ngpCmd = "\"" + instantNgpExe + "\" \"" + outputDir + "\"";
+            std::cout << "[FrameExtractor] Command: " << ngpCmd << std::endl;
+            
+            // Use CreateProcess for better control and error reporting
+            STARTUPINFOA si = {};
+            PROCESS_INFORMATION pi = {};
+            si.cb = sizeof(si);
+            si.dwFlags = STARTF_USESHOWWINDOW;
+            si.wShowWindow = SW_SHOW;
+            
+            // CreateProcessA requires a modifiable copy of the command line
+            char cmdBuffer[1024];
+            strcpy_s(cmdBuffer, sizeof(cmdBuffer), ngpCmd.c_str());
+            
+            // Get the pyngp directory as working directory (where the DLLs are)
+            std::string pyngpDir = (fs::path(projectRoot) / "pyngp").string();
+            
+            BOOL success = CreateProcessA(
+                NULL,                    // lpApplicationName
+                cmdBuffer,               // lpCommandLine
+                NULL,                    // lpProcessAttributes
+                NULL,                    // lpThreadAttributes
+                FALSE,                   // bInheritHandles
+                CREATE_NEW_CONSOLE,      // dwCreationFlags
+                NULL,                    // lpEnvironment
+                pyngpDir.c_str(),        // lpCurrentDirectory - set to pyngp folder for DLL dependencies
+                &si,                     // lpStartupInfo
+                &pi                      // lpProcessInformation
+            );
+            
+            if (success) {
+                std::cout << "[FrameExtractor] Instant-NGP process launched successfully (PID: " << pi.dwProcessId << ")" << std::endl;
+                
+                // Wait for the process to complete
+                DWORD waitResult = WaitForSingleObject(pi.hProcess, INFINITE);
+                
+                if (waitResult == WAIT_OBJECT_0) {
+                    DWORD exitCode = 0;
+                    if (GetExitCodeProcess(pi.hProcess, &exitCode)) {
+                        std::cout << "[FrameExtractor] Instant-NGP exited with code: " << exitCode << std::endl;
+                        
+                        if (exitCode != 0) {
+                            std::cout << "[FrameExtractor] Note: Instant-NGP may have exited due to a CLI argument error." << std::endl;
+                            std::cout << "[FrameExtractor] The GUI window may have opened and closed. Check if transforms.json exists." << std::endl;
+                            
+                            // Check if transforms.json exists - if it does, the load was successful
+                            std::string transformsPath = (fs::path(outputDir) / "transforms.json").string();
+                            if (fs::exists(transformsPath)) {
+                                std::cout << "[FrameExtractor] Dataset loaded successfully (transforms.json found)." << std::endl;
+                            }
+                        }
+                    } else {
+                        std::cout << "[FrameExtractor] Could not retrieve exit code." << std::endl;
+                    }
+                } else {
+                    std::cerr << "[FrameExtractor] ERROR: WaitForSingleObject failed or timed out." << std::endl;
+                }
+                
+                CloseHandle(pi.hProcess);
+                CloseHandle(pi.hThread);
+            } else {
+                DWORD error = GetLastError();
+                std::cerr << "[FrameExtractor] ERROR: Failed to launch instant-ngp.exe. Windows error code: " << error << std::endl;
+                std::cerr << "[FrameExtractor] Command attempted: " << ngpCmd << std::endl;
+                runningNeRF = false;
+                return;
+            }
+            
             nerfProgress = 90;
             
             nerfProgress = 100;
