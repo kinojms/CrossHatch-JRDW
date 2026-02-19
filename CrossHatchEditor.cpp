@@ -1480,7 +1480,7 @@ static void SmoothMesh(MeshData& mesh, int iterations, float factor)
     // ------------------------------------------------------------
     // 3. Laplacian smoothing (FLOAT math!)
     // ------------------------------------------------------------
-    for (int it = 0; it < iterations; ++it)
+ /*   for (int it = 0; it < iterations; ++it)
     {
         std::vector<Vec3> next = uniquePositions;
 
@@ -1509,7 +1509,77 @@ static void SmoothMesh(MeshData& mesh, int iterations, float factor)
         }
 
         uniquePositions = next;
+    }*/
+    // ------------------------------------------------------------
+// 3. Proper Taubin smoothing with volume preservation
+// ------------------------------------------------------------
+
+    float lambda = factor;        // 0.3f recommended
+    float mu = -lambda * 0.5f;    // shrink cancel
+
+    for (int it = 0; it < iterations; ++it)
+    {
+        std::vector<Vec3> lap(uniquePositions.size());
+
+        // Compute Laplacian
+        for (size_t i = 0; i < uniquePositions.size(); ++i)
+        {
+            if (adj[i].empty()) continue;
+
+            float ax = 0, ay = 0, az = 0;
+            for (uint32_t n : adj[i])
+            {
+                ax += uniquePositions[n].x;
+                ay += uniquePositions[n].y;
+                az += uniquePositions[n].z;
+            }
+
+            float inv = 1.0f / adj[i].size();
+            ax *= inv; ay *= inv; az *= inv;
+
+            lap[i].x = ax - uniquePositions[i].x;
+            lap[i].y = ay - uniquePositions[i].y;
+            lap[i].z = az - uniquePositions[i].z;
+        }
+
+        // Lambda pass
+        for (size_t i = 0; i < uniquePositions.size(); ++i)
+        {
+            uniquePositions[i].x += lambda * lap[i].x;
+            uniquePositions[i].y += lambda * lap[i].y;
+            uniquePositions[i].z += lambda * lap[i].z;
+        }
+
+        // Recompute Laplacian after lambda
+        for (size_t i = 0; i < uniquePositions.size(); ++i)
+        {
+            if (adj[i].empty()) continue;
+
+            float ax = 0, ay = 0, az = 0;
+            for (uint32_t n : adj[i])
+            {
+                ax += uniquePositions[n].x;
+                ay += uniquePositions[n].y;
+                az += uniquePositions[n].z;
+            }
+
+            float inv = 1.0f / adj[i].size();
+            ax *= inv; ay *= inv; az *= inv;
+
+            lap[i].x = ax - uniquePositions[i].x;
+            lap[i].y = ay - uniquePositions[i].y;
+            lap[i].z = az - uniquePositions[i].z;
+        }
+
+        // Mu pass
+        for (size_t i = 0; i < uniquePositions.size(); ++i)
+        {
+            uniquePositions[i].x += mu * lap[i].x;
+            uniquePositions[i].y += mu * lap[i].y;
+            uniquePositions[i].z += mu * lap[i].z;
+        }
     }
+
 
     // ------------------------------------------------------------
     // 4. Write back to original mesh
