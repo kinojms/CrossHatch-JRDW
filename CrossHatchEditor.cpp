@@ -1372,6 +1372,60 @@ static void MergeCloseVertices(MeshData& mesh, float epsilon)
 //        }
 //    }
 //}
+static void SubdivideOnce(MeshData& mesh)
+{
+    std::vector<PosColorVertex> newVerts = mesh.vertices;
+    std::vector<uint32_t> newIndices;
+
+    std::map<std::pair<uint16_t, uint16_t>, uint16_t> midpointCache;
+
+    auto getMidpoint = [&](uint16_t a, uint16_t b) -> uint16_t
+        {
+            if (a > b) std::swap(a, b);
+
+            auto key = std::make_pair(a, b);
+            auto it = midpointCache.find(key);
+            if (it != midpointCache.end())
+                return it->second;
+
+            PosColorVertex va = mesh.vertices[a];
+            PosColorVertex vb = mesh.vertices[b];
+
+            PosColorVertex mid;
+            mid.x = (va.x + vb.x) * 0.5f;
+            mid.y = (va.y + vb.y) * 0.5f;
+            mid.z = (va.z + vb.z) * 0.5f;
+
+            uint16_t index = (uint16_t)newVerts.size();
+            newVerts.push_back(mid);
+            midpointCache[key] = index;
+
+            return index;
+        };
+
+    for (size_t i = 0; i < mesh.indices.size(); i += 3)
+    {
+        uint16_t i0 = mesh.indices[i];
+        uint16_t i1 = mesh.indices[i + 1];
+        uint16_t i2 = mesh.indices[i + 2];
+
+        uint16_t m0 = getMidpoint(i0, i1);
+        uint16_t m1 = getMidpoint(i1, i2);
+        uint16_t m2 = getMidpoint(i2, i0);
+
+        // Split triangle into 4
+        newIndices.insert(newIndices.end(), {
+            i0, m0, m2,
+            i1, m1, m0,
+            i2, m2, m1,
+            m0, m1, m2
+            });
+    }
+
+    mesh.vertices = newVerts;
+    mesh.indices = newIndices;
+}
+
 
 struct Vec3Key {
     int32_t x, y, z; // Use scaled integers for robust matching
@@ -4436,6 +4490,7 @@ static void RenderInspectorBody(Instance* selectedInstance, std::vector<Instance
                 ImGui::SliderFloat("Factor##smooth", &s_smoothFactor, 0.01f, 1.0f);
                 if (ImGui::Button("Smooth Mesh"))
                 {
+					SubdivideOnce(*mesh); // Subdivide once to add vertices for smoothing
                     SmoothMesh(*mesh, s_smoothIterations, s_smoothFactor);
                     ApplyEditableMeshToInstance(selectedInstance);
                 }
