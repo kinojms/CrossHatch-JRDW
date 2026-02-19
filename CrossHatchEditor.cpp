@@ -19,6 +19,10 @@
 #ifdef _WIN32
 #include <windows.h>
 #include <commdlg.h>
+
+#include <map>
+#include <set>
+#include <algorithm> // For std::max and std::min
 #endif
 #include <filesystem>
 namespace fs = std::filesystem;
@@ -728,6 +732,13 @@ struct MeshData {
     std::vector<uint32_t> indices;
 };
 
+// CPU-side editable mesh data for instances that support geometry operations.
+// Keyed by Instance::id.
+static std::unordered_map<int, MeshData> g_InstanceMeshData;
+// Base mesh templates keyed by instance type (e.g. "cube", "plane", "mesh").
+// These are cloned into g_InstanceMeshData when instances are created.
+static std::unordered_map<std::string, MeshData> g_BaseMeshData;
+
 struct Vec3 {
     float x, y, z;
 };
@@ -1046,6 +1057,694 @@ void computeNormals(std::vector<PosColorVertex>& vertices, const std::vector<uin
     }
 }
 
+// Register base mesh data helpers --------------------------------------------
+
+// Build a MeshData from compile-time arrays.
+template<size_t NVerts, size_t NIdx, typename IndexT>
+static MeshData MakeMeshDataFromArrays(const PosColorVertex(&verts)[NVerts], const IndexT(&idx)[NIdx])
+{
+    MeshData mesh;
+    mesh.vertices.assign(verts, verts + NVerts);
+    mesh.indices.reserve(NIdx);
+    for (size_t i = 0; i < NIdx; ++i)
+    {
+        mesh.indices.push_back(static_cast<uint32_t>(idx[i]));
+    }
+    return mesh;
+}
+
+// Build a MeshData from runtime vectors.
+template<typename IndexT>
+static MeshData MakeMeshDataFromVectors(const std::vector<PosColorVertex>& verts, const std::vector<IndexT>& idx)
+{
+    MeshData mesh;
+    mesh.vertices = verts;
+    mesh.indices.reserve(idx.size());
+    for (size_t i = 0; i < idx.size(); ++i)
+    {
+        mesh.indices.push_back(static_cast<uint32_t>(idx[i]));
+    }
+    return mesh;
+}
+
+// Helper to attach a base mesh template to a newly created instance, based on its type.
+static void RegisterInstanceMeshFromType(Instance* inst)
+{
+    if (!inst) return;
+    auto it = g_BaseMeshData.find(inst->type);
+    if (it != g_BaseMeshData.end())
+    {
+        g_InstanceMeshData[inst->id] = it->second;
+    }
+}
+
+// Forward declaration so geometry tools can recreate GPU buffers.
+void createMeshBuffers(const MeshData& meshData, bgfx::VertexBufferHandle& vbh, bgfx::IndexBufferHandle& ibh);
+
+// Helper: get editable mesh data for an instance, if available.
+static MeshData* GetEditableMeshData(Instance* inst)
+{
+    if (!inst) return nullptr;
+    auto it = g_InstanceMeshData.find(inst->id);
+    if (it == g_InstanceMeshData.end()) return nullptr;
+    return &it->second;
+}
+
+static bool HasEditableMeshData(const Instance* inst)
+{
+    if (!inst || inst->isLight) return false;
+    return g_InstanceMeshData.find(inst->id) != g_InstanceMeshData.end();
+}
+
+// Rebuild GPU buffers from CPU-side mesh data for the given instance.
+static void ApplyEditableMeshToInstance(Instance* inst)
+{
+    if (!inst) return;
+    auto it = g_InstanceMeshData.find(inst->id);
+    if (it == g_InstanceMeshData.end()) return;
+
+    MeshData& mesh = it->second;
+
+    // Recompute normals after topology/position changes.
+    computeNormals(mesh.vertices, mesh.indices);
+
+    if (bgfx::isValid(inst->vertexBuffer))
+    {
+        bgfx::destroy(inst->vertexBuffer);
+    }
+    if (bgfx::isValid(inst->indexBuffer))
+    {
+        bgfx::destroy(inst->indexBuffer);
+    }
+
+    createMeshBuffers(mesh, inst->vertexBuffer, inst->indexBuffer);
+}
+
+// --- Geometry modification helpers (subdivision, merging, smoothing, boundaries) ---
+
+// Simple utility to encode an undirected edge (i,j) into a 64-bit key.
+static inline uint64_t EncodeEdge(uint32_t a, uint32_t b)
+{
+    return (uint64_t)std::min(a, b) << 32 | (uint64_t)std::max(a, b);
+}
+
+// Color boundary vertices (vertices that belong to at least one boundary edge).
+static void ColorBoundaryVertices(MeshData& mesh, uint32_t boundaryAbgr)
+{
+    if (mesh.indices.size() < 3 || mesh.vertices.empty())
+        return;
+
+    std::unordered_map<uint64_t, uint32_t> edgeUseCount;
+    edgeUseCount.reserve(mesh.indices.size());
+
+    // Count how many faces reference each undirected edge.
+    for (size_t i = 0; i + 2 < mesh.indices.size(); i += 3)
+    {
+        uint32_t i0 = mesh.indices[i + 0];
+        uint32_t i1 = mesh.indices[i + 1];
+        uint32_t i2 = mesh.indices[i + 2];
+
+        ++edgeUseCount[EncodeEdge(i0, i1)];
+        ++edgeUseCount[EncodeEdge(i1, i2)];
+        ++edgeUseCount[EncodeEdge(i2, i0)];
+    }
+
+    std::vector<uint8_t> isBoundary(mesh.vertices.size(), 0);
+
+    for (const auto& kv : edgeUseCount)
+    {
+        if (kv.second == 1)
+        {
+            uint32_t a = uint32_t(kv.first >> 32);
+            uint32_t b = uint32_t(kv.first & 0xffffffffu);
+            if (a < isBoundary.size()) isBoundary[a] = 1;
+            if (b < isBoundary.size()) isBoundary[b] = 1;
+        }
+    }
+
+    for (size_t i = 0; i < mesh.vertices.size(); ++i)
+    {
+        if (isBoundary[i])
+        {
+            mesh.vertices[i].abgr = boundaryAbgr;
+        }
+    }
+}
+
+// Naive triangle subdivision: each triangle is split into 4 using midpoints.
+static void SubdivideMesh(MeshData& mesh, int levels)
+{
+    levels = std::max(0, levels);
+    for (int level = 0; level < levels; ++level)
+    {
+        if (mesh.indices.size() < 3) break;
+
+        std::unordered_map<uint64_t, uint32_t> midpointIndex;
+        midpointIndex.reserve(mesh.indices.size());
+
+        std::vector<uint32_t> newIndices;
+        newIndices.reserve(mesh.indices.size() * 4);
+
+        auto getMidpoint = [&](uint32_t i0, uint32_t i1) -> uint32_t
+        {
+            uint64_t key = EncodeEdge(i0, i1);
+            auto it = midpointIndex.find(key);
+            if (it != midpointIndex.end())
+                return it->second;
+
+            PosColorVertex v0 = mesh.vertices[i0];
+            PosColorVertex v1 = mesh.vertices[i1];
+
+            PosColorVertex m = v0;
+            m.x = 0.5f * (v0.x + v1.x);
+            m.y = 0.5f * (v0.y + v1.y);
+            m.z = 0.5f * (v0.z + v1.z);
+            m.u = 0.5f * (v0.u + v1.u);
+            m.v = 0.5f * (v0.v + v1.v);
+            // Leave normals for recomputation by computeNormals.
+            // Average color so seams are less visible.
+            // Simple unpack/pack is avoided; we just copy one endpoint's color.
+            // (Attribute mode will still give a clear outline.)
+
+            uint32_t newIndex = (uint32_t)mesh.vertices.size();
+            mesh.vertices.push_back(m);
+            midpointIndex[key] = newIndex;
+            return newIndex;
+        };
+
+        for (size_t i = 0; i + 2 < mesh.indices.size(); i += 3)
+        {
+            uint32_t i0 = mesh.indices[i + 0];
+            uint32_t i1 = mesh.indices[i + 1];
+            uint32_t i2 = mesh.indices[i + 2];
+
+            uint32_t m01 = getMidpoint(i0, i1);
+            uint32_t m12 = getMidpoint(i1, i2);
+            uint32_t m20 = getMidpoint(i2, i0);
+
+            // 4 new triangles.
+            newIndices.push_back(i0);  newIndices.push_back(m01); newIndices.push_back(m20);
+            newIndices.push_back(i1);  newIndices.push_back(m12); newIndices.push_back(m01);
+            newIndices.push_back(i2);  newIndices.push_back(m20); newIndices.push_back(m12);
+            newIndices.push_back(m01); newIndices.push_back(m12); newIndices.push_back(m20);
+        }
+
+        mesh.indices.swap(newIndices);
+    }
+}
+
+// Merge vertices that are closer than epsilon in object space.
+static void MergeCloseVertices(MeshData& mesh, float epsilon)
+{
+    if (mesh.vertices.empty() || mesh.indices.empty() || epsilon <= 0.0f)
+        return;
+
+    const float eps2 = epsilon * epsilon;
+    const size_t oldCount = mesh.vertices.size();
+
+    std::vector<uint32_t> remap(oldCount, UINT32_MAX);
+    std::vector<PosColorVertex> newVerts;
+    newVerts.reserve(oldCount);
+
+    for (uint32_t i = 0; i < oldCount; ++i)
+    {
+        if (remap[i] != UINT32_MAX)
+            continue;
+
+        PosColorVertex base = mesh.vertices[i];
+        float accumX = base.x, accumY = base.y, accumZ = base.z;
+        uint32_t mergedCount = 1;
+
+        remap[i] = (uint32_t)newVerts.size();
+
+        for (uint32_t j = i + 1; j < oldCount; ++j)
+        {
+            if (remap[j] != UINT32_MAX)
+                continue;
+
+            const PosColorVertex& v = mesh.vertices[j];
+            float dx = v.x - base.x;
+            float dy = v.y - base.y;
+            float dz = v.z - base.z;
+            float d2 = dx * dx + dy * dy + dz * dz;
+            if (d2 <= eps2)
+            {
+                remap[j] = remap[i];
+                accumX += v.x;
+                accumY += v.y;
+                accumZ += v.z;
+                ++mergedCount;
+            }
+        }
+
+        // Average position; keep other attributes from the base vertex.
+        base.x = accumX / float(mergedCount);
+        base.y = accumY / float(mergedCount);
+        base.z = accumZ / float(mergedCount);
+
+        newVerts.push_back(base);
+    }
+
+    // Remap indices.
+    for (uint32_t& idx : mesh.indices)
+    {
+        if (idx < remap.size() && remap[idx] != UINT32_MAX)
+        {
+            idx = remap[idx];
+        }
+    }
+
+    mesh.vertices.swap(newVerts);
+}
+
+//// Simple Laplacian smoothing.
+//static void SmoothMesh(MeshData& mesh, int iterations, float factor)
+//{
+//    if (mesh.vertices.empty() || mesh.indices.empty())
+//        return;
+//
+//    iterations = std::max(0, iterations);
+//    factor = std::max(0.0f, std::min(factor, 1.0f));
+//    if (iterations == 0 || factor <= 0.0f)
+//        return;
+//
+//    std::vector<std::vector<uint32_t>> adjacency(mesh.vertices.size());
+//    for (size_t i = 0; i + 2 < mesh.indices.size(); i += 3)
+//    {
+//        uint32_t i0 = mesh.indices[i + 0];
+//        uint32_t i1 = mesh.indices[i + 1];
+//        uint32_t i2 = mesh.indices[i + 2];
+//
+//        adjacency[i0].push_back(i1);
+//        adjacency[i0].push_back(i2);
+//        adjacency[i1].push_back(i0);
+//        adjacency[i1].push_back(i2);
+//        adjacency[i2].push_back(i0);
+//        adjacency[i2].push_back(i1);
+//    }
+//
+//    std::vector<PosColorVertex> temp = mesh.vertices;
+//
+//    for (int it = 0; it < iterations; ++it)
+//    {
+//        temp = mesh.vertices;
+//
+//        for (size_t i = 0; i < mesh.vertices.size(); ++i)
+//        {
+//            const auto& nbrs = adjacency[i];
+//            if (nbrs.empty())
+//                continue;
+//
+//            float ax = 0.0f, ay = 0.0f, az = 0.0f;
+//            for (uint32_t n : nbrs)
+//            {
+//                ax += temp[n].x;
+//                ay += temp[n].y;
+//                az += temp[n].z;
+//            }
+//            float inv = 1.0f / float(nbrs.size());
+//            ax *= inv; ay *= inv; az *= inv;
+//
+//            PosColorVertex& v = mesh.vertices[i];
+//            v.x = v.x + factor * (ax - v.x);
+//            v.y = v.y + factor * (ay - v.y);
+//            v.z = v.z + factor * (az - v.z);
+//        }
+//    }
+//}
+static void SubdivideOnce(MeshData& mesh)
+{
+    std::vector<PosColorVertex> newVerts = mesh.vertices;
+    std::vector<uint32_t> newIndices;
+
+    std::map<std::pair<uint16_t, uint16_t>, uint16_t> midpointCache;
+
+    auto getMidpoint = [&](uint16_t a, uint16_t b) -> uint16_t
+        {
+            if (a > b) std::swap(a, b);
+
+            auto key = std::make_pair(a, b);
+            auto it = midpointCache.find(key);
+            if (it != midpointCache.end())
+                return it->second;
+
+            PosColorVertex va = mesh.vertices[a];
+            PosColorVertex vb = mesh.vertices[b];
+
+            PosColorVertex mid;
+            mid.x = (va.x + vb.x) * 0.5f;
+            mid.y = (va.y + vb.y) * 0.5f;
+            mid.z = (va.z + vb.z) * 0.5f;
+
+            uint16_t index = (uint16_t)newVerts.size();
+            newVerts.push_back(mid);
+            midpointCache[key] = index;
+
+            return index;
+        };
+
+    for (size_t i = 0; i < mesh.indices.size(); i += 3)
+    {
+        uint16_t i0 = mesh.indices[i];
+        uint16_t i1 = mesh.indices[i + 1];
+        uint16_t i2 = mesh.indices[i + 2];
+
+        uint16_t m0 = getMidpoint(i0, i1);
+        uint16_t m1 = getMidpoint(i1, i2);
+        uint16_t m2 = getMidpoint(i2, i0);
+
+        // Split triangle into 4
+        newIndices.insert(newIndices.end(), {
+            i0, m0, m2,
+            i1, m1, m0,
+            i2, m2, m1,
+            m0, m1, m2
+            });
+    }
+
+    mesh.vertices = newVerts;
+    mesh.indices = newIndices;
+}
+
+
+struct Vec3Key {
+    int32_t x, y, z; // Use scaled integers for robust matching
+    bool operator<(const Vec3Key& o) const {
+        if (x != o.x) return x < o.x;
+        if (y != o.y) return y < o.y;
+        return z < o.z;
+    }
+};
+
+void computeNormals(std::vector<PosColorVertex>& vertices, const std::vector<uint16_t>& indices) {
+    // 1. Zero out all normals
+    for (auto& v : vertices) { v.nx = v.ny = v.nz = 0.0f; }
+
+    // 2. Accumulate triangle normals
+    for (size_t i = 0; i + 2 < indices.size(); i += 3) {
+        auto& v0 = vertices[indices[i]];
+        auto& v1 = vertices[indices[i + 1]];
+        auto& v2 = vertices[indices[i + 2]];
+
+        float dx1 = v1.x - v0.x; float dy1 = v1.y - v0.y; float dz1 = v1.z - v0.z;
+        float dx2 = v2.x - v0.x; float dy2 = v2.y - v0.y; float dz2 = v2.z - v0.z;
+
+        // Cross product
+        float nx = dy1 * dz2 - dz1 * dy2;
+        float ny = dz1 * dx2 - dx1 * dz2;
+        float nz = dx1 * dy2 - dy1 * dx2;
+
+        v0.nx += nx; v0.ny += ny; v0.nz += nz;
+        v1.nx += nx; v1.ny += ny; v1.nz += nz;
+        v2.nx += nx; v2.ny += ny; v2.nz += nz;
+    }
+
+    // 3. Normalize
+    for (auto& v : vertices) {
+        float len = std::sqrt(v.nx * v.nx + v.ny * v.ny + v.nz * v.nz);
+        if (len > 0.0f) { v.nx /= len; v.ny /= len; v.nz /= len; }
+    }
+}
+
+static void SmoothMesh(MeshData& mesh, int iterations, float factor)
+{
+    if (mesh.vertices.empty() || mesh.indices.empty()) return;
+
+    size_t vertexCount = mesh.vertices.size();
+
+    // ------------------------------------------------------------
+    // 1. Weld duplicate vertices (by position)
+    // ------------------------------------------------------------
+    std::map<Vec3Key, uint32_t> posToUniqueId;
+    std::vector<uint32_t> vertexToUniqueId(vertexCount);
+
+    struct Vec3 { float x, y, z; };
+    std::vector<Vec3> uniquePositions;
+
+    auto toKey = [](float f) { return (int32_t)(f * 1000.0f); };
+
+    for (size_t i = 0; i < vertexCount; ++i)
+    {
+        Vec3Key key = {
+            toKey(mesh.vertices[i].x),
+            toKey(mesh.vertices[i].y),
+            toKey(mesh.vertices[i].z)
+        };
+
+        auto it = posToUniqueId.find(key);
+        if (it == posToUniqueId.end())
+        {
+            uint32_t newId = (uint32_t)uniquePositions.size();
+            posToUniqueId[key] = newId;
+            vertexToUniqueId[i] = newId;
+
+            uniquePositions.push_back({
+                mesh.vertices[i].x,
+                mesh.vertices[i].y,
+                mesh.vertices[i].z
+                });
+        }
+        else
+        {
+            vertexToUniqueId[i] = it->second;
+        }
+    }
+
+    // ------------------------------------------------------------
+    // 2. Build adjacency (unique IDs only)
+    // ------------------------------------------------------------
+    std::vector<std::set<uint32_t>> adj(uniquePositions.size());
+
+    for (size_t i = 0; i + 2 < mesh.indices.size(); i += 3)
+    {
+        uint32_t u0 = vertexToUniqueId[mesh.indices[i]];
+        uint32_t u1 = vertexToUniqueId[mesh.indices[i + 1]];
+        uint32_t u2 = vertexToUniqueId[mesh.indices[i + 2]];
+
+        auto addEdge = [&](uint32_t a, uint32_t b)
+            {
+                if (a != b) adj[a].insert(b);
+            };
+
+        addEdge(u0, u1); addEdge(u0, u2);
+        addEdge(u1, u0); addEdge(u1, u2);
+        addEdge(u2, u0); addEdge(u2, u1);
+    }
+
+    // ------------------------------------------------------------
+    // 3. Laplacian smoothing (FLOAT math!)
+    // ------------------------------------------------------------
+ /*   for (int it = 0; it < iterations; ++it)
+    {
+        std::vector<Vec3> next = uniquePositions;
+
+        for (size_t i = 0; i < uniquePositions.size(); ++i)
+        {
+            if (adj[i].empty()) continue;
+
+            float ax = 0, ay = 0, az = 0;
+
+            for (uint32_t n : adj[i])
+            {
+                ax += uniquePositions[n].x;
+                ay += uniquePositions[n].y;
+                az += uniquePositions[n].z;
+            }
+
+            float inv = 1.0f / adj[i].size();
+
+            ax *= inv;
+            ay *= inv;
+            az *= inv;
+
+            next[i].x = uniquePositions[i].x + factor * (ax - uniquePositions[i].x);
+            next[i].y = uniquePositions[i].y + factor * (ay - uniquePositions[i].y);
+            next[i].z = uniquePositions[i].z + factor * (az - uniquePositions[i].z);
+        }
+
+        uniquePositions = next;
+    }*/
+    // ------------------------------------------------------------
+// 3. Proper Taubin smoothing with volume preservation
+// ------------------------------------------------------------
+
+    float lambda = factor;        // 0.3f recommended
+    float mu = -lambda * 0.5f;    // shrink cancel
+
+    for (int it = 0; it < iterations; ++it)
+    {
+        std::vector<Vec3> lap(uniquePositions.size());
+
+        // Compute Laplacian
+        for (size_t i = 0; i < uniquePositions.size(); ++i)
+        {
+            if (adj[i].empty()) continue;
+
+            float ax = 0, ay = 0, az = 0;
+            for (uint32_t n : adj[i])
+            {
+                ax += uniquePositions[n].x;
+                ay += uniquePositions[n].y;
+                az += uniquePositions[n].z;
+            }
+
+            float inv = 1.0f / adj[i].size();
+            ax *= inv; ay *= inv; az *= inv;
+
+            lap[i].x = ax - uniquePositions[i].x;
+            lap[i].y = ay - uniquePositions[i].y;
+            lap[i].z = az - uniquePositions[i].z;
+        }
+
+        // Lambda pass
+        for (size_t i = 0; i < uniquePositions.size(); ++i)
+        {
+            uniquePositions[i].x += lambda * lap[i].x;
+            uniquePositions[i].y += lambda * lap[i].y;
+            uniquePositions[i].z += lambda * lap[i].z;
+        }
+
+        // Recompute Laplacian after lambda
+        for (size_t i = 0; i < uniquePositions.size(); ++i)
+        {
+            if (adj[i].empty()) continue;
+
+            float ax = 0, ay = 0, az = 0;
+            for (uint32_t n : adj[i])
+            {
+                ax += uniquePositions[n].x;
+                ay += uniquePositions[n].y;
+                az += uniquePositions[n].z;
+            }
+
+            float inv = 1.0f / adj[i].size();
+            ax *= inv; ay *= inv; az *= inv;
+
+            lap[i].x = ax - uniquePositions[i].x;
+            lap[i].y = ay - uniquePositions[i].y;
+            lap[i].z = az - uniquePositions[i].z;
+        }
+
+        // Mu pass
+        for (size_t i = 0; i < uniquePositions.size(); ++i)
+        {
+            uniquePositions[i].x += mu * lap[i].x;
+            uniquePositions[i].y += mu * lap[i].y;
+            uniquePositions[i].z += mu * lap[i].z;
+        }
+    }
+
+
+    // ------------------------------------------------------------
+    // 4. Write back to original mesh
+    // ------------------------------------------------------------
+    for (size_t i = 0; i < vertexCount; ++i)
+    {
+        uint32_t uid = vertexToUniqueId[i];
+
+        mesh.vertices[i].x = uniquePositions[uid].x;
+        mesh.vertices[i].y = uniquePositions[uid].y;
+        mesh.vertices[i].z = uniquePositions[uid].z;
+    }
+
+    // ------------------------------------------------------------
+    // 5. Recompute normals
+    // ------------------------------------------------------------
+    computeNormals(mesh.vertices, mesh.indices);
+}
+
+
+// Transform a position by a 4x4 matrix.
+static void TransformPosition(const float* m, float x, float y, float z, float& outX, float& outY, float& outZ)
+{
+    outX = m[0] * x + m[4] * y + m[8]  * z + m[12];
+    outY = m[1] * x + m[5] * y + m[9]  * z + m[13];
+    outZ = m[2] * x + m[6] * y + m[10] * z + m[14];
+}
+
+// Draw selected instance's mesh as green vertices (small crosses) and green edges.
+static void DrawSelectedMeshOverlay(const Instance* inst, const float* worldMatrix, uint16_t viewId)
+{
+    if (!inst) return;
+
+    auto it = g_InstanceMeshData.find(inst->id);
+    if (it == g_InstanceMeshData.end())
+        return;
+
+    const MeshData& mesh = it->second;
+    if (mesh.vertices.empty() || mesh.indices.empty())
+        return;
+
+    const uint32_t edgeColor = PackAbgr(0xff, 0x20, 0xff, 0x20); // bright green
+    const uint32_t vertColor = PackAbgr(0xff, 0x40, 0xff, 0x40); // slightly brighter green
+
+    std::vector<LineVertex> verts;
+    verts.reserve(mesh.indices.size() * 2 + mesh.vertices.size() * 6);
+
+    auto pushLine = [&](float x0, float y0, float z0,
+                        float x1, float y1, float z1,
+                        uint32_t abgr)
+    {
+        LineVertex a{};
+        a.x = x0; a.y = y0; a.z = z0;
+        a.nx = 0.0f; a.ny = 1.0f; a.nz = 0.0f;
+        a.abgr = abgr;
+        a.u = 0.0f; a.v = 0.0f;
+
+        LineVertex b{};
+        b.x = x1; b.y = y1; b.z = z1;
+        b.nx = 0.0f; b.ny = 1.0f; b.nz = 0.0f;
+        b.abgr = abgr;
+        b.u = 0.0f; b.v = 0.0f;
+
+        verts.push_back(a);
+        verts.push_back(b);
+    };
+
+    // Edges: draw each triangle edge as a green segment.
+    for (size_t i = 0; i + 2 < mesh.indices.size(); i += 3)
+    {
+        uint32_t i0 = mesh.indices[i + 0];
+        uint32_t i1 = mesh.indices[i + 1];
+        uint32_t i2 = mesh.indices[i + 2];
+        if (i0 >= mesh.vertices.size() || i1 >= mesh.vertices.size() || i2 >= mesh.vertices.size())
+            continue;
+
+        const PosColorVertex& v0 = mesh.vertices[i0];
+        const PosColorVertex& v1 = mesh.vertices[i1];
+        const PosColorVertex& v2 = mesh.vertices[i2];
+
+        float x0, y0, z0;
+        float x1, y1, z1;
+        float x2, y2, z2;
+        TransformPosition(worldMatrix, v0.x, v0.y, v0.z, x0, y0, z0);
+        TransformPosition(worldMatrix, v1.x, v1.y, v1.z, x1, y1, z1);
+        TransformPosition(worldMatrix, v2.x, v2.y, v2.z, x2, y2, z2);
+
+        pushLine(x0, y0, z0, x1, y1, z1, edgeColor);
+        pushLine(x1, y1, z1, x2, y2, z2, edgeColor);
+        pushLine(x2, y2, z2, x0, y0, z0, edgeColor);
+    }
+
+    // Vertices: small crosses around each vertex position.
+    const float r = 0.01f; // cross half-size in world units
+    for (const auto& v : mesh.vertices)
+    {
+        float cx, cy, cz;
+        TransformPosition(worldMatrix, v.x, v.y, v.z, cx, cy, cz);
+
+        pushLine(cx - r, cy, cz, cx + r, cy, cz, vertColor);
+        pushLine(cx, cy - r, cz, cx, cy + r, cz, vertColor);
+        pushLine(cx, cy, cz - r, cx, cy, cz + r, vertColor);
+    }
+
+    if (!verts.empty())
+    {
+        SubmitLineList(viewId, unlitColorProgram, verts.data(), static_cast<uint32_t>(verts.size()),
+            BGFX_STATE_WRITE_RGB | BGFX_STATE_DEPTH_TEST_LESS);
+    }
+}
+
 std::string openFileDialog(bool save) {
 #ifdef _WIN32
     char filePath[MAX_PATH] = { 0 };
@@ -1099,7 +1798,7 @@ MeshData loadMesh(const std::string& filePath) {
     std::cout << "[DEBUG loadMesh] Loading mesh file: " << filePath << std::endl;
     std::cout << "[DEBUG loadMesh] Total meshes in scene: " << scene->mNumMeshes << std::endl;
     
-    for (unsigned int meshIndex = 0; meshIndex < scene->mNumMeshes; ++meshIndex) {
+        for (unsigned int meshIndex = 0; meshIndex < scene->mNumMeshes; ++meshIndex) {
         aiMesh* mesh = scene->mMeshes[meshIndex];
         size_t baseIndex = vertices.size();
         std::unordered_map<std::string, uint16_t> uniqueVertices;
@@ -1559,7 +2258,10 @@ static void spawnInstance(Camera camera, const std::string& instanceName, const 
     std::string fullName = instanceName + std::to_string(instanceCounter);
 
     // Create a new instance with the current vertex and index buffers
-    instances.push_back(new Instance(instanceCounter++, fullName, instanceType, x, y, z, vbh, ibh));
+    Instance* inst = new Instance(instanceCounter++, fullName, instanceType, x, y, z, vbh, ibh);
+    instances.push_back(inst);
+    // Attach editable mesh data (if base template exists for this type).
+    RegisterInstanceMeshFromType(inst);
     std::cout << "New instance created at (" << x << ", " << y << ", " << z << ")" << std::endl;
 }
 
@@ -1568,7 +2270,10 @@ static void spawnInstanceAtCenter(const std::string& instanceName, const std::st
     std::string fullName = instanceName + std::to_string(instanceCounter);
 
     // Create a new instance with the current vertex and index buffers
-    instances.push_back(new Instance(instanceCounter++, fullName, instanceType, 0.0f, 0.0f, 0.0f, vbh, ibh));
+    Instance* inst = new Instance(instanceCounter++, fullName, instanceType, 0.0f, 0.0f, 0.0f, vbh, ibh);
+    instances.push_back(inst);
+    // Attach editable mesh data (if base template exists for this type).
+    RegisterInstanceMeshFromType(inst);
     std::cout << "New instance created at (" << 0 << ", " << 0 << ", " << 0 << ")" << std::endl;
 }
 
@@ -1817,6 +2522,12 @@ void drawInstance(Instance* instance, bgfx::ProgramHandle defaultProgram, bgfx::
                 }
             }
         }
+
+        // When this instance is selected, draw its vertices as green dots and edges as green lines.
+        if (selectedInstance == instance && highlightVisible)
+        {
+            DrawSelectedMeshOverlay(instance, world, 1);
+        }
     }
     // Determine what color to pass to children.
     // If the effective color is white, then children should use their own objectColor.
@@ -1850,6 +2561,12 @@ void deleteInstance(Instance* instance)
     for (Instance* child : instance->children)
     {
         deleteInstance(child);
+    }
+    // Remove any cached editable mesh data associated with this instance.
+    auto it = g_InstanceMeshData.find(instance->id);
+    if (it != g_InstanceMeshData.end())
+    {
+        g_InstanceMeshData.erase(it);
     }
     delete instance;
 }
@@ -2614,6 +3331,16 @@ std::unordered_map<std::string, std::string> loadSceneFromFile(std::vector<Insta
         // Create instance
         Instance* instance = new Instance(id, name, type, pos[0], pos[1], pos[2], vbh, ibh);
         instance->meshNumber = meshNo;
+        // If this instance was created from an imported mesh, cache its editable mesh data.
+        if (!importedMeshes.empty() && meshNo >= 0 && meshNo < (int)importedMeshes.size())
+        {
+            g_InstanceMeshData[instance->id] = importedMeshes[meshNo].meshData;
+        }
+        // Otherwise, try to attach a base mesh template for this type.
+        if (g_InstanceMeshData.find(instance->id) == g_InstanceMeshData.end())
+        {
+            RegisterInstanceMeshFromType(instance);
+        }
         instance->rotation[0] = rot[0]; instance->rotation[1] = rot[1]; instance->rotation[2] = rot[2];
         instance->scale[0] = scale[0]; instance->scale[1] = scale[1]; instance->scale[2] = scale[2];
         instance->objectColor[0] = color[0]; instance->objectColor[1] = color[1];
@@ -3700,6 +4427,137 @@ static void RenderInspectorBody(Instance* selectedInstance, std::vector<Instance
                 selectedInstance->material.albedo[0] = selectedInstance->material.albedo[1] = selectedInstance->material.albedo[2] = selectedInstance->material.albedo[3] = 1.0f;
             }
         }
+        // Geometry / topology tools for selected object.
+        if (ImGui::CollapsingHeader("Geometry / Topology Tools"))
+        {
+            bool hasMesh = HasEditableMeshData(selectedInstance);
+            if (!hasMesh)
+            {
+                ImGui::TextWrapped("No editable mesh data available for this object.");
+            }
+            else
+            {
+                MeshData* mesh = GetEditableMeshData(selectedInstance);
+                // Boundary visualization
+                static ImVec4 s_boundaryColor = ImVec4(1.0f, 0.1f, 0.1f, 1.0f);
+                ImGui::Separator();
+                ImGui::Text("Boundaries");
+                ImGui::SameLine();
+                ImGui::ColorEdit4("##boundaryColor", (float*)&s_boundaryColor, ImGuiColorEditFlags_NoInputs);
+                if (ImGui::Button("Color Boundary Vertices"))
+                {
+                    uint8_t r = (uint8_t)(s_boundaryColor.x * 255.0f);
+                    uint8_t g = (uint8_t)(s_boundaryColor.y * 255.0f);
+                    uint8_t b = (uint8_t)(s_boundaryColor.z * 255.0f);
+                    uint8_t a = (uint8_t)(s_boundaryColor.w * 255.0f);
+                    uint32_t abgr = PackAbgr(a, b, g, r);
+                    ColorBoundaryVertices(*mesh, abgr);
+                    ApplyEditableMeshToInstance(selectedInstance);
+                }
+
+                // Subdivision
+                static int s_subdivideLevels = 1;
+                ImGui::Separator();
+                ImGui::Text("Subdivision");
+                ImGui::SetNextItemWidth(input_width);
+                ImGui::SliderInt("Levels##subdiv", &s_subdivideLevels, 1, 3);
+                if (ImGui::Button("Apply Subdivision"))
+                {
+                    SubdivideMesh(*mesh, s_subdivideLevels);
+                    ApplyEditableMeshToInstance(selectedInstance);
+                }
+
+                // Merge close vertices
+                static float s_mergeEpsilon = 0.001f;
+                ImGui::Separator();
+                ImGui::Text("Merge Vertices");
+                ImGui::SetNextItemWidth(input_width);
+                ImGui::DragFloat("Distance##merge", &s_mergeEpsilon, 0.0001f, 0.0f, 1.0f, "%.5f");
+                if (ImGui::Button("Merge Close Vertices"))
+                {
+                    MergeCloseVertices(*mesh, s_mergeEpsilon);
+                    ApplyEditableMeshToInstance(selectedInstance);
+                }
+
+                // Smoothing
+                static int s_smoothIterations = 1;
+                static float s_smoothFactor = 0.5f;
+                ImGui::Separator();
+                ImGui::Text("Smoothing");
+                ImGui::SetNextItemWidth(input_width);
+                ImGui::SliderInt("Iterations##smooth", &s_smoothIterations, 1, 10);
+                ImGui::SetNextItemWidth(input_width);
+                ImGui::SliderFloat("Factor##smooth", &s_smoothFactor, 0.01f, 1.0f);
+                if (ImGui::Button("Smooth Mesh"))
+                {
+					SubdivideOnce(*mesh); // Subdivide once to add vertices for smoothing
+                    SmoothMesh(*mesh, s_smoothIterations, s_smoothFactor);
+                    ApplyEditableMeshToInstance(selectedInstance);
+                }
+            }
+
+            // Object-level morphing between two instances (transforms & color).
+            ImGui::Separator();
+            ImGui::Text("Morph To Other Object");
+            // Build list of candidate instances (exclude lights and self).
+            std::vector<Instance*> morphCandidates;
+            morphCandidates.reserve(instances.size());
+            for (Instance* inst : instances)
+            {
+                if (!inst || inst == selectedInstance) continue;
+                if (inst->isLight) continue;
+                morphCandidates.push_back(inst);
+            }
+
+            static int s_morphIndex = -1;
+            if (!morphCandidates.empty())
+            {
+                // Clamp stored index if candidate list shrank.
+                if (s_morphIndex >= (int)morphCandidates.size())
+                    s_morphIndex = (int)morphCandidates.size() - 1;
+
+                std::vector<const char*> names;
+                names.reserve(morphCandidates.size());
+                for (Instance* inst : morphCandidates)
+                    names.push_back(inst->name.c_str());
+
+                ImGui::SetNextItemWidth(input_width);
+                ImGui::Combo("Target##morph", &s_morphIndex,
+                    names.data(), (int)names.size());
+
+                static float s_morphT = 0.0f;
+                ImGui::SetNextItemWidth(input_width);
+                ImGui::SliderFloat("Amount##morph", &s_morphT, 0.0f, 1.0f);
+
+                if (s_morphIndex >= 0 && s_morphIndex < (int)morphCandidates.size())
+                {
+                    Instance* target = morphCandidates[s_morphIndex];
+                    if (target)
+                    {
+                        float t = s_morphT;
+                        // Simple linear interpolation of transform and color.
+                        for (int i = 0; i < 3; ++i)
+                        {
+                            selectedInstance->position[i] =
+                                selectedInstance->position[i] * (1.0f - t) + target->position[i] * t;
+                            selectedInstance->rotation[i] =
+                                selectedInstance->rotation[i] * (1.0f - t) + target->rotation[i] * t;
+                            selectedInstance->scale[i] =
+                                selectedInstance->scale[i] * (1.0f - t) + target->scale[i] * t;
+                        }
+                        for (int i = 0; i < 4; ++i)
+                        {
+                            selectedInstance->objectColor[i] =
+                                selectedInstance->objectColor[i] * (1.0f - t) + target->objectColor[i] * t;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                ImGui::TextDisabled("No other non-light objects available to morph to.");
+            }
+        }
     }
 
     ImGui::Spacing();
@@ -3912,6 +4770,14 @@ int main(void)
     g_vbh_cone = vbh_cone;
     g_ibh_cone = ibh_cone;
 
+    // Register base mesh templates for primitives and static meshes.
+    g_BaseMeshData["plane"]   = MakeMeshDataFromArrays(planeVertices, planeIndices);
+    g_BaseMeshData["cube"]    = MakeMeshDataFromArrays(cubeVertices, cubeIndices);
+    g_BaseMeshData["capsule"] = MakeMeshDataFromVectors(capsuleVertices, capsuleIndices);
+    g_BaseMeshData["cylinder"]= MakeMeshDataFromVectors(cylinderVertices, cylinderIndices);
+    g_BaseMeshData["cone"]    = MakeMeshDataFromVectors(coneVertices, coneIndices);
+    g_BaseMeshData["sphere"]  = MakeMeshDataFromVectors(sphereVertices, sphereIndices);
+
     //cornell box generation
     bgfx::VertexBufferHandle vbh_cornell = bgfx::createVertexBuffer(
         bgfx::makeRef(cornellBoxVertices, sizeof(cornellBoxVertices)),
@@ -3965,6 +4831,14 @@ int main(void)
         bgfx::makeRef(cornellBoxRightIndices, sizeof(cornellBoxRightIndices))
     );
 
+    g_BaseMeshData["cornell_box"] = MakeMeshDataFromArrays(cornellBoxVertices, cornellBoxIndices);
+    g_BaseMeshData["innerCube"]   = MakeMeshDataFromArrays(innerCubeVertices, innerCubeIndices);
+    g_BaseMeshData["floor"]       = MakeMeshDataFromArrays(cornellBoxFloorVertices, cornellBoxFloorIndices);
+    g_BaseMeshData["ceiling"]     = MakeMeshDataFromArrays(cornellBoxCeilingVertices, cornellBoxCeilingIndices);
+    g_BaseMeshData["back"]        = MakeMeshDataFromArrays(cornellBoxBackVertices, cornellBoxBackIndices);
+    g_BaseMeshData["left"]        = MakeMeshDataFromArrays(cornellBoxLeftVertices, cornellBoxLeftIndices);
+    g_BaseMeshData["right"]       = MakeMeshDataFromArrays(cornellBoxRightVertices, cornellBoxRightIndices);
+
     //arrow primitive
     bgfx::IndexBufferHandle ibh_arrow = bgfx::createIndexBuffer(
         bgfx::makeRef(arrowIndices, sizeof(arrowIndices))
@@ -3973,6 +4847,7 @@ int main(void)
         bgfx::makeRef(arrowVertices, sizeof(arrowVertices)),
         layout
     );
+    g_BaseMeshData["arrow"] = MakeMeshDataFromArrays(arrowVertices, arrowIndices);
 
     //mesh generation
     MeshData meshData = loadMesh2("meshes/suzanne.obj");
@@ -3997,6 +4872,11 @@ int main(void)
     bgfx::VertexBufferHandle vbh_lucy;
     bgfx::IndexBufferHandle ibh_lucy;
     createMeshBuffers(lucyData, vbh_lucy, ibh_lucy);
+
+    g_BaseMeshData["mesh"]   = meshData;
+    g_BaseMeshData["teapot"] = teapotData;
+    g_BaseMeshData["bunny"]  = bunnyData;
+    g_BaseMeshData["lucy"]   = lucyData;
 
     //comic border generation
     MeshData comicborder = loadMesh("comic elements/comicborder.obj");
@@ -4052,6 +4932,16 @@ int main(void)
     bgfx::IndexBufferHandle ibh_comicbubble8;
     createMeshBuffers(comicbubble8, vbh_comicbubble8, ibh_comicbubble8);
 
+    g_BaseMeshData["comicborder"] = comicborder;
+    g_BaseMeshData["comicbubble1"] = comicbubble1;
+    g_BaseMeshData["comicbubble2"] = comicbubble2;
+    g_BaseMeshData["comicbubble3"] = comicbubble3;
+    g_BaseMeshData["comicbubble4"] = comicbubble4;
+    g_BaseMeshData["comicbubble5"] = comicbubble5;
+    g_BaseMeshData["comicbubble6"] = comicbubble6;
+    g_BaseMeshData["comicbubble7"] = comicbubble7;
+    g_BaseMeshData["comicbubble8"] = comicbubble8;
+
     // simple quad for text rendering
     bgfx::VertexBufferHandle vbh_textQuad = bgfx::createVertexBuffer(
         bgfx::copy(textQuadVertices, sizeof(textQuadVertices)),
@@ -4060,6 +4950,8 @@ int main(void)
     bgfx::IndexBufferHandle ibh_textQuad = bgfx::createIndexBuffer(
         bgfx::copy(textQuadIndices, sizeof(textQuadIndices))
     );
+
+    g_BaseMeshData["text"] = MakeMeshDataFromArrays(textQuadVertices, textQuadIndices);
 
     std::unordered_map<std::string, std::pair<bgfx::VertexBufferHandle, bgfx::IndexBufferHandle>> bufferMap;
 
@@ -4176,6 +5068,8 @@ int main(void)
                     fileName, 0.0f, 0.0f, 0.0f,
                     vbh_imported, ibh_imported);
                 childInst->meshNumber = i;
+            // Cache editable mesh data for geometry tools.
+            g_InstanceMeshData[childInst->id] = importedMeshes[i].meshData;
                 
                 // Decompose the imported mesh's transform
                 aiVector3D scaling, position;
@@ -5263,6 +6157,8 @@ int main(void)
                                             fileName, 0.0f, 0.0f, 0.0f,
                                             vbh_imported, ibh_imported);
                                         childInst->meshNumber = i;
+                                        // Cache editable mesh data for geometry tools.
+                                        g_InstanceMeshData[childInst->id] = importedMeshes[i].meshData;
                                         // Decompose the imported mesh's transform.
                                         aiVector3D scaling, position;
                                         aiQuaternion rotation;
@@ -5390,17 +6286,22 @@ int main(void)
                             wallsNode->scale[2] = 0.2f;
 
                             Instance* floorPlane = new Instance(instanceCounter++, "floor", "plane", 0.0f, -6.0f, 0.0f, vbh_plane, ibh_plane);
+                            RegisterInstanceMeshFromType(floorPlane);
                             wallsNode->addChild(floorPlane);
                             Instance* ceilingPlane = new Instance(instanceCounter++, "ceiling", "plane", 0.0f, 14.0f, 0.0f, vbh_plane, ibh_plane);
+                            RegisterInstanceMeshFromType(ceilingPlane);
                             wallsNode->addChild(ceilingPlane);
                             Instance* backPlane = new Instance(instanceCounter++, "back", "plane", 0.0f, 4.0f, -10.0f, vbh_plane, ibh_plane);
+                            RegisterInstanceMeshFromType(backPlane);
                             backPlane->rotation[0] = 1.57f;
                             wallsNode->addChild(backPlane);
                             Instance* leftPlane = new Instance(instanceCounter++, "left_wall", "plane", 10.0f, 4.0f, 0.0f, vbh_plane, ibh_plane);
+                            RegisterInstanceMeshFromType(leftPlane);
                             leftPlane->objectColor[0] = 1.0f; leftPlane->objectColor[1] = 0.0f; leftPlane->objectColor[2] = 0.0f; leftPlane->objectColor[3] = 1.0f;
                             leftPlane->rotation[2] = 1.57f;
                             wallsNode->addChild(leftPlane);
                             Instance* rightPlane = new Instance(instanceCounter++, "right_wall", "plane", -10.0f, 4.0f, 0.0f, vbh_plane, ibh_plane);
+                            RegisterInstanceMeshFromType(rightPlane);
                             rightPlane->objectColor[0] = 0.0f; rightPlane->objectColor[1] = 1.0f; rightPlane->objectColor[2] = 0.0f; rightPlane->objectColor[3] = 1.0f;
                             rightPlane->rotation[2] = 1.57f;
                             wallsNode->addChild(rightPlane);
@@ -5418,6 +6319,8 @@ int main(void)
                             cornellBox->addChild(wallsNode);
                             cornellBox->addChild(innerCube);
                             cornellBox->addChild(innerRectBox);
+                            RegisterInstanceMeshFromType(innerCube);
+                            RegisterInstanceMeshFromType(innerRectBox);
                             instances.push_back(cornellBox);
                             std::cout << "Cornell Box spawned" << std::endl;
                         }
