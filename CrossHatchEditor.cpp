@@ -19,6 +19,10 @@
 #ifdef _WIN32
 #include <windows.h>
 #include <commdlg.h>
+
+#include <map>
+#include <set>
+#include <algorithm> // For std::max and std::min
 #endif
 #include <filesystem>
 namespace fs = std::filesystem;
@@ -1313,61 +1317,218 @@ static void MergeCloseVertices(MeshData& mesh, float epsilon)
     mesh.vertices.swap(newVerts);
 }
 
-// Simple Laplacian smoothing.
-static void SmoothMesh(MeshData& mesh, int iterations, float factor)
-{
-    if (mesh.vertices.empty() || mesh.indices.empty())
-        return;
+//// Simple Laplacian smoothing.
+//static void SmoothMesh(MeshData& mesh, int iterations, float factor)
+//{
+//    if (mesh.vertices.empty() || mesh.indices.empty())
+//        return;
+//
+//    iterations = std::max(0, iterations);
+//    factor = std::max(0.0f, std::min(factor, 1.0f));
+//    if (iterations == 0 || factor <= 0.0f)
+//        return;
+//
+//    std::vector<std::vector<uint32_t>> adjacency(mesh.vertices.size());
+//    for (size_t i = 0; i + 2 < mesh.indices.size(); i += 3)
+//    {
+//        uint32_t i0 = mesh.indices[i + 0];
+//        uint32_t i1 = mesh.indices[i + 1];
+//        uint32_t i2 = mesh.indices[i + 2];
+//
+//        adjacency[i0].push_back(i1);
+//        adjacency[i0].push_back(i2);
+//        adjacency[i1].push_back(i0);
+//        adjacency[i1].push_back(i2);
+//        adjacency[i2].push_back(i0);
+//        adjacency[i2].push_back(i1);
+//    }
+//
+//    std::vector<PosColorVertex> temp = mesh.vertices;
+//
+//    for (int it = 0; it < iterations; ++it)
+//    {
+//        temp = mesh.vertices;
+//
+//        for (size_t i = 0; i < mesh.vertices.size(); ++i)
+//        {
+//            const auto& nbrs = adjacency[i];
+//            if (nbrs.empty())
+//                continue;
+//
+//            float ax = 0.0f, ay = 0.0f, az = 0.0f;
+//            for (uint32_t n : nbrs)
+//            {
+//                ax += temp[n].x;
+//                ay += temp[n].y;
+//                az += temp[n].z;
+//            }
+//            float inv = 1.0f / float(nbrs.size());
+//            ax *= inv; ay *= inv; az *= inv;
+//
+//            PosColorVertex& v = mesh.vertices[i];
+//            v.x = v.x + factor * (ax - v.x);
+//            v.y = v.y + factor * (ay - v.y);
+//            v.z = v.z + factor * (az - v.z);
+//        }
+//    }
+//}
 
-    iterations = std::max(0, iterations);
-    factor = std::max(0.0f, std::min(factor, 1.0f));
-    if (iterations == 0 || factor <= 0.0f)
-        return;
+struct Vec3Key {
+    int32_t x, y, z; // Use scaled integers for robust matching
+    bool operator<(const Vec3Key& o) const {
+        if (x != o.x) return x < o.x;
+        if (y != o.y) return y < o.y;
+        return z < o.z;
+    }
+};
 
-    std::vector<std::vector<uint32_t>> adjacency(mesh.vertices.size());
-    for (size_t i = 0; i + 2 < mesh.indices.size(); i += 3)
-    {
-        uint32_t i0 = mesh.indices[i + 0];
-        uint32_t i1 = mesh.indices[i + 1];
-        uint32_t i2 = mesh.indices[i + 2];
+void computeNormals(std::vector<PosColorVertex>& vertices, const std::vector<uint16_t>& indices) {
+    // 1. Zero out all normals
+    for (auto& v : vertices) { v.nx = v.ny = v.nz = 0.0f; }
 
-        adjacency[i0].push_back(i1);
-        adjacency[i0].push_back(i2);
-        adjacency[i1].push_back(i0);
-        adjacency[i1].push_back(i2);
-        adjacency[i2].push_back(i0);
-        adjacency[i2].push_back(i1);
+    // 2. Accumulate triangle normals
+    for (size_t i = 0; i + 2 < indices.size(); i += 3) {
+        auto& v0 = vertices[indices[i]];
+        auto& v1 = vertices[indices[i + 1]];
+        auto& v2 = vertices[indices[i + 2]];
+
+        float dx1 = v1.x - v0.x; float dy1 = v1.y - v0.y; float dz1 = v1.z - v0.z;
+        float dx2 = v2.x - v0.x; float dy2 = v2.y - v0.y; float dz2 = v2.z - v0.z;
+
+        // Cross product
+        float nx = dy1 * dz2 - dz1 * dy2;
+        float ny = dz1 * dx2 - dx1 * dz2;
+        float nz = dx1 * dy2 - dy1 * dx2;
+
+        v0.nx += nx; v0.ny += ny; v0.nz += nz;
+        v1.nx += nx; v1.ny += ny; v1.nz += nz;
+        v2.nx += nx; v2.ny += ny; v2.nz += nz;
     }
 
-    std::vector<PosColorVertex> temp = mesh.vertices;
-
-    for (int it = 0; it < iterations; ++it)
-    {
-        temp = mesh.vertices;
-
-        for (size_t i = 0; i < mesh.vertices.size(); ++i)
-        {
-            const auto& nbrs = adjacency[i];
-            if (nbrs.empty())
-                continue;
-
-            float ax = 0.0f, ay = 0.0f, az = 0.0f;
-            for (uint32_t n : nbrs)
-            {
-                ax += temp[n].x;
-                ay += temp[n].y;
-                az += temp[n].z;
-            }
-            float inv = 1.0f / float(nbrs.size());
-            ax *= inv; ay *= inv; az *= inv;
-
-            PosColorVertex& v = mesh.vertices[i];
-            v.x = v.x + factor * (ax - v.x);
-            v.y = v.y + factor * (ay - v.y);
-            v.z = v.z + factor * (az - v.z);
-        }
+    // 3. Normalize
+    for (auto& v : vertices) {
+        float len = std::sqrt(v.nx * v.nx + v.ny * v.ny + v.nz * v.nz);
+        if (len > 0.0f) { v.nx /= len; v.ny /= len; v.nz /= len; }
     }
 }
+
+static void SmoothMesh(MeshData& mesh, int iterations, float factor)
+{
+    if (mesh.vertices.empty() || mesh.indices.empty()) return;
+
+    size_t vertexCount = mesh.vertices.size();
+
+    // ------------------------------------------------------------
+    // 1. Weld duplicate vertices (by position)
+    // ------------------------------------------------------------
+    std::map<Vec3Key, uint32_t> posToUniqueId;
+    std::vector<uint32_t> vertexToUniqueId(vertexCount);
+
+    struct Vec3 { float x, y, z; };
+    std::vector<Vec3> uniquePositions;
+
+    auto toKey = [](float f) { return (int32_t)(f * 1000.0f); };
+
+    for (size_t i = 0; i < vertexCount; ++i)
+    {
+        Vec3Key key = {
+            toKey(mesh.vertices[i].x),
+            toKey(mesh.vertices[i].y),
+            toKey(mesh.vertices[i].z)
+        };
+
+        auto it = posToUniqueId.find(key);
+        if (it == posToUniqueId.end())
+        {
+            uint32_t newId = (uint32_t)uniquePositions.size();
+            posToUniqueId[key] = newId;
+            vertexToUniqueId[i] = newId;
+
+            uniquePositions.push_back({
+                mesh.vertices[i].x,
+                mesh.vertices[i].y,
+                mesh.vertices[i].z
+                });
+        }
+        else
+        {
+            vertexToUniqueId[i] = it->second;
+        }
+    }
+
+    // ------------------------------------------------------------
+    // 2. Build adjacency (unique IDs only)
+    // ------------------------------------------------------------
+    std::vector<std::set<uint32_t>> adj(uniquePositions.size());
+
+    for (size_t i = 0; i + 2 < mesh.indices.size(); i += 3)
+    {
+        uint32_t u0 = vertexToUniqueId[mesh.indices[i]];
+        uint32_t u1 = vertexToUniqueId[mesh.indices[i + 1]];
+        uint32_t u2 = vertexToUniqueId[mesh.indices[i + 2]];
+
+        auto addEdge = [&](uint32_t a, uint32_t b)
+            {
+                if (a != b) adj[a].insert(b);
+            };
+
+        addEdge(u0, u1); addEdge(u0, u2);
+        addEdge(u1, u0); addEdge(u1, u2);
+        addEdge(u2, u0); addEdge(u2, u1);
+    }
+
+    // ------------------------------------------------------------
+    // 3. Laplacian smoothing (FLOAT math!)
+    // ------------------------------------------------------------
+    for (int it = 0; it < iterations; ++it)
+    {
+        std::vector<Vec3> next = uniquePositions;
+
+        for (size_t i = 0; i < uniquePositions.size(); ++i)
+        {
+            if (adj[i].empty()) continue;
+
+            float ax = 0, ay = 0, az = 0;
+
+            for (uint32_t n : adj[i])
+            {
+                ax += uniquePositions[n].x;
+                ay += uniquePositions[n].y;
+                az += uniquePositions[n].z;
+            }
+
+            float inv = 1.0f / adj[i].size();
+
+            ax *= inv;
+            ay *= inv;
+            az *= inv;
+
+            next[i].x = uniquePositions[i].x + factor * (ax - uniquePositions[i].x);
+            next[i].y = uniquePositions[i].y + factor * (ay - uniquePositions[i].y);
+            next[i].z = uniquePositions[i].z + factor * (az - uniquePositions[i].z);
+        }
+
+        uniquePositions = next;
+    }
+
+    // ------------------------------------------------------------
+    // 4. Write back to original mesh
+    // ------------------------------------------------------------
+    for (size_t i = 0; i < vertexCount; ++i)
+    {
+        uint32_t uid = vertexToUniqueId[i];
+
+        mesh.vertices[i].x = uniquePositions[uid].x;
+        mesh.vertices[i].y = uniquePositions[uid].y;
+        mesh.vertices[i].z = uniquePositions[uid].z;
+    }
+
+    // ------------------------------------------------------------
+    // 5. Recompute normals
+    // ------------------------------------------------------------
+    computeNormals(mesh.vertices, mesh.indices);
+}
+
 
 // Transform a position by a 4x4 matrix.
 static void TransformPosition(const float* m, float x, float y, float z, float& outX, float& outY, float& outZ)
