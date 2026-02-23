@@ -6599,6 +6599,8 @@ int main(void)
         // Prefer unlit vertex-color program so axes/grid are bright and mostly
         // independent from crosshatch shading, but fall back to defaultProgram
         // if the unlit shaders are not available.
+        const float tintBasic[4] = { 1.0f, 1.0f, 1.0f, 0.0f };
+        bgfx::setUniform(u_tint, tintBasic);
         bgfx::ProgramHandle gridProgram =
             bgfx::isValid(unlitColorProgram) ? unlitColorProgram : defaultProgram;
         DrawWorldAxesAndGrid(1, activeCamera, gridProgram);
@@ -6648,8 +6650,7 @@ int main(void)
         // Update rotating lights
         updateRotatingLights(instances, deltaTime);
 
-        const float tintBasic[4] = { 1.0f, 1.0f, 1.0f, 0.0f };
-        bgfx::setUniform(u_tint, tintBasic);
+        // tintBasic is already defined and set before drawing the grid (to prevent grid from inheriting highlight tints)
         bgfx::submit(1, defaultProgram);
 
         for (const auto& instance : instances)
