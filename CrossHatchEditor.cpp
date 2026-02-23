@@ -5097,10 +5097,15 @@ int main(void)
                             ImGuizmo::ViewManipulate(viewForGizmo, viewGizmoDistance, gizmoPos, gizmoSize, 0);
 
                             // Only push changes back into the camera while the user is
-                            // actively manipulating the gizmo. This avoids fighting with
-                            // the normal camera-controls (InputManager::update) and
-                            // prevents jitter when idle.
-                            if (ImGuizmo::IsUsing())
+                            // actively manipulating the VIEW gizmo (not the transform gizmo).
+                            // Check if mouse is in the view gizmo area to avoid conflicts with
+                            // the transform gizmo. This prevents jitter when using translate/scale/rotate.
+                            int mouseX = static_cast<int>(InputManager::getMouseX());
+                            int mouseY = static_cast<int>(InputManager::getMouseY());
+                            bool mouseInViewGizmoArea = (mouseX >= (int)(rectMax.x - gizmoSize.x - padding - 20.0f) && 
+                                                        mouseY >= (int)(rectMax.y - gizmoSize.y - padding - 20.0f));
+                            
+                            if (ImGuizmo::IsUsing() && mouseInViewGizmoArea)
                             {
                                 // Update the active camera from the manipulated view matrix so that
                                 // the main 3D viewport follows the gizmo orientation.

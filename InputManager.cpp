@@ -77,10 +77,16 @@ void InputManager::update(Camera& camera, float deltaTime, bool mouseIn3DViewpor
         m_FirstMouse = true;
         glfwGetCursorPos(m_window, &m_mouseX, &m_mouseY);
 
-        // Calculate initial camera target and distance
-        m_cameraTarget = bx::mad(camera.front, bx::Vec3(m_cameraDistance, m_cameraDistance, m_cameraDistance), camera.position);
+        // Calculate initial camera target and distance from current camera state
+        // This ensures we account for any camera changes from gizmo manipulations
+        bx::Vec3 cameraToCenter = bx::mul(camera.front, bx::Vec3(10.0f, 10.0f, 10.0f));
+        m_cameraTarget = bx::add(camera.position, cameraToCenter);
         bx::Vec3 toTarget = bx::sub(m_cameraTarget, camera.position);
         m_cameraDistance = bx::length(toTarget);
+        
+        // Clamp to reasonable values
+        if (m_cameraDistance < 0.1f) m_cameraDistance = 10.0f;
+        if (m_cameraDistance > 1000.0f) m_cameraDistance = 1000.0f;
 
         if (ctrlPressed) {
             m_isPanning = true;
