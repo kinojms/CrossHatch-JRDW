@@ -39,9 +39,10 @@ private:
 	static std::unordered_map<int, bool> keyStates;
 
 	static bool m_rightClickMousePressed;
+	static bool m_middleMousePressed;
 	static float m_scrollDelta;
 
-	static bx::Vec3 m_cameraTarget;  
+	static bx::Vec3 m_cameraTarget;
 	static float m_cameraDistance;
 	static bool m_isOrbiting;
 	static bool m_isPanning;
