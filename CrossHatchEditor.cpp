@@ -3489,20 +3489,20 @@ static void RenderLeftSidebar()
             dl->AddTriangleFilled(ImVec2(c.x, c.y + len), ImVec2(c.x - ah, c.y + len - ah), ImVec2(c.x + ah, c.y + len - ah), col);
         };
 
-        auto draw_rotate_icon = [](ImDrawList* dl, ImVec2 p0, ImVec2 p1, ImU32 col)
-        {
-            const ImVec2 c((p0.x + p1.x) * 0.5f, (p0.y + p1.y) * 0.5f);
-            const float w = (p1.x - p0.x);
-            const float h = (p1.y - p0.y);
-            const float r = ImMin(w, h) * 0.25f;
-            const float thick = 2.0f;
+        // auto draw_rotate_icon = [](ImDrawList* dl, ImVec2 p0, ImVec2 p1, ImU32 col)
+        // {
+        //     const ImVec2 c((p0.x + p1.x) * 0.5f, (p0.y + p1.y) * 0.5f);
+        //     const float w = (p1.x - p0.x);
+        //     const float h = (p1.y - p0.y);
+        //     const float r = ImMin(w, h) * 0.25f;
+        //     const float thick = 2.0f;
 
-            dl->AddCircle(c, r, col, 24, thick);
-            // Arrow head at top-right quadrant
-            const ImVec2 tip(c.x + r * 0.70f, c.y - r * 0.70f);
-            const float ah = ImMin(w, h) * 0.10f;
-            dl->AddTriangleFilled(tip, ImVec2(tip.x - ah, tip.y), ImVec2(tip.x, tip.y + ah), col);
-        };
+        //     dl->AddCircle(c, r, col, 24, thick);
+        //     // Arrow head at top-right quadrant
+        //     const ImVec2 tip(c.x + r * 0.70f, c.y - r * 0.70f);
+        //     const float ah = ImMin(w, h) * 0.10f;
+        //     dl->AddTriangleFilled(tip, ImVec2(tip.x - ah, tip.y), ImVec2(tip.x, tip.y + ah), col);
+        // };
 
         auto draw_scale_icon = [](ImDrawList* dl, ImVec2 p0, ImVec2 p1, ImU32 col)
         {
@@ -3562,8 +3562,8 @@ static void RenderLeftSidebar()
         // - Scale available (matches existing inspector UI)
         operation_button("##op_translate", "Translate (1)", ImGuizmo::TRANSLATE, hasSelection, draw_translate_icon);
         ImGui::Spacing();
-        operation_button("##op_rotate", "Rotate (2)", ImGuizmo::ROTATE, hasSelection, draw_rotate_icon);
-        ImGui::Spacing();
+        // operation_button("##op_rotate", "Rotate (2)", ImGuizmo::ROTATE, hasSelection, draw_rotate_icon);
+        // ImGui::Spacing();
         operation_button("##op_scale", "Scale (3)", ImGuizmo::SCALE, hasSelection, draw_scale_icon);
 
         // If nothing is selected, hint that the toolbar still affects the gizmo once an object is picked.
