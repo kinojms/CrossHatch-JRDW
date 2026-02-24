@@ -11,6 +11,7 @@ bool InputManager::skipPickingPass = false;
 std::unordered_map<int, bool> InputManager::keyStates;
 
 bool InputManager::m_rightClickMousePressed = false;
+bool InputManager::m_middleMousePressed = false;
 float InputManager::m_scrollDelta = 0.0f;
 bx::Vec3 InputManager::m_cameraTarget = bx::Vec3(0.0f, 0.0f, 0.0f);
 float InputManager::m_cameraDistance = 10.0f;
@@ -57,6 +58,10 @@ void InputManager::update(Camera& camera, float deltaTime, bool mouseIn3DViewpor
     bool wasRightMousePressed = m_rightClickMousePressed;
     m_rightClickMousePressed = glfwGetMouseButton(m_window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
 
+    // Check middle mouse button state (used for pan)
+    bool wasMiddleMousePressed = m_middleMousePressed;
+    m_middleMousePressed = glfwGetMouseButton(m_window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS;
+
     // Always reset orbit/pan state when right button is released
     if (!m_rightClickMousePressed) {
         m_isOrbiting = false;
@@ -72,15 +77,37 @@ void InputManager::update(Camera& camera, float deltaTime, bool mouseIn3DViewpor
 
     bool ctrlPressed = isKeyPressed(GLFW_KEY_LEFT_CONTROL) || isKeyPressed(GLFW_KEY_RIGHT_CONTROL);
 
+    // Initialize mouse position when starting to drag (middle-click in viewport)
+    if (m_middleMousePressed && !wasMiddleMousePressed) {
+        m_FirstMouse = true;
+        glfwGetCursorPos(m_window, &m_mouseX, &m_mouseY);
+
+        // Calculate initial camera target and distance from current camera state
+        bx::Vec3 cameraToCenter = bx::mul(camera.front, bx::Vec3(10.0f, 10.0f, 10.0f));
+        m_cameraTarget = bx::add(camera.position, cameraToCenter);
+        bx::Vec3 toTarget = bx::sub(m_cameraTarget, camera.position);
+        m_cameraDistance = bx::length(toTarget);
+        
+        // Clamp to reasonable values
+        if (m_cameraDistance < 0.1f) m_cameraDistance = 10.0f;
+        if (m_cameraDistance > 1000.0f) m_cameraDistance = 1000.0f;
+    }
+
     // Initialize mouse position when starting to drag (right-click in viewport)
     if (m_rightClickMousePressed && !wasRightMousePressed) {
         m_FirstMouse = true;
         glfwGetCursorPos(m_window, &m_mouseX, &m_mouseY);
 
-        // Calculate initial camera target and distance
-        m_cameraTarget = bx::mad(camera.front, bx::Vec3(m_cameraDistance, m_cameraDistance, m_cameraDistance), camera.position);
+        // Calculate initial camera target and distance from current camera state
+        // This ensures we account for any camera changes from gizmo manipulations
+        bx::Vec3 cameraToCenter = bx::mul(camera.front, bx::Vec3(10.0f, 10.0f, 10.0f));
+        m_cameraTarget = bx::add(camera.position, cameraToCenter);
         bx::Vec3 toTarget = bx::sub(m_cameraTarget, camera.position);
         m_cameraDistance = bx::length(toTarget);
+        
+        // Clamp to reasonable values
+        if (m_cameraDistance < 0.1f) m_cameraDistance = 10.0f;
+        if (m_cameraDistance > 1000.0f) m_cameraDistance = 1000.0f;
 
         if (ctrlPressed) {
             m_isPanning = true;
@@ -90,6 +117,26 @@ void InputManager::update(Camera& camera, float deltaTime, bool mouseIn3DViewpor
             m_isOrbiting = true;
             m_isPanning = false;
         }
+        
+        // Restore FOV to default when right-click dragging starts
+        camera.fov = 60.0f;
+    }
+
+    // Handle middle-click pan
+    if (m_middleMousePressed)
+    {
+        getMouseMovement(&x, &y);
+
+        const float panSpeed = 0.003f * m_cameraDistance;
+        // Reverse pan direction in flat view (low FOV), normal pan in regular view (high FOV)
+        float xMultiplier = (camera.fov < 40.0f) ? -1.0f : 1.0f;
+        bx::Vec3 panRight = bx::mul(camera.right, bx::Vec3(xMultiplier * x * panSpeed, xMultiplier * x * panSpeed, xMultiplier * x * panSpeed));
+        bx::Vec3 panUp = bx::mul(camera.up, bx::Vec3(-y * panSpeed, -y * panSpeed, -y * panSpeed));
+
+        camera.position = bx::add(camera.position, panRight);
+        camera.position = bx::add(camera.position, panUp);
+        m_cameraTarget = bx::add(m_cameraTarget, panRight);
+        m_cameraTarget = bx::add(m_cameraTarget, panUp);
     }
 
     // Handle right-click rotate / Ctrl+right-click pan
@@ -99,7 +146,9 @@ void InputManager::update(Camera& camera, float deltaTime, bool mouseIn3DViewpor
 
         if (m_isPanning) {
             const float panSpeed = 0.003f * m_cameraDistance;
-            bx::Vec3 panRight = bx::mul(camera.right, bx::Vec3(x * panSpeed, x * panSpeed, x * panSpeed));
+            // Reverse pan direction in flat view (low FOV), normal pan in regular view (high FOV)
+            float xMultiplier = (camera.fov < 40.0f) ? -1.0f : 1.0f;
+            bx::Vec3 panRight = bx::mul(camera.right, bx::Vec3(xMultiplier * x * panSpeed, xMultiplier * x * panSpeed, xMultiplier * x * panSpeed));
             bx::Vec3 panUp = bx::mul(camera.up, bx::Vec3(-y * panSpeed, -y * panSpeed, -y * panSpeed));
 
             camera.position = bx::add(camera.position, panRight);

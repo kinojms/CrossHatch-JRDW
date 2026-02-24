@@ -802,6 +802,191 @@ void DecomposeMatrixToInstance_ImGuizmo(const float* matrix, Instance* inst)
     inst->scale[2] = scl[2];
 }
 
+// Sphere-based orientation gizmo (replaces cube-based ViewManipulate)
+// Renders 6 colored spheres at each axis direction for camera orientation control
+// The spheres are positioned based on how the world axes appear in the camera's view
+// They stay in a circle in the gizmo area at the bottom-right, never disappearing
+void DrawOrientationSphereGizmo(float* view, float* proj, ImVec2 position, ImVec2 size, float rectW, float rectH, Camera& cam)
+{
+    const float sphereRadius = 12.0f;
+    const float centerX = position.x + size.x * 0.5f;
+    const float centerY = position.y + size.y * 0.5f;
+    const ImVec2 gizmoCenter(centerX, centerY);
+    const float orbitRadius = std::min(size.x, size.y) * 0.35f;
+
+    // Axis colors (matching the world axes: Red=X, Green=Y, Blue=Z)
+    const ImVec4 colorX(1.0f, 0.2f, 0.2f, 0.8f);  // Red for X axis
+    const ImVec4 colorY(0.2f, 1.0f, 0.2f, 0.8f);  // Green for Y axis
+    const ImVec4 colorZ(0.2f, 0.2f, 1.0f, 0.8f);  // Blue for Z axis
+    const ImVec4 colorBg(0.15f, 0.15f, 0.15f, 0.5f);  // Background
+
+    // Get the draw list for rendering to the gizmo area
+    ImDrawList* drawList = ImGui::GetWindowDrawList();
+
+    // Normalize camera basis vectors to ensure consistent projection
+    bx::Vec3 camRight = bx::normalize(cam.right);
+    bx::Vec3 camUp = bx::normalize(cam.up);
+
+    // Helper function to project a world direction to a 2D position within the gizmo area
+    // The spheres move freely within the circular region based on their 3D orientation
+    auto directionToGizmoPos = [&](bx::Vec3 worldDir) -> ImVec2 {
+        // Project the world direction onto the camera's view plane
+        // using the camera's normalized right and up vectors
+        float x = bx::dot(worldDir, camRight);
+        float y = bx::dot(worldDir, camUp);
+        
+        // Use raw projections scaled to fill the circular region
+        // This gives a true 3D visualization where the distance from center
+        // indicates how much the axis is pointing toward/away from camera
+        float screenX = gizmoCenter.x + x * orbitRadius;
+        float screenY = gizmoCenter.y + y * orbitRadius;
+        
+        return ImVec2(screenX, screenY);
+    };
+
+    // Define the 6 sphere positions (axis directions)
+    struct SphereAxis {
+        ImVec2 screenPos;
+        bx::Vec3 viewDirection;  // Direction to look along this axis
+        ImVec4 color;
+        const char* label;
+        SphereAxis() : screenPos(0,0), viewDirection(0,0,0), color(0,0,0,0), label("") {}
+        SphereAxis(ImVec2 sp, bx::Vec3 vd, ImVec4 c, const char* l) 
+            : screenPos(sp), viewDirection(vd), color(c), label(l) {}
+    };
+
+    std::vector<SphereAxis> spheres;
+    
+    // Create 6 spheres for each axis direction
+    // Positive/Negative X (Red)
+    bx::Vec3 dirX(1.0f, 0.0f, 0.0f);
+    bx::Vec3 dirNegX(-1.0f, 0.0f, 0.0f);
+    spheres.push_back(SphereAxis(directionToGizmoPos(dirX), dirX, colorX, "+X"));
+    spheres.push_back(SphereAxis(directionToGizmoPos(dirNegX), dirNegX, colorX, "-X"));
+    
+    // Positive/Negative Y (Green)
+    bx::Vec3 dirY(0.0f, 1.0f, 0.0f);
+    bx::Vec3 dirNegY(0.0f, -1.0f, 0.0f);
+    spheres.push_back(SphereAxis(directionToGizmoPos(dirY), dirY, colorY, "+Y"));
+    spheres.push_back(SphereAxis(directionToGizmoPos(dirNegY), dirNegY, colorY, "-Y"));
+    
+    // Positive/Negative Z (Blue)
+    bx::Vec3 dirZ(0.0f, 0.0f, 1.0f);
+    bx::Vec3 dirNegZ(0.0f, 0.0f, -1.0f);
+    spheres.push_back(SphereAxis(directionToGizmoPos(dirZ), dirZ, colorZ, "+Z"));
+    spheres.push_back(SphereAxis(directionToGizmoPos(dirNegZ), dirNegZ, colorZ, "-Z"));
+
+    // Draw background circle
+    drawList->AddCircleFilled(gizmoCenter, orbitRadius + sphereRadius + 4.0f, ImGui::GetColorU32(colorBg), 32);
+
+    ImGuiIO& io = ImGui::GetIO();
+    ImVec2 mousePos = io.MousePos;
+    int hoveredSphere = -1;
+    bool mousePressed = ImGui::IsMouseClicked(ImGuiMouseButton_Left);
+
+    // Draw spheres and check for interaction
+    for (size_t i = 0; i < spheres.size(); ++i)
+    {
+        const SphereAxis& sphere = spheres[i];
+        ImVec2 delta = ImVec2(mousePos.x - sphere.screenPos.x, mousePos.y - sphere.screenPos.y);
+        float distSq = delta.x * delta.x + delta.y * delta.y;
+        bool isHovered = distSq < (sphereRadius * sphereRadius);
+
+        if (isHovered) {
+            hoveredSphere = static_cast<int>(i);
+        }
+
+        // Draw sphere (as a filled circle with border)
+        ImU32 sphereColor = ImGui::GetColorU32(isHovered ? 
+            ImVec4(sphere.color.x * 1.3f, sphere.color.y * 1.3f, sphere.color.z * 1.3f, 1.0f) :
+            sphere.color);
+        
+        drawList->AddCircleFilled(sphere.screenPos, sphereRadius, sphereColor, 32);
+        drawList->AddCircle(sphere.screenPos, sphereRadius, 
+                           ImGui::GetColorU32(ImVec4(1.0f, 1.0f, 1.0f, 0.6f)), 32, 1.5f);
+
+        // If clicked, snap camera to this axis direction looking at world origin
+        if (isHovered && mousePressed)
+        {
+            // Position camera along the axis direction at a reasonable distance from origin
+            float viewDistance = 20.0f;
+            bx::Vec3 worldOrigin(0.0f, 0.0f, 0.0f);
+            cam.position = bx::mul(sphere.viewDirection, viewDistance);
+            
+            // Make camera look at the world origin
+            float viewTemp[16];
+            bx::mtxLookAt(viewTemp, cam.position, worldOrigin, bx::Vec3(0.0f, 1.0f, 0.0f));
+            
+            // Extract new camera orientation from the view matrix
+            float invView[16];
+            bx::mtxInverse(invView, viewTemp);
+            
+            // Extract basis vectors from inverse view matrix (camera transform)
+            // Column-major: first 3 columns are basis, last column is translation
+            cam.right = bx::normalize(bx::Vec3(invView[0], invView[4], invView[8]));
+            cam.up = bx::normalize(bx::Vec3(invView[1], invView[5], invView[9]));
+            cam.front = bx::normalize(bx::sub(worldOrigin, cam.position));
+            
+            // Set FOV to a lower value for flat appearance
+            cam.fov = 25.0f;
+        }
+    }
+
+    // Handle dragging for smooth rotation
+    if (ImGui::IsMouseDragging(ImGuiMouseButton_Left) && hoveredSphere >= 0)
+    {
+        // Calculate rotation based on mouse movement
+        ImVec2 mouseDelta = ImGui::GetIO().MouseDelta;
+        if (std::abs(mouseDelta.x) > 0.1f || std::abs(mouseDelta.y) > 0.1f)
+        {
+            // Simple trackball-like rotation around view center
+            float rotSpeed = 0.01f;
+            
+            // Rotate around up axis (yaw)
+            float yawAngle = mouseDelta.x * rotSpeed;
+            
+            // Create rotation matrix for yaw (around Y axis)
+            float cosy = std::cos(yawAngle);
+            float siny = std::sin(yawAngle);
+            
+            // Rotate cam.front and cam.right around world Y axis
+            bx::Vec3 newFront(
+                cam.front.x * cosy - cam.front.z * siny,
+                cam.front.y,
+                cam.front.x * siny + cam.front.z * cosy
+            );
+            cam.front = bx::normalize(newFront);
+            
+            bx::Vec3 newRight(
+                cam.right.x * cosy - cam.right.z * siny,
+                cam.right.y,
+                cam.right.x * siny + cam.right.z * cosy
+            );
+            cam.right = bx::normalize(newRight);
+            
+            // Pitch rotation
+            float pitchAngle = mouseDelta.y * rotSpeed;
+            float cosp = std::cos(pitchAngle);
+            float sinp = std::sin(pitchAngle);
+            
+            // Rotate cam.front and cam.up around the right axis
+            newFront = bx::Vec3(
+                cam.front.x * cosp + cam.up.x * sinp,
+                cam.front.y * cosp + cam.up.y * sinp,
+                cam.front.z * cosp + cam.up.z * sinp
+            );
+            cam.front = bx::normalize(newFront);
+            
+            bx::Vec3 newUp(
+                -cam.front.x * sinp + cam.up.x * cosp,
+                -cam.front.y * sinp + cam.up.y * cosp,
+                -cam.front.z * sinp + cam.up.z * cosp
+            );
+            cam.up = bx::normalize(newUp);
+        }
+    }
+}
+
 void DrawGizmoForSelected(Instance* selectedInstance, float originX, float originY, const float* view, const float* proj, float rectWidth, float rectHeight)
 {
     // Static state for this function:
@@ -5964,66 +6149,21 @@ int main(void)
                             cam.nearClip, cam.farClip,
                             bgfx::getCaps()->homogeneousDepth);
 
-                        // --- Viewport orientation gizmo (bottom-right), Blender-style ---
-                        // Dragging this small gizmo rotates the active camera, and clicking on
-                        // an axis/face snaps the view to that orientation.
-                        //
-                        // For a more intuitive behavior (the gizmo appears to rotate in the
-                        // same direction as the camera when you orbit using other controls),
-                        // we feed ViewManipulate a *mirrored* view matrix that looks along
-                        // -cam.front instead of +cam.front. The main scene and transform
-                        // gizmo still use the regular view.
+                        // --- Viewport orientation gizmo (bottom-right) with colored spheres ---
+                        // Clicking on a sphere snaps the camera to that axis view direction.
+                        // Dragging smoothly rotates the camera.
+                        // Each sphere is colored according to its axis: Red=X, Green=Y, Blue=Z
                         {
-                            float viewForGizmo[16];
-                            bx::mtxLookAt(viewForGizmo, cam.position,
-                                bx::sub(cam.position, cam.front),
-                                cam.up);
-                            static float viewGizmoDistance = 10.0f;
-                            if (viewGizmoDistance <= 0.0f)
-                                viewGizmoDistance = 10.0f;
-
                             const ImVec2 gizmoSize(96.0f, 96.0f);
                             const float padding = 12.0f;
                             ImVec2 gizmoPos(
                                 rectMax.x - gizmoSize.x - padding,
                                 rectMax.y - gizmoSize.y - padding);
 
-                            ImGuizmo::ViewManipulate(viewForGizmo, viewGizmoDistance, gizmoPos, gizmoSize, 0);
+                            DrawOrientationSphereGizmo(view, proj, gizmoPos, gizmoSize, rectW, rectH, cam);
 
-                            // Only push changes back into the camera while the user is
-                            // actively manipulating the gizmo. This avoids fighting with
-                            // the normal camera-controls (InputManager::update) and
-                            // prevents jitter when idle.
-                            if (ImGuizmo::IsUsing())
-                            {
-                                // Update the active camera from the manipulated view matrix so that
-                                // the main 3D viewport follows the gizmo orientation.
-                                float invView[16];
-                                bx::mtxInverse(invView, viewForGizmo);
-
-                                // Extract camera basis from the inverse view (camera transform).
-                                // bx matrices are column-major: basis vectors are the first three columns,
-                                // translation is in the last column.
-                                cam.position = { invView[12], invView[13], invView[14] };
-                                cam.right    = { invView[0],  invView[4],  invView[8]  };
-                                cam.up       = { invView[1],  invView[5],  invView[9]  };
-                                bx::Vec3 forward = { -invView[2], -invView[6], -invView[10] };
-                                cam.front = forward;
-
-                                // Keep yaw / pitch in sync so other camera controls remain consistent.
-                                const float fx = forward.x;
-                                const float fy = forward.y;
-                                const float fz = forward.z;
-                                const float len = bx::sqrt(fx * fx + fy * fy + fz * fz);
-                                if (len > 0.0001f)
-                                {
-                                    const float nx = fx / len;
-                                    const float ny = fy / len;
-                                    const float nz = fz / len;
-                                    cam.yaw   = std::atan2(nz, nx) * 180.0f / 3.14159265f;
-                                    cam.pitch = std::asin(ny)      * 180.0f / 3.14159265f;
-                                }
-                            }
+                            // Note: Camera updates are handled directly in DrawOrientationSphereGizmo,
+                            // so no need to process ImGuizmo::IsUsing() like before.
                         }
 
                         // Draw transform gizmo for the selected object (if any), using the same
@@ -7497,6 +7637,8 @@ int main(void)
         // Prefer unlit vertex-color program so axes/grid are bright and mostly
         // independent from crosshatch shading, but fall back to defaultProgram
         // if the unlit shaders are not available.
+        const float tintBasic[4] = { 1.0f, 1.0f, 1.0f, 0.0f };
+        bgfx::setUniform(u_tint, tintBasic);
         bgfx::ProgramHandle gridProgram =
             bgfx::isValid(unlitColorProgram) ? unlitColorProgram : defaultProgram;
         DrawWorldAxesAndGrid(1, activeCamera, gridProgram);
@@ -7546,8 +7688,7 @@ int main(void)
         // Update rotating lights
         updateRotatingLights(instances, deltaTime);
 
-        const float tintBasic[4] = { 1.0f, 1.0f, 1.0f, 0.0f };
-        bgfx::setUniform(u_tint, tintBasic);
+        // tintBasic is already defined and set before drawing the grid (to prevent grid from inheriting highlight tints)
         bgfx::submit(1, defaultProgram);
 
         for (const auto& instance : instances)
