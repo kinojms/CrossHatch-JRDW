@@ -2806,7 +2806,7 @@ void drawInstance(Instance* instance, bgfx::ProgramHandle defaultProgram, bgfx::
         }
 
         // When this instance is selected, draw its vertices as green dots and edges as green lines.
-        if (selectedInstance == instance && highlightVisible)
+        if (selectedInstance == instance && highlightVisible && showAllVertices)
         {
             DrawSelectedMeshOverlay(instance, world, 1, defaultProgram, cameraPos);
         }
