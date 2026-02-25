@@ -22,6 +22,7 @@
 
 #include <map>
 #include <set>
+#include <unordered_set>
 #include <algorithm> // For std::max and std::min
 #endif
 #include <filesystem>
@@ -77,6 +78,7 @@ namespace fs = std::filesystem;
 std::vector<Camera> cameras;
 int currentCameraIndex = 0;
 static bool highlightVisible = true;
+static bool showAllVertices = false; // Toggle with Tab key to show vertices and edges for all objects
 static float RadToDeg(float rad) { return rad * (180.0f / 3.14159265358979f); }
 static float DegToRad(float deg) { return deg * (3.14159265358979f / 180.0f); }
 static ImGuizmo::OPERATION currentGizmoOperation = ImGuizmo::TRANSLATE;
@@ -259,8 +261,13 @@ static inline uint32_t PackAbgr(uint8_t a, uint8_t b, uint8_t g, uint8_t r)
 
 static void SubmitLineList(uint16_t viewId, bgfx::ProgramHandle program, const LineVertex* verts, uint32_t numVerts, uint64_t state)
 {
-    if (!bgfx::isValid(program) || verts == nullptr || numVerts < 2)
+    if (verts == nullptr || numVerts < 2)
         return;
+    
+    // If the provided program is invalid, we can't submit
+    if (!bgfx::isValid(program))
+        return;
+    
     if (!bgfx::getAvailTransientVertexBuffer(numVerts, GetLineVertexLayout()))
         return;
 
@@ -272,6 +279,28 @@ static void SubmitLineList(uint16_t viewId, bgfx::ProgramHandle program, const L
     bx::mtxIdentity(id);
     bgfx::setTransform(id);
     bgfx::setVertexBuffer(0, &tvb, 0, numVerts);
+    bgfx::setState(state);
+    bgfx::submit(viewId, program);
+}
+
+static void SubmitTriangleList(uint16_t viewId, bgfx::ProgramHandle program, const LineVertex* verts, uint32_t numVerts, const uint16_t* indices, uint32_t numIndices, uint64_t state)
+{
+    if (!bgfx::isValid(program) || numVerts == 0 || numIndices == 0)
+        return;
+
+    bgfx::TransientVertexBuffer tvb;
+    bgfx::allocTransientVertexBuffer(&tvb, numVerts, GetLineVertexLayout());
+    std::memcpy(tvb.data, verts, sizeof(LineVertex) * numVerts);
+
+    bgfx::TransientIndexBuffer tib;
+    bgfx::allocTransientIndexBuffer(&tib, numIndices);
+    std::memcpy(tib.data, indices, sizeof(uint16_t) * numIndices);
+
+    float id[16];
+    bx::mtxIdentity(id);
+    bgfx::setTransform(id);
+    bgfx::setVertexBuffer(0, &tvb, 0, numVerts);
+    bgfx::setIndexBuffer(&tib, 0, numIndices);
     bgfx::setState(state);
     bgfx::submit(viewId, program);
 }
@@ -1848,7 +1877,7 @@ static void TransformPosition(const float* m, float x, float y, float z, float& 
 }
 
 // Draw selected instance's mesh as green vertices (small crosses) and green edges.
-static void DrawSelectedMeshOverlay(const Instance* inst, const float* worldMatrix, uint16_t viewId)
+static void DrawSelectedMeshOverlay(const Instance* inst, const float* worldMatrix, uint16_t viewId, bgfx::ProgramHandle defaultProgram, const bx::Vec3& cameraPos)
 {
     if (!inst) return;
 
@@ -1911,22 +1940,86 @@ static void DrawSelectedMeshOverlay(const Instance* inst, const float* worldMatr
         pushLine(x2, y2, z2, x0, y0, z0, edgeColor);
     }
 
-    // Vertices: small crosses around each vertex position.
-    const float r = 0.01f; // cross half-size in world units
+    // Vertices: 2D filled squares around each vertex position, always facing camera.
+    const float r = 0.01f; // square half-size in world units (original size)
+    
+    std::vector<LineVertex> squareVerts;
+    std::vector<uint16_t> squareIndices;
+    squareVerts.reserve(mesh.vertices.size() * 4);
+    squareIndices.reserve(mesh.vertices.size() * 6);
+    
+    uint16_t vertIdx = 0;
     for (const auto& v : mesh.vertices)
     {
         float cx, cy, cz;
         TransformPosition(worldMatrix, v.x, v.y, v.z, cx, cy, cz);
-
-        pushLine(cx - r, cy, cz, cx + r, cy, cz, vertColor);
-        pushLine(cx, cy - r, cz, cx, cy + r, cz, vertColor);
-        pushLine(cx, cy, cz - r, cx, cy, cz + r, vertColor);
+        
+        // Get camera-to-vertex direction and create basis vectors
+        bx::Vec3 vertPos = { cx, cy, cz };
+        bx::Vec3 toCam = bx::sub(cameraPos, vertPos);
+        toCam = bx::normalize(toCam);
+        
+        // Create right vector (cross with world up to get right)
+        bx::Vec3 worldUp = { 0.0f, 1.0f, 0.0f };
+        bx::Vec3 right = bx::cross(worldUp, toCam);
+        if (bx::length(right) < 0.001f)  // degenerate case (looking straight up/down)
+        {
+            right = { 1.0f, 0.0f, 0.0f };
+        }
+        right = bx::normalize(right);
+        
+        // Recalculate up perpendicular to both
+        bx::Vec3 up = bx::cross(toCam, right);
+        up = bx::normalize(up);
+        
+        // Create square corners (offset from vertex)
+        bx::Vec3 corners[4] = {
+            bx::add(vertPos, bx::mul(bx::add(right, up), r)),     // top-right
+            bx::sub(vertPos, bx::mul(bx::add(right, up), r)),     // bottom-left
+            bx::add(vertPos, bx::mul(bx::sub(right, up), r)),     // bottom-right
+            bx::sub(vertPos, bx::mul(bx::sub(right, up), r))      // top-left
+        };
+        
+        // Add 4 vertices for this square
+        for (int i = 0; i < 4; ++i)
+        {
+            LineVertex lv{};
+            lv.x = corners[i].x;
+            lv.y = corners[i].y;
+            lv.z = corners[i].z;
+            lv.nx = 0.0f; lv.ny = 1.0f; lv.nz = 0.0f;
+            lv.abgr = vertColor;
+            lv.u = 0.0f; lv.v = 0.0f;
+            squareVerts.push_back(lv);
+        }
+        
+        // Add indices for two triangles forming a square
+        squareIndices.push_back(vertIdx + 0);
+        squareIndices.push_back(vertIdx + 1);
+        squareIndices.push_back(vertIdx + 2);
+        
+        squareIndices.push_back(vertIdx + 0);
+        squareIndices.push_back(vertIdx + 2);
+        squareIndices.push_back(vertIdx + 3);
+        
+        vertIdx += 4;
+    }
+    
+    // Submit filled squares as triangles
+    if (!squareVerts.empty() && !squareIndices.empty())
+    {
+        bgfx::ProgramHandle programToUse = bgfx::isValid(unlitColorProgram) ? unlitColorProgram : defaultProgram;
+        SubmitTriangleList(viewId, programToUse, squareVerts.data(), static_cast<uint32_t>(squareVerts.size()),
+            squareIndices.data(), static_cast<uint32_t>(squareIndices.size()),
+            BGFX_STATE_WRITE_RGB | BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_BLEND_ALPHA);
     }
 
     if (!verts.empty())
     {
-        SubmitLineList(viewId, unlitColorProgram, verts.data(), static_cast<uint32_t>(verts.size()),
-            BGFX_STATE_WRITE_RGB | BGFX_STATE_DEPTH_TEST_LESS);
+        // Try to use unlitColorProgram, but fall back to defaultProgram if it's not available
+        bgfx::ProgramHandle programToUse = bgfx::isValid(unlitColorProgram) ? unlitColorProgram : defaultProgram;
+        SubmitLineList(viewId, programToUse, verts.data(), static_cast<uint32_t>(verts.size()),
+            BGFX_STATE_WRITE_RGB | BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_PT_LINES | BGFX_STATE_BLEND_ALPHA);
     }
 }
 
@@ -2300,6 +2393,10 @@ static void glfw_keyCallback(GLFWwindow* window, int key, int scancode, int acti
     }
     else if (key == GLFW_KEY_F1 && action == GLFW_RELEASE)
         s_showStats = !s_showStats;
+    else if (key == GLFW_KEY_V && (mods & GLFW_MOD_ALT) && action == GLFW_RELEASE) {
+        showAllVertices = !showAllVertices;
+        std::cout << "[Toggle Vertices] showAllVertices = " << (showAllVertices ? "ON" : "OFF") << std::endl;
+    }
 
     // Forward the event to ImGui
     ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, mods);
@@ -2515,7 +2612,7 @@ bool IsWhite(const float color[4], float epsilon = 0.001f)
 }
 // Recursive draw function for hierarchy.
 void drawInstance(Instance* instance, bgfx::ProgramHandle defaultProgram, bgfx::ProgramHandle lightDebugProgram, bgfx::ProgramHandle textProgram, bgfx::ProgramHandle comicProgram, bgfx::UniformHandle u_comicColor, bgfx::UniformHandle u_noiseTex, bgfx::UniformHandle u_diffuseTex, bgfx::UniformHandle u_objectColor, bgfx::UniformHandle u_tint, bgfx::UniformHandle u_inkColor, bgfx::UniformHandle u_e, bgfx::UniformHandle u_params, bgfx::UniformHandle u_extraParams, bgfx::UniformHandle u_paramsLayer,
-    bgfx::TextureHandle defaultWhiteTexture, bgfx::TextureHandle inheritedNoiseTex, bgfx::TextureHandle inheritedTexture, const float* parentColor = nullptr, const float* parentTransform = nullptr)
+    bgfx::TextureHandle defaultWhiteTexture, bgfx::TextureHandle inheritedNoiseTex, bgfx::TextureHandle inheritedTexture, const float* parentColor = nullptr, const float* parentTransform = nullptr, const bx::Vec3& cameraPos = {0, 0, 0})
 {
     float local[16];
     bx::mtxSRT(local,
@@ -2711,7 +2808,7 @@ void drawInstance(Instance* instance, bgfx::ProgramHandle defaultProgram, bgfx::
         // When this instance is selected, draw its vertices as green dots and edges as green lines.
         if (selectedInstance == instance && highlightVisible)
         {
-            DrawSelectedMeshOverlay(instance, world, 1);
+            DrawSelectedMeshOverlay(instance, world, 1, defaultProgram, cameraPos);
         }
     }
     // Determine what color to pass to children.
@@ -5735,6 +5832,10 @@ int main(void)
     {
         glfwPollEvents();
 
+        // DEBUG: Log vertex mode state periodically
+        static int frameCount = 0;
+        frameCount++;
+
         ImGuiViewport* viewport = ImGui::GetMainViewport();
         //static VideoPlayer videoPlayer;
         //static bool videoLoaded = false;
@@ -6911,6 +7012,11 @@ int main(void)
                     ImGui::MenuItem("Camera Settings", nullptr, &show_CameraSettings);
                     ImGui::MenuItem("Cameras", nullptr, &show_Cameras);
                     ImGui::MenuItem("Log Console", nullptr, &show_LogConsole);
+                    ImGui::Separator();
+                    if (ImGui::MenuItem("Vertex Mode", nullptr, &showAllVertices))
+                    {
+                        // Toggle logged, no debug output needed
+                    }
                     ImGui::EndMenu();
                 }
             ImGui::EndMainMenuBar();
@@ -7729,7 +7835,27 @@ int main(void)
                 }
             }
 
-            drawInstance(instance, defaultProgram, lightDebugProgram, textProgram, comicProgram, u_comicColor, u_noiseTex, u_diffuseTex, u_objectColor, u_tint, u_inkColor, u_e, u_params, u_extraParams, u_paramsLayer, defaultWhiteTexture, BGFX_INVALID_HANDLE, BGFX_INVALID_HANDLE, instance->objectColor); // your usual shader program
+            drawInstance(instance, defaultProgram, lightDebugProgram, textProgram, comicProgram, u_comicColor, u_noiseTex, u_diffuseTex, u_objectColor, u_tint, u_inkColor, u_e, u_params, u_extraParams, u_paramsLayer, defaultWhiteTexture, BGFX_INVALID_HANDLE, BGFX_INVALID_HANDLE, instance->objectColor, nullptr, activeCamera.position); // your usual shader program
+        }
+
+        // Vertex Mode: Draw vertices and edges for all instances when enabled
+        if (showAllVertices)
+        {
+            for (const auto& instance : instances)
+            {
+                float model[16];
+                bx::mtxSRT(model,
+                    instance->scale[0], instance->scale[1], instance->scale[2],
+                    instance->rotation[0], instance->rotation[1], instance->rotation[2],
+                    instance->position[0], instance->position[1], instance->position[2]);
+
+                // Check if this instance has mesh data
+                auto meshIt = g_InstanceMeshData.find(instance->id);
+                if (meshIt != g_InstanceMeshData.end() && !instance->isLight)
+                {
+                    DrawSelectedMeshOverlay(instance, model, 1, defaultProgram, activeCamera.position);
+                }
+            }
         }
 
         // Update your vertex layout to include normals
