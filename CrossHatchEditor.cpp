@@ -385,7 +385,10 @@ struct LightAnimation {
     float frequency[3] = { 1.0f, 1.0f, 1.0f };  // Frequency (Hz) for each axis.
     float phase[3] = { 0.0f, 0.0f, 0.0f };  // Phase offset for each axis.
 };
-
+struct MeshData {
+    std::vector<PosColorVertex> vertices;
+    std::vector<uint32_t> indices;
+};
 struct Instance
 {
     int id;
@@ -399,6 +402,9 @@ struct Instance
     bgfx::VertexBufferHandle vertexBuffer;
     bgfx::IndexBufferHandle indexBuffer;
     bool selected = false;
+
+    MeshData meshData;
+    bool hasMeshData = false;
 
     // Add an override object color (RGBA)
     float objectColor[4];
@@ -727,10 +733,7 @@ public:
 
 CommandManager gCmdManager;
 
-struct MeshData {
-    std::vector<PosColorVertex> vertices;
-    std::vector<uint32_t> indices;
-};
+
 
 // CPU-side editable mesh data for instances that support geometry operations.
 // Keyed by Instance::id.
@@ -1101,26 +1104,73 @@ static void RegisterInstanceMeshFromType(Instance* inst)
 // Forward declaration so geometry tools can recreate GPU buffers.
 void createMeshBuffers(const MeshData& meshData, bgfx::VertexBufferHandle& vbh, bgfx::IndexBufferHandle& ibh);
 
+// Helper: get the instance that actually holds editable mesh data. When the user selects
+// a group (e.g. clean-mono.obj_group), the group has no mesh; the mesh is on a child.
+// This returns the selected instance if it has mesh, else the first child that has mesh.
+static Instance* GetInstanceWithEditableMesh(Instance* inst)
+{
+    if (!inst || inst->isLight) return nullptr;
+    if (g_InstanceMeshData.find(inst->id) != g_InstanceMeshData.end())
+        return inst;
+    if (inst->hasMeshData && !inst->meshData.vertices.empty())
+        return inst;
+    for (Instance* child : inst->children)
+    {
+        if (!child || child->isLight) continue;
+        if (g_InstanceMeshData.find(child->id) != g_InstanceMeshData.end())
+            return child;
+        if (child->hasMeshData && !child->meshData.vertices.empty())
+            return child;
+    }
+    return nullptr;
+}
+static const Instance* GetInstanceWithEditableMeshConst(const Instance* inst)
+{
+    if (!inst || inst->isLight) return nullptr;
+    if (g_InstanceMeshData.find(inst->id) != g_InstanceMeshData.end())
+        return inst;
+    if (inst->hasMeshData && !inst->meshData.vertices.empty())
+        return inst;
+    for (Instance* child : inst->children)
+    {
+        if (!child || child->isLight) continue;
+        if (g_InstanceMeshData.find(child->id) != g_InstanceMeshData.end())
+            return child;
+        if (child->hasMeshData && !child->meshData.vertices.empty())
+            return child;
+    }
+    return nullptr;
+}
+
 // Helper: get editable mesh data for an instance, if available.
 static MeshData* GetEditableMeshData(Instance* inst)
 {
-    if (!inst) return nullptr;
-    auto it = g_InstanceMeshData.find(inst->id);
-    if (it == g_InstanceMeshData.end()) return nullptr;
-    return &it->second;
+    Instance* target = GetInstanceWithEditableMesh(inst);
+    if (!target) return nullptr;
+    if (g_InstanceMeshData.find(target->id) == g_InstanceMeshData.end())
+    {
+        if (target->hasMeshData && !target->meshData.vertices.empty())
+            g_InstanceMeshData[target->id] = target->meshData;
+        else
+            return nullptr;
+    }
+    return &g_InstanceMeshData[target->id];
 }
 
 static bool HasEditableMeshData(const Instance* inst)
 {
     if (!inst || inst->isLight) return false;
-    return g_InstanceMeshData.find(inst->id) != g_InstanceMeshData.end();
+    if (GetInstanceWithEditableMeshConst(inst) != nullptr)
+        return true;
+    return false;
 }
 
 // Rebuild GPU buffers from CPU-side mesh data for the given instance.
 static void ApplyEditableMeshToInstance(Instance* inst)
 {
-    if (!inst) return;
-    auto it = g_InstanceMeshData.find(inst->id);
+    Instance* target = GetInstanceWithEditableMesh(inst);
+    if (!target) return;
+    auto it = g_InstanceMeshData.find(target->id);
     if (it == g_InstanceMeshData.end()) return;
 
     MeshData& mesh = it->second;
@@ -1128,16 +1178,16 @@ static void ApplyEditableMeshToInstance(Instance* inst)
     // Recompute normals after topology/position changes.
     computeNormals(mesh.vertices, mesh.indices);
 
-    if (bgfx::isValid(inst->vertexBuffer))
+    if (bgfx::isValid(target->vertexBuffer))
     {
-        bgfx::destroy(inst->vertexBuffer);
+        bgfx::destroy(target->vertexBuffer);
     }
-    if (bgfx::isValid(inst->indexBuffer))
+    if (bgfx::isValid(target->indexBuffer))
     {
-        bgfx::destroy(inst->indexBuffer);
+        bgfx::destroy(target->indexBuffer);
     }
 
-    createMeshBuffers(mesh, inst->vertexBuffer, inst->indexBuffer);
+    createMeshBuffers(mesh, target->vertexBuffer, target->indexBuffer);
 }
 
 // --- Geometry modification helpers (subdivision, merging, smoothing, boundaries) ---
@@ -4430,6 +4480,15 @@ static void RenderInspectorBody(Instance* selectedInstance, std::vector<Instance
         // Geometry / topology tools for selected object.
         if (ImGui::CollapsingHeader("Geometry / Topology Tools"))
         {
+            // Ensure imported OBJ (e.g. nerf / instant-ngp v x y z r g b) is editable: if this
+            // instance has CPU mesh data but it was never registered, register it now so
+            // HasEditableMeshData returns true and the nerf OBJ can be read/edited here.
+            if (selectedInstance && !selectedInstance->isLight && selectedInstance->hasMeshData
+                && !selectedInstance->meshData.vertices.empty()
+                && g_InstanceMeshData.find(selectedInstance->id) == g_InstanceMeshData.end())
+            {
+                g_InstanceMeshData[selectedInstance->id] = selectedInstance->meshData;
+            }
             bool hasMesh = HasEditableMeshData(selectedInstance);
             if (!hasMesh)
             {
@@ -6685,6 +6744,9 @@ int main(void)
                                                     Instance* childInst = new Instance(instanceCounter++, displayName + "_" + std::to_string(i), displayName,
                                                         0.0f, 0.0f, 0.0f, vbh_imported, ibh_imported);
                                                     childInst->meshNumber = i;
+                                                    childInst->meshData = importedMeshes[i].meshData;
+                                                    childInst->hasMeshData = true;
+                                                    g_InstanceMeshData[childInst->id] = importedMeshes[i].meshData;
 
                                                     aiVector3D scaling, position;
                                                     aiQuaternion rotation;
