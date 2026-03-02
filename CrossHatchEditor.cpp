@@ -22,6 +22,7 @@
 
 #include <map>
 #include <set>
+#include <unordered_set>
 #include <algorithm> // For std::max and std::min
 #endif
 #include <filesystem>
@@ -742,6 +743,24 @@ static std::unordered_map<int, MeshData> g_InstanceMeshData;
 // These are cloned into g_InstanceMeshData when instances are created.
 static std::unordered_map<std::string, MeshData> g_BaseMeshData;
 
+// Shared (global) buffer handles used by primitive types. When we apply mesh edits we must
+// not destroy these, or new instances would get invalid handles and crash. We only destroy
+// buffers that are instance-owned (created for that instance).
+static std::unordered_set<uint16_t> g_SharedVertexBufferIndices;
+static std::unordered_set<uint16_t> g_SharedIndexBufferIndices;
+void RegisterSharedBuffers(const std::unordered_map<std::string, std::pair<bgfx::VertexBufferHandle, bgfx::IndexBufferHandle>>& bufferMap)
+{
+    g_SharedVertexBufferIndices.clear();
+    g_SharedIndexBufferIndices.clear();
+    for (const auto& kv : bufferMap)
+    {
+        if (bgfx::isValid(kv.second.first))
+            g_SharedVertexBufferIndices.insert(kv.second.first.idx);
+        if (bgfx::isValid(kv.second.second))
+            g_SharedIndexBufferIndices.insert(kv.second.second.idx);
+    }
+}
+
 struct Vec3 {
     float x, y, z;
 };
@@ -1178,14 +1197,15 @@ static void ApplyEditableMeshToInstance(Instance* inst)
     // Recompute normals after topology/position changes.
     computeNormals(mesh.vertices, mesh.indices);
 
-    if (bgfx::isValid(target->vertexBuffer))
-    {
+    // Do not destroy shared (global) buffers: primitives (cube, cylinder, etc.) share
+    // buffers from bufferMap. Destroying them would invalidate handles used when adding
+    // new instances and cause crashes. Only destroy buffers that are instance-owned.
+    bool vbShared = g_SharedVertexBufferIndices.count(target->vertexBuffer.idx) != 0;
+    bool ibShared = g_SharedIndexBufferIndices.count(target->indexBuffer.idx) != 0;
+    if (bgfx::isValid(target->vertexBuffer) && !vbShared)
         bgfx::destroy(target->vertexBuffer);
-    }
-    if (bgfx::isValid(target->indexBuffer))
-    {
+    if (bgfx::isValid(target->indexBuffer) && !ibShared)
         bgfx::destroy(target->indexBuffer);
-    }
 
     createMeshBuffers(mesh, target->vertexBuffer, target->indexBuffer);
 }
@@ -5044,6 +5064,8 @@ int main(void)
     bufferMap["comicbubble6"] = { vbh_comicbubble6, ibh_comicbubble6 };
     bufferMap["comicbubble7"] = { vbh_comicbubble7, ibh_comicbubble7 };
     bufferMap["comicbubble8"] = { vbh_comicbubble8, ibh_comicbubble8 };
+
+    RegisterSharedBuffers(bufferMap);
 
     std::unordered_map<std::string, std::string> importedObjMap;
 
