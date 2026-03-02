@@ -1,20 +1,9 @@
-#ifdef GL_ES
-precision mediump float;
-// incoming varyings from vertex shader
-varying vec3 v_normal;
-// world-space position
-varying vec3 v_worldPos;
-// vertex color attribute (if used)
-varying vec4 v_color;
-varying vec2 v_texcoord0;
-#else
-in vec3 v_normal;
-in vec3 v_worldPos;
-in vec4 v_color;
-in vec2 v_texcoord0;
-#endif
+$input v_pos, v_normal, v_view, v_texcoord0, v_shadowcoord
 
 #include <bgfx_shader.sh>
+// --- SHADOW CONFIG ---
+#define SHADOW_PACKED_DEPTH 0 // Use hardware depth comparison (Sampler2DShadow)
+#include "fs_sms_shadow.sh"   // Include the BGFX helper you uploaded
 
 // ----- Lighting uniforms -----
 // Each light is packed into 4 vec4’s. For example, with MAX_LIGHTS=16, you’ll have 64 vec4’s.
@@ -58,8 +47,12 @@ uniform vec4 u_paramsLayer;
 uniform vec4 u_uvTransform;   // (tilingU, tilingV, offsetU, offsetV)
 uniform vec4 u_albedoFactor;  // (r, g, b, a) color tint
 
+// Add these new uniforms at the top of f_out29.sc
+uniform vec4 u_shadowParams1; // x=Scale, y=Density, z=Angle, w=Thickness
+uniform vec4 u_shadowParams2; // x=Epsilon (Smoothness)
+
 // ----- Helper functions for crosshatching -----
-float luma(vec3 color) {
+float calcLuma(vec3 color) {
     return dot(color, vec3(0.299, 0.587, 0.114));
 }
 
@@ -110,6 +103,16 @@ void main()
     
     vec3 lighting = vec3(0.0);
     int numLights = int(u_numLights.x);
+
+    // --- SHADOW CALCULATION ---
+    // 1. Get Softness from u_e.w (Default to 1.0 if 0)
+    float softness = max(u_e.w, 1.0);
+
+    // 2. Calculate Shadow with Variable Spread
+    // Multiplying the texel size by 'softness' spreads the samples further apart.
+    // This creates a wider gradient at the shadow edges.
+    float shadowVal = PCF(s_shadowMap, v_shadowcoord, 0.002, vec2(1.0/2048.0, 1.0/2048.0) * softness);
+
     for (int i = 0; i < numLights; i++) {
         int offset = i * 4;
         float lightType = u_lights[offset].x; // 0: directional, 1: point, 2: spot.
@@ -121,18 +124,19 @@ void main()
         float range = u_lights[offset+3].w; // For attenuation if needed
         
         vec3 L;
+        float attenuation = 1.0; // Defined HERE so it is visible in the entire loop
         if (lightType == 0.0) { // directional
             L = -lightDir;
         } else {
-            L = normalize(lightPos - v_worldPos);
+            L = normalize(lightPos - v_pos);
         }
         float diff = max(dot(N, L), 0.0);
 
         // For point and spot lights, apply attenuation.
         if (lightType != 0.0) {
-            float distance = length(lightPos - v_worldPos);
+            float distance = length(lightPos - v_pos);
             // Simple linear attenuation (clamped)
-            float attenuation = clamp(1.0 - distance / range, 0.0, 1.0);
+            attenuation = clamp(1.0 - distance / range, 0.0, 1.0);
             diff *= attenuation;
         }
 
@@ -152,7 +156,7 @@ void main()
             }
         }
 
-        lighting += lightColor * intensity * diff;
+        lighting += lightColor * intensity * diff * attenuation;
     }
     
     // --- Texture/Material ---
@@ -168,121 +172,31 @@ void main()
     //    (optionally also multiply alpha if you want)
     vec3 tintedBase = texSample.rgb * u_albedoFactor.rgb;
 
-    // apply vertex color if available
-    tintedBase *= v_color.rgb;
-
     // 4 Combine tintedBase with your crosshatch logic:
     //    e.g., litColor = tintedBase * lighting, then crosshatching...
     //    or tintedBase * (some lighting factor)...
     vec3 litColor = tintedBase * lighting;
     
-    //vec3 litColor = baseColor * lighting;
-    
     // --- Crosshatch Effect Selection ---
     int mode = int(u_extraParams.w);
     vec3 crossColor;
 
-    //mode 0 is original
-    if(mode == 0){
-        // --- Crosshatch Effect ---
-        float lumVal = luma(litColor);
-        float lVal = 1.0 - lumVal;
-        float darks = 1.0 - 2.0 * lumVal;
+    // Unpack Config
+    float shadowHatchIntensity = u_e.y; // Shadow strength from C++
+    float paperOpacity = u_e.z;         // Paper opacity from C++ (New!)
 
-        // Use the stroke multiplier and angle factors from u_params:
-        float strokeMult = u_params.y;
-        float angle1 = u_params.z;
-        float angle2 = u_params.w;
+    // Modify Luminance based on Shadow Map
+    float realLum = calcLuma(litColor);
+    float shadowFactor = mix(1.0 - shadowHatchIntensity, 1.0, shadowVal);
+    float lumVal = realLum * shadowFactor;
 
-        // Scale the world position by the pattern scale (u_extraParams.x)
-        vec3 p_scaled = v_worldPos * u_extraParams.x;
+    // Track how much "Ink" we generate (0.0 = Empty, 1.0 = Solid Ink)
+    float inkFactor = 0.0;
 
-        // Multiply the stroke multiplier by the line thickness factor (u_extraParams.y)
-        float line = texcube(p_scaled, N, lVal * strokeMult * u_extraParams.y, angle1);
-        float lineDark = texcube(p_scaled, N, darks * strokeMult * u_extraParams.y, angle2);
-        
-        float epsilon = u_e.x;
-        float r = 1.0 - smoothstep(lVal - epsilon, lVal + epsilon, line);
-        float rDark = 1.0 - smoothstep(lVal - epsilon, lVal + epsilon, lineDark);
-        
-        //mix(litColor, u_inkColor.xyz, r);
-        vec3 inkedColor = blendDarken(litColor, u_inkColor.xyz, 0.5 * r);
-        //vec3 crossColor = mix(inkedColor, u_inkColor.xyz, rDark);
-        crossColor = mix(inkedColor, u_inkColor.xyz, rDark);
-
-    }
-    else if (mode == 1){
-        // --- Modified Crosshatch Effect ---
-        float lumVal = luma(litColor);
-        float lVal = 1.0 - lumVal;
-
-        // Use the stroke multiplier and angle factors from u_params:
-        float strokeMult = u_params.y;
-        float angle1 = u_params.z;
-
-        // Scale the world position by the pattern scale (u_extraParams.x)
-        vec3 p_scaled = v_worldPos * u_extraParams.x;
-
-        // Multiply the stroke multiplier by the line thickness factor (u_extraParams.y)
-        float line = texcube(p_scaled, N, lVal * strokeMult * u_extraParams.y, angle1);
-        
-        float epsilon = u_e.x;
-        float r = 1.0 - smoothstep(lVal - epsilon, lVal + epsilon, line);
-        
-        crossColor = mix(litColor, u_inkColor.xyz, r);
-
-    }else if(mode == 2){
-        // --- Another Modified Crosshatch Effect ---
-
-        // --- Layer 1 ---
-        // Partial distance compensation:
-        // 1. measure distance from camera to fragment
-        float dist = length(u_cameraPos.xyz - v_worldPos);
-
-        // 2. pick a "referenceDist" so that if dist >= referenceDist, the pattern doesn't shrink further
-        float referenceDist = 2.0;  // e.g. 5.0 or 10.0
-
-        // 3. compute a factor that is 1.0 when dist <= referenceDist, and smaller if you come closer
-        float factor = referenceDist / max(dist, referenceDist);
-
-        // 4. combine with your usual crosshatch scale
-        float finalScale = u_extraParams.x * factor;
-
-        // anchor in world space
-        vec3 p_scaled = v_worldPos * finalScale;
-
-        float lumVal = luma(litColor);
-        float lVal   = 1.0 - lumVal;
-
-        float strokeMult = u_params.y;
-        float angle1     = u_params.z;
-        
-        float line    = texcube(p_scaled, N, lVal * strokeMult * u_extraParams.y, angle1);
-        float epsilon = u_e.x;
-        float r = 1.0 - smoothstep(lVal - epsilon, lVal + epsilon, line);
-        // Force a minimum hatch effect regardless of brightness:
-        // r = max(r, 0.2);
-
-        // --- Layer 2 ---
-        // strokeMult2 = 0.3, angle1test = 2.983, thickness 10.0, p_scaled2 = v_worldPos * 0.3
-
-        float layerPatternScale = u_paramsLayer.x;
-        float layerStrokeMult = u_paramsLayer.y;
-        float layerAngle = u_paramsLayer.z;
-
-        float finalScale2 = layerPatternScale * factor;
-        vec3 p_scaled2 = v_worldPos * finalScale2;
-
-        float line2 = texcube(p_scaled2, N, layerStrokeMult * u_paramsLayer.w, layerAngle);
-        float r2 = 1.0 - step(0.5, line2);
-        
-        vec3 crosshatch = mix(litColor, u_inkColor.xyz, r);
-
-        crossColor =  mix(crosshatch, u_inkColor.xyz, r2);
-
-    }else if(mode == 3){
-        //default/simple lighting system
-        crossColor = litColor;
+    if(mode == 4) {
+    // --- Crosshatch with Shadow Map Modulation ---
+        inkFactor = 1.0; // Solid object
+        crossColor = litColor * (0.2 + 0.8 * shadowVal);
     }
     
     // Blend the crosshatch with the lit color (adjust blend factor as desired)
@@ -291,6 +205,14 @@ void main()
     // --- Apply the object color override:
     finalColor *= u_objectColor.rgb;
     
-    vec4 finalColor4 = vec4(finalColor, 1.0);
-    gl_FragColor = mix(finalColor4, u_tint, u_tint.a);
+    // Calculate Alpha:
+    // If paperOpacity is 1.0, alpha is always 1.0 (Solid).
+    // If paperOpacity is 0.0, alpha depends entirely on inkFactor (Transparent paper).
+    // We assume 'u_tint.a' is an overall fade, but usually 1.0.
+    float finalAlpha = clamp(paperOpacity + inkFactor, 0.0, 1.0);
+    
+    gl_FragColor = vec4(finalColor, finalAlpha);
+
+    //vec4 finalColor4 = vec4(finalColor, 1.0);
+    //gl_FragColor = mix(finalColor4, u_tint, u_tint.a);
 }

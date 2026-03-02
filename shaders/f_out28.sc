@@ -1,12 +1,15 @@
 #ifdef GL_ES
 precision mediump float;
+// incoming varyings from vertex shader
 varying vec3 v_normal;
-varying vec3 v_pos;
+// world-space position (was v_pos previously but vertex shader outputs v_worldPos)
+varying vec3 v_worldPos;
+// vertex color, useful when meshes provide per-vertex coloring
 varying vec4 v_color;
 varying vec2 v_texcoord0;
 #else
 in vec3 v_normal;
-in vec3 v_pos;
+in vec3 v_worldPos;
 in vec4 v_color;
 in vec2 v_texcoord0;
 #endif
@@ -103,10 +106,7 @@ void main()
 {
     // --- Lighting Calculation ---
     vec3 N = normalize(v_normal);
-    
-    // Debug: Check if vertex color is being received
-    // If v_color is white (1,1,1,1), it means no vertex color data
-    // If v_color has actual colors, use them
+    //vec3 baseColor = texture2D(u_diffuseTex, v_texcoord0).rgb;
     
     vec3 lighting = vec3(0.0);
     int numLights = int(u_numLights.x);
@@ -124,13 +124,14 @@ void main()
         if (lightType == 0.0) { // directional
             L = -lightDir;
         } else {
-            L = normalize(lightPos - v_pos);
+            // use world-space position from vertex shader
+            L = normalize(lightPos - v_worldPos);
         }
         float diff = max(dot(N, L), 0.0);
 
         // For point and spot lights, apply attenuation.
         if (lightType != 0.0) {
-            float distance = length(lightPos - v_pos);
+            float distance = length(lightPos - v_worldPos);
             // Simple linear attenuation (clamped)
             float attenuation = clamp(1.0 - distance / range, 0.0, 1.0);
             diff *= attenuation;
@@ -155,10 +156,6 @@ void main()
         lighting += lightColor * intensity * diff;
     }
     
-    // Add ambient lighting to ensure vertex colors are visible even without lights
-    vec3 ambient = vec3(0.2, 0.2, 0.2); // Minimum ambient light
-    lighting = max(lighting, ambient);
-    
     // --- Texture/Material ---
     // 1. Tiling & offset:
     //    scale = (tilingU, tilingV), offset = (offsetU, offsetV)
@@ -167,47 +164,19 @@ void main()
     // 2. Sample the diffuse texture with that transformed UV:
     vec4 texSample = texture2D(u_diffuseTex, uvScaled);
 
-    // 3. Prioritize vertex colors - use them directly if present, otherwise use texture
-    //    Vertex colors from OBJ files should be displayed as-is
-    vec3 vertexColorMod = v_color.rgb;
-    
-    // Check if vertex color is not white (has actual color data)
-    // OBJ vertex colors are typically in 0-1 range, so check if significantly different from white
-    // Use a threshold to detect non-white colors (accounting for floating point precision)
-    // Since debug shows colors like RGBA(0.068, 0.051, 0.025, 1), these are clearly not white
-    float colorThreshold = 0.99; // If any component is less than 0.99, consider it colored
-    bool hasVertexColor = (vertexColorMod.r < colorThreshold || vertexColorMod.g < colorThreshold || vertexColorMod.b < colorThreshold);
-    
-    // DEBUG: Force use vertex colors if they're significantly different from white
-    // This ensures vertex colors from OBJ files are always used
-    vec3 baseColor;
-    if (hasVertexColor) {
-        // Vertex has color - use it directly, don't multiply by white texture
-        baseColor = vertexColorMod;
-    } else {
-        // No vertex color - use texture
-        baseColor = texSample.rgb;
-    }
+    // 3. Apply the color tint:
+    //    multiply the texture color by the albedoFactor.rgb
+    //    (optionally also multiply alpha if you want)
+    vec3 tintedBase = texSample.rgb * u_albedoFactor.rgb;
 
-    // 4. Apply the color tint:
-    //    Only apply albedoFactor if vertex colors aren't present (to preserve vertex colors)
-    //    If vertex has color, use it directly; otherwise apply albedo tint
-    vec3 tintedBase = hasVertexColor ? baseColor : (baseColor * u_albedoFactor.rgb);
+    // 3a. incorporate vertex color (if provided). this allows lights to
+    // interact with colored meshes instead of leaving them unlit.
+    tintedBase *= v_color.rgb;
 
     // 4 Combine tintedBase with your crosshatch logic:
-    //    For vertex colors, ensure they're visible even with low lighting
-    //    Multiply by lighting, but ensure minimum visibility for vertex colors
-    vec3 litColor;
-    if (hasVertexColor) {
-        // For vertex colors, apply lighting but ensure they remain visible
-        // Use max to ensure colors don't go completely black
-        // Add ambient to lighting to ensure colors are always visible
-        vec3 finalLighting = max(lighting, ambient);
-        litColor = tintedBase * finalLighting;
-    } else {
-        // For textures, use normal lighting with ambient
-        litColor = tintedBase * max(lighting, ambient);
-    }
+    //    e.g., litColor = tintedBase * lighting, then crosshatching...
+    //    or tintedBase * (some lighting factor)...
+    vec3 litColor = tintedBase * lighting;
     
     //vec3 litColor = baseColor * lighting;
     
@@ -228,7 +197,7 @@ void main()
         float angle2 = u_params.w;
 
         // Scale the world position by the pattern scale (u_extraParams.x)
-        vec3 p_scaled = v_pos * u_extraParams.x;
+        vec3 p_scaled = v_worldPos * u_extraParams.x;
 
         // Multiply the stroke multiplier by the line thickness factor (u_extraParams.y)
         float line = texcube(p_scaled, N, lVal * strokeMult * u_extraParams.y, angle1);
@@ -254,7 +223,7 @@ void main()
         float angle1 = u_params.z;
 
         // Scale the world position by the pattern scale (u_extraParams.x)
-        vec3 p_scaled = v_pos * u_extraParams.x;
+        vec3 p_scaled = v_worldPos * u_extraParams.x;
 
         // Multiply the stroke multiplier by the line thickness factor (u_extraParams.y)
         float line = texcube(p_scaled, N, lVal * strokeMult * u_extraParams.y, angle1);
@@ -270,7 +239,7 @@ void main()
         // --- Layer 1 ---
         // Partial distance compensation:
         // 1. measure distance from camera to fragment
-        float dist = length(u_cameraPos.xyz - v_pos);
+        float dist = length(u_cameraPos.xyz - v_worldPos);
 
         // 2. pick a "referenceDist" so that if dist >= referenceDist, the pattern doesn't shrink further
         float referenceDist = 2.0;  // e.g. 5.0 or 10.0
@@ -282,7 +251,7 @@ void main()
         float finalScale = u_extraParams.x * factor;
 
         // anchor in world space
-        vec3 p_scaled = v_pos * finalScale;
+        vec3 p_scaled = v_worldPos * finalScale;
 
         float lumVal = luma(litColor);
         float lVal   = 1.0 - lumVal;
@@ -304,7 +273,7 @@ void main()
         float layerAngle = u_paramsLayer.z;
 
         float finalScale2 = layerPatternScale * factor;
-        vec3 p_scaled2 = v_pos * finalScale2;
+        vec3 p_scaled2 = v_worldPos * finalScale2;
 
         float line2 = texcube(p_scaled2, N, layerStrokeMult * u_paramsLayer.w, layerAngle);
         float r2 = 1.0 - step(0.5, line2);
@@ -316,7 +285,7 @@ void main()
     }else if(mode == 3){
         // --- Layer 1 ---
         // anchor in world space
-        vec3 p_scaled = v_pos * u_extraParams.x;
+        vec3 p_scaled = v_worldPos * u_extraParams.x;
 
         float lumVal = luma(litColor);
         float lVal   = 1.0 - lumVal;
@@ -334,7 +303,7 @@ void main()
         float layerStrokeMult = u_paramsLayer.y;
         float layerAngle = u_paramsLayer.z;
 
-        vec3 p_scaled2 = v_pos * layerPatternScale;
+        vec3 p_scaled2 = v_worldPos * layerPatternScale;
 
         float line2 = texcube(p_scaled2, N, layerStrokeMult * u_paramsLayer.w, layerAngle);
         float r2 = 1.0 - step(0.5, line2);
@@ -344,33 +313,15 @@ void main()
         crossColor =  mix(crosshatch, u_inkColor.xyz, r2);
     }else if(mode == 4){
         //default/simple lighting system
-        // For vertex colors, ensure they're visible even with mode 4
-        if (hasVertexColor) {
-            // Use vertex colors directly with minimal processing
-            crossColor = hasVertexColor ? vertexColorMod : litColor;
-        } else {
-            crossColor = litColor;
-        }
+        crossColor = litColor;
     }
     
     // Blend the crosshatch with the lit color (adjust blend factor as desired)
     vec3 finalColor = mix(litColor, crossColor, u_extraParams.z);
     
     // --- Apply the object color override:
-    // Only apply object color if it's not white (to preserve vertex colors)
-    // If object color is white, it means no override, so use vertex colors as-is
-    // For vertex colors, skip object color override to preserve the original colors
-    if (!hasVertexColor && (u_objectColor.r < 0.99 || u_objectColor.g < 0.99 || u_objectColor.b < 0.99)) {
-        finalColor *= u_objectColor.rgb;
-    }
+    finalColor *= u_objectColor.rgb;
     
-    // Final fallback: If we have vertex colors but they're not showing, use them directly
-    // This ensures vertex colors are always visible
-    if (hasVertexColor && dot(finalColor, vec3(1.0)) < 0.01) {
-        // If final color is nearly black, use vertex color directly with ambient
-        finalColor = vertexColorMod * ambient;
-    }
-    
-    vec4 finalColor4 = vec4(finalColor, v_color.a);
+    vec4 finalColor4 = vec4(finalColor, 1.0);
     gl_FragColor = mix(finalColor4, u_tint, u_tint.a);
 }
