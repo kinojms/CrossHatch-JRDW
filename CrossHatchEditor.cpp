@@ -297,6 +297,31 @@ static void SubmitTriangleList(uint16_t viewId, bgfx::ProgramHandle program, con
     bgfx::submit(viewId, program);
 }
 
+// Max vertices per transient batch (bgfx limit); batching avoids crash on large OBJs.
+static const uint32_t kOverlayBatchMaxVerts = 32768u;
+// Submit triangle list in batches so large meshes (e.g. imported OBJ) don't exceed transient buffer.
+static void SubmitTriangleListBatched(uint16_t viewId, bgfx::ProgramHandle program, const LineVertex* verts, uint32_t numVerts, uint64_t state)
+{
+    if (!bgfx::isValid(program) || verts == nullptr || numVerts < 3) return;
+    for (uint32_t offset = 0; offset < numVerts; )
+    {
+        uint32_t batch = std::min(numVerts - offset, kOverlayBatchMaxVerts);
+        batch -= batch % 3; // must be multiple of 3 (triangles)
+        if (batch < 3) break;
+        if (!bgfx::getAvailTransientVertexBuffer(batch, GetLineVertexLayout())) break;
+        bgfx::TransientVertexBuffer tvb;
+        bgfx::allocTransientVertexBuffer(&tvb, batch, GetLineVertexLayout());
+        std::memcpy(tvb.data, verts + offset, sizeof(LineVertex) * batch);
+        float id[16];
+        bx::mtxIdentity(id);
+        bgfx::setTransform(id);
+        bgfx::setVertexBuffer(0, &tvb, 0, batch);
+        bgfx::setState(state);
+        bgfx::submit(viewId, program);
+        offset += batch;
+    }
+}
+
 // Push a small world-space quad (2 triangles, 6 vertices) at (cx,cy,cz) with half-size r in XY plane; color abgr.
 static void PushVertexDot(std::vector<LineVertex>& out, float cx, float cy, float cz, float r, uint32_t abgr)
 {
@@ -1981,6 +2006,13 @@ static void DrawMeshEditModeOverlay(const Instance* inst, const float* worldMatr
     const MeshData& mesh = it->second;
     if (mesh.vertices.empty() || mesh.indices.empty()) return;
 
+    // Avoid crash on very large OBJs: overlay supports up to 64k vertices / 192k indices (64k triangles).
+    // Larger meshes (e.g. clean-mono with 300k+ verts) skip overlay; batching keeps submit within bgfx transient limit.
+    const size_t kMaxOverlayVerts = 65536u;
+    const size_t kMaxOverlayIndices = 196608u; // 64k triangles
+    if (mesh.vertices.size() > kMaxOverlayVerts || mesh.indices.size() > kMaxOverlayIndices)
+        return;
+
     const float lineHalfWidth = 0.02f;  // thick edges
     const float rNorm = 0.08f;
     const float rSel  = 0.11f;
@@ -1989,7 +2021,8 @@ static void DrawMeshEditModeOverlay(const Instance* inst, const float* worldMatr
 
     // 1) Edges as thick quads (triangles) so they are clearly visible
     std::vector<LineVertex> edgeVerts;
-    edgeVerts.reserve(mesh.indices.size() * 6 * 2); // 6 verts per edge, 2 passes
+    size_t maxEdgeVerts = (mesh.indices.size() / 3) * 6 * 3; // 6 verts per edge, 3 edges per triangle
+    edgeVerts.reserve(std::min(maxEdgeVerts, size_t(kOverlayBatchMaxVerts) * 4u));
     for (size_t i = 0; i + 2 < mesh.indices.size(); i += 3)
     {
         uint32_t i0 = mesh.indices[i], i1 = mesh.indices[i + 1], i2 = mesh.indices[i + 2];
@@ -2004,13 +2037,13 @@ static void DrawMeshEditModeOverlay(const Instance* inst, const float* worldMatr
     }
     if (!edgeVerts.empty())
     {
-        SubmitTriangleList(viewId, program, edgeVerts.data(), static_cast<uint32_t>(edgeVerts.size()), triState);
-        SubmitTriangleList(viewId, program, edgeVerts.data(), static_cast<uint32_t>(edgeVerts.size()), triStateOnTop);
+        SubmitTriangleListBatched(viewId, program, edgeVerts.data(), static_cast<uint32_t>(edgeVerts.size()), triState);
+        SubmitTriangleListBatched(viewId, program, edgeVerts.data(), static_cast<uint32_t>(edgeVerts.size()), triStateOnTop);
     }
 
-    // 2) Vertex dots as billboard quads (always face camera) so all 8 cube vertices are visible
+    // 2) Vertex dots as billboard quads (always face camera) so all vertices are visible
     std::vector<LineVertex> dotVerts;
-    dotVerts.reserve(mesh.vertices.size() * 6);
+    dotVerts.reserve(std::min(mesh.vertices.size() * 36u, size_t(kOverlayBatchMaxVerts) * 4u)); // PushBillboardDot(segments=16) adds ~33 verts per dot
     for (size_t idx = 0; idx < mesh.vertices.size(); ++idx)
     {
         const auto& v = mesh.vertices[idx];
@@ -2023,8 +2056,8 @@ static void DrawMeshEditModeOverlay(const Instance* inst, const float* worldMatr
     }
     if (!dotVerts.empty())
     {
-        SubmitTriangleList(viewId, program, dotVerts.data(), static_cast<uint32_t>(dotVerts.size()), triState);
-        SubmitTriangleList(viewId, program, dotVerts.data(), static_cast<uint32_t>(dotVerts.size()), triStateOnTop);
+        SubmitTriangleListBatched(viewId, program, dotVerts.data(), static_cast<uint32_t>(dotVerts.size()), triState);
+        SubmitTriangleListBatched(viewId, program, dotVerts.data(), static_cast<uint32_t>(dotVerts.size()), triStateOnTop);
     }
 }
 
