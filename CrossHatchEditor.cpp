@@ -1377,354 +1377,64 @@ static void ColorBoundaryVertices(MeshData& mesh, uint32_t boundaryAbgr)
 }
 
 // Naive triangle subdivision: each triangle is split into 4 using midpoints.
-// ============================================================================
-// Catmull-Clark Subdivision (Industry Standard - Like Blender/Maya)
-// ============================================================================
-// Simple Loop-based subdivision (one iteration) used as a fallback.
-static void SubdivideMesh_LoopOnce(MeshData& mesh)
-{
-    if (mesh.indices.size() < 3 || mesh.vertices.empty())
-        return;
-
-    std::unordered_map<uint64_t, uint32_t> midpointIndex;
-    midpointIndex.reserve(mesh.indices.size());
-
-    std::vector<uint32_t> newIndices;
-    newIndices.reserve(mesh.indices.size() * 4);
-
-    // Create midpoints on edges
-    auto getMidpoint = [&](uint32_t i0, uint32_t i1) -> uint32_t
-    {
-        uint64_t key = EncodeEdge(i0, i1);
-        auto it = midpointIndex.find(key);
-        if (it != midpointIndex.end())
-            return it->second;
-
-        PosColorVertex v0 = mesh.vertices[i0];
-        PosColorVertex v1 = mesh.vertices[i1];
-
-        PosColorVertex m = v0;
-        m.x = 0.5f * (v0.x + v1.x);
-        m.y = 0.5f * (v0.y + v1.y);
-        m.z = 0.5f * (v0.z + v1.z);
-        m.u = 0.5f * (v0.u + v1.u);
-        m.v = 0.5f * (v0.v + v1.v);
-        m.abgr = v0.abgr;
-        m.nx = m.ny = m.nz = 0.0f;
-
-        uint32_t newIndex = (uint32_t)mesh.vertices.size();
-        mesh.vertices.push_back(m);
-        midpointIndex[key] = newIndex;
-        return newIndex;
-    };
-
-    // Split each triangle into 4
-    for (size_t i = 0; i + 2 < mesh.indices.size(); i += 3)
-    {
-        uint32_t i0 = mesh.indices[i + 0];
-        uint32_t i1 = mesh.indices[i + 1];
-        uint32_t i2 = mesh.indices[i + 2];
-
-        uint32_t m01 = getMidpoint(i0, i1);
-        uint32_t m12 = getMidpoint(i1, i2);
-        uint32_t m20 = getMidpoint(i2, i0);
-
-        newIndices.push_back(i0);   newIndices.push_back(m01); newIndices.push_back(m20);
-        newIndices.push_back(i1);   newIndices.push_back(m12); newIndices.push_back(m01);
-        newIndices.push_back(i2);   newIndices.push_back(m20); newIndices.push_back(m12);
-        newIndices.push_back(m01);  newIndices.push_back(m12); newIndices.push_back(m20);
-    }
-
-    mesh.indices.swap(newIndices);
-}
-
-// Forward declaration of MergeCloseVertices (defined later)
-static void MergeCloseVertices(MeshData& mesh, float epsilon);
-
-static void SubdivideMesh_CatmullClark(MeshData& mesh)
-{
-    if (mesh.indices.size() < 3 || mesh.vertices.empty())
-        return;
-
-    // Weld any nearly-duplicate vertices up front – many primitives and some
-    // imports create separate vertices for each face which breaks adjacency
-    // and leads to spike artifacts.  Use a tiny epsilon so only exact duplicates
-    // collapse.
-    MergeCloseVertices(mesh, 0.0001f);
-
-    const size_t originalVertexCount = mesh.vertices.size();
-    const size_t triangleCount = mesh.indices.size() / 3;
-
-    // Build per-vertex adjacency info
-    std::vector<std::vector<uint32_t>> vertexFaces(originalVertexCount);  // faces touching each vertex
-    std::vector<std::vector<uint32_t>> vertexNeighbors(originalVertexCount);  // adjacent vertices
-
-    for (size_t faceIdx = 0; faceIdx < triangleCount; ++faceIdx)
-    {
-        uint32_t i0 = mesh.indices[faceIdx * 3 + 0];
-        uint32_t i1 = mesh.indices[faceIdx * 3 + 1];
-        uint32_t i2 = mesh.indices[faceIdx * 3 + 2];
-
-        // Record face adjacency
-        vertexFaces[i0].push_back((uint32_t)faceIdx);
-        vertexFaces[i1].push_back((uint32_t)faceIdx);
-        vertexFaces[i2].push_back((uint32_t)faceIdx);
-
-        // Record vertex neighbors (avoid duplicates)
-        auto addNeighbor = [](std::vector<uint32_t>& neighbors, uint32_t v)
-        {
-            if (std::find(neighbors.begin(), neighbors.end(), v) == neighbors.end())
-                neighbors.push_back(v);
-        };
-
-        addNeighbor(vertexNeighbors[i0], i1);
-        addNeighbor(vertexNeighbors[i0], i2);
-        addNeighbor(vertexNeighbors[i1], i0);
-        addNeighbor(vertexNeighbors[i1], i2);
-        addNeighbor(vertexNeighbors[i2], i0);
-        addNeighbor(vertexNeighbors[i2], i1);
-    }
-
-    std::vector<PosColorVertex> newVertices = mesh.vertices;
-    newVertices.reserve(originalVertexCount + mesh.indices.size() / 2);
-
-    std::vector<uint32_t> newIndices;
-    newIndices.reserve(mesh.indices.size() * 4);
-
-    // Step 1: Create face points (one per triangle)
-    std::vector<uint32_t> facePointIndices;
-    facePointIndices.reserve(triangleCount);
-
-    for (size_t faceIdx = 0; faceIdx < triangleCount; ++faceIdx)
-    {
-        uint32_t i0 = mesh.indices[faceIdx * 3 + 0];
-        uint32_t i1 = mesh.indices[faceIdx * 3 + 1];
-        uint32_t i2 = mesh.indices[faceIdx * 3 + 2];
-
-        const PosColorVertex& v0 = mesh.vertices[i0];
-        const PosColorVertex& v1 = mesh.vertices[i1];
-        const PosColorVertex& v2 = mesh.vertices[i2];
-
-        PosColorVertex facePoint;
-        facePoint.x = (v0.x + v1.x + v2.x) / 3.0f;
-        facePoint.y = (v0.y + v1.y + v2.y) / 3.0f;
-        facePoint.z = (v0.z + v1.z + v2.z) / 3.0f;
-        facePoint.u = (v0.u + v1.u + v2.u) / 3.0f;
-        facePoint.v = (v0.v + v1.v + v2.v) / 3.0f;
-        facePoint.nx = 0.0f;  // Recomputed after subdivision
-        facePoint.ny = 0.0f;
-        facePoint.nz = 0.0f;
-        facePoint.abgr = v0.abgr;  // Use first vertex's color
-
-        uint32_t facePointIdx = (uint32_t)newVertices.size();
-        newVertices.push_back(facePoint);
-        facePointIndices.push_back(facePointIdx);
-    }
-
-    // Step 2: Create edge points and track them
-    std::map<std::pair<uint32_t, uint32_t>, uint32_t> edgePointMap;
-
-    auto getOrCreateEdgePoint = [&](uint32_t v0, uint32_t v1) -> uint32_t
-    {
-        if (v0 > v1) std::swap(v0, v1);
-        auto key = std::make_pair(v0, v1);
-
-        auto it = edgePointMap.find(key);
-        if (it != edgePointMap.end())
-            return it->second;
-
-        // Edge point = average of edge endpoints + adjacent face points
-        const PosColorVertex& pv0 = mesh.vertices[v0];
-        const PosColorVertex& pv1 = mesh.vertices[v1];
-
-        // Find faces adjacent to this edge
-        std::vector<uint32_t> adjacentFaces;
-        for (uint32_t f : vertexFaces[v0])
-        {
-            if (std::find(vertexFaces[v1].begin(), vertexFaces[v1].end(), f) != vertexFaces[v1].end())
-                adjacentFaces.push_back(f);
-        }
-
-        PosColorVertex edgePoint;
-        edgePoint.x = pv0.x + pv1.x;
-        edgePoint.y = pv0.y + pv1.y;
-        edgePoint.z = pv0.z + pv1.z;
-        edgePoint.u = pv0.u + pv1.u;
-        edgePoint.v = pv0.v + pv1.v;
-
-        // Add face point contributions (averaged)
-        for (uint32_t faceIdx : adjacentFaces)
-        {
-            const PosColorVertex& fp = newVertices[facePointIndices[faceIdx]];
-            edgePoint.x += fp.x;
-            edgePoint.y += fp.y;
-            edgePoint.z += fp.z;
-            edgePoint.u += fp.u;
-            edgePoint.v += fp.v;
-        }
-
-        // Average: (v0 + v1 + f0 + f1) / 4 for internal edges
-        float denom = 2.0f + (float)adjacentFaces.size();
-        edgePoint.x /= denom;
-        edgePoint.y /= denom;
-        edgePoint.z /= denom;
-        edgePoint.u /= denom;
-        edgePoint.v /= denom;
-        edgePoint.nx = 0.0f;  // Recomputed
-        edgePoint.ny = 0.0f;
-        edgePoint.nz = 0.0f;
-        edgePoint.abgr = pv0.abgr;
-
-        uint32_t edgePointIdx = (uint32_t)newVertices.size();
-        newVertices.push_back(edgePoint);
-        edgePointMap[key] = edgePointIdx;
-
-        return edgePointIdx;
-    };
-
-    // Step 3: Move original vertices using Catmull-Clark formula
-    std::vector<PosColorVertex> movedVertices = mesh.vertices;
-    bool clampedOccurred = false;
-
-    for (uint32_t i = 0; i < originalVertexCount; ++i)
-    {
-        const std::vector<uint32_t>& adjacentFaces = vertexFaces[i];
-        const std::vector<uint32_t>& neighbors = vertexNeighbors[i];
-
-        if (adjacentFaces.empty() || neighbors.empty())
-            continue;
-
-        uint32_t n = (uint32_t)adjacentFaces.size();
-
-        // F = average of face points of faces touching this vertex
-        float Fx = 0.0f, Fy = 0.0f, Fz = 0.0f;
-        for (uint32_t faceIdx : adjacentFaces)
-        {
-            const PosColorVertex& fp = newVertices[facePointIndices[faceIdx]];
-            Fx += fp.x;
-            Fy += fp.y;
-            Fz += fp.z;
-        }
-        Fx /= (float)n;
-        Fy /= (float)n;
-        Fz /= (float)n;
-
-        // R = average of edge midpoints for edges of this vertex
-        // each edge midpoint = (P + neighbor) / 2
-        float Rx = 0.0f, Ry = 0.0f, Rz = 0.0f;
-        const PosColorVertex& P = mesh.vertices[i];
-        for (uint32_t neighbor : neighbors)
-        {
-            const PosColorVertex& nv = mesh.vertices[neighbor];
-            Rx += (P.x + nv.x) * 0.5f;
-            Ry += (P.y + nv.y) * 0.5f;
-            Rz += (P.z + nv.z) * 0.5f;
-        }
-        Rx /= (float)neighbors.size();
-        Ry /= (float)neighbors.size();
-        Rz /= (float)neighbors.size();
-
-        // Catmull-Clark formula: (F + 2*R + (n-3)*P) / n
-        float nf = (float)n;
-        PosColorVertex newPos;
-        newPos.x = (Fx + 2.0f * Rx + (nf - 3.0f) * P.x) / nf;
-        newPos.y = (Fy + 2.0f * Ry + (nf - 3.0f) * P.y) / nf;
-        newPos.z = (Fz + 2.0f * Rz + (nf - 3.0f) * P.z) / nf;
-        
-        // Clamp movement to avoid spikes (limit distance from original to some fraction of average edge length)
-        {
-            float avgEdgeLen = 0.0f;
-            for (uint32_t neighbor : neighbors)
-            {
-                const PosColorVertex& nv = mesh.vertices[neighbor];
-                float dx = nv.x - P.x;
-                float dy = nv.y - P.y;
-                float dz = nv.z - P.z;
-                avgEdgeLen += sqrtf(dx*dx + dy*dy + dz*dz);
-            }
-            if (!neighbors.empty())
-                avgEdgeLen /= (float)neighbors.size();
-
-            float maxMove = avgEdgeLen * 0.5f; // half the average edge length
-            float dx = newPos.x - P.x;
-            float dy = newPos.y - P.y;
-            float dz = newPos.z - P.z;
-            float dist = sqrtf(dx*dx + dy*dy + dz*dz);
-            if (dist > maxMove && dist > 0.0f)
-            {
-                clampedOccurred = true;
-                float scale = maxMove / dist;
-                newPos.x = P.x + dx * scale;
-                newPos.y = P.y + dy * scale;
-                newPos.z = P.z + dz * scale;
-#ifdef _DEBUG
-                // debug print a warning for problematic vertices
-                printf("[Subdivision] clamped vertex %u move (orig %.3f %.3f %.3f -> new %.3f %.3f %.3f)\n",
-                       i, P.x, P.y, P.z, newPos.x, newPos.y, newPos.z);
-#endif
-            }
-        }
-
-        movedVertices[i] = newPos;
-        // UVs and color stay the same for moved vertices
-    }
-
-    // Replace original vertices with moved ones in the new vertex list
-    for (uint32_t i = 0; i < originalVertexCount; ++i)
-    {
-        newVertices[i] = movedVertices[i];
-    }
-
-    // Log clamping occurrences for diagnostic purposes.  We no longer perform
-    // a hard fallback; clamping by itself guarantees there will be no extreme
-    // spikes, and keeping the Catmull-Clark topology yields smoother results
-    // than switching back to Loop.
-    if (clampedOccurred)
-    {
-        printf("[Subdivision] some vertex movements were clamped (mesh may have had poor topology)\n");
-    }
-
-    // Step 4: Rebuild indices connecting face points, edge points, and moved vertices
-    for (size_t faceIdx = 0; faceIdx < triangleCount; ++faceIdx)
-    {
-        uint32_t i0 = mesh.indices[faceIdx * 3 + 0];
-        uint32_t i1 = mesh.indices[faceIdx * 3 + 1];
-        uint32_t i2 = mesh.indices[faceIdx * 3 + 2];
-
-        uint32_t fp = facePointIndices[faceIdx];  // Central face point
-
-        // Edge points for this triangle
-        uint32_t e01 = getOrCreateEdgePoint(i0, i1);
-        uint32_t e12 = getOrCreateEdgePoint(i1, i2);
-        uint32_t e20 = getOrCreateEdgePoint(i2, i0);
-
-        // Create 6 smaller triangles from the original triangle
-        // Each original vertex gets a quad that includes the face point
-        
-        // Quad around vertex i0: (i0, e01, fp, e20)
-        newIndices.push_back(i0);   newIndices.push_back(e01);  newIndices.push_back(fp);
-        newIndices.push_back(i0);   newIndices.push_back(fp);   newIndices.push_back(e20);
-
-        // Quad around vertex i1: (i1, e12, fp, e01)
-        newIndices.push_back(i1);   newIndices.push_back(e12);  newIndices.push_back(fp);
-        newIndices.push_back(i1);   newIndices.push_back(fp);   newIndices.push_back(e01);
-
-        // Quad around vertex i2: (i2, e20, fp, e12)
-        newIndices.push_back(i2);   newIndices.push_back(e20);  newIndices.push_back(fp);
-        newIndices.push_back(i2);   newIndices.push_back(fp);   newIndices.push_back(e12);
-    }
-
-    mesh.vertices = std::move(newVertices);
-    mesh.indices = std::move(newIndices);
-}
-
 static void SubdivideMesh(MeshData& mesh, int levels)
 {
-    levels = std::max(0, std::min(levels, 3));  // Cap at 3 levels for performance
+    levels = std::max(0, levels);
     for (int level = 0; level < levels; ++level)
     {
         if (mesh.indices.size() < 3) break;
-        SubdivideMesh_CatmullClark(mesh);
+
+        std::unordered_map<uint64_t, uint32_t> midpointIndex;
+        midpointIndex.reserve(mesh.indices.size());
+
+        std::vector<uint32_t> newIndices;
+        newIndices.reserve(mesh.indices.size() * 4);
+
+        auto getMidpoint = [&](uint32_t i0, uint32_t i1) -> uint32_t
+        {
+            uint64_t key = EncodeEdge(i0, i1);
+            auto it = midpointIndex.find(key);
+            if (it != midpointIndex.end())
+                return it->second;
+
+            PosColorVertex v0 = mesh.vertices[i0];
+            PosColorVertex v1 = mesh.vertices[i1];
+
+            PosColorVertex m = v0;
+            m.x = 0.5f * (v0.x + v1.x);
+            m.y = 0.5f * (v0.y + v1.y);
+            m.z = 0.5f * (v0.z + v1.z);
+            m.u = 0.5f * (v0.u + v1.u);
+            m.v = 0.5f * (v0.v + v1.v);
+            // Leave normals for recomputation by computeNormals.
+            // Average color so seams are less visible.
+            // Simple unpack/pack is avoided; we just copy one endpoint's color.
+            // (Attribute mode will still give a clear outline.)
+
+            uint32_t newIndex = (uint32_t)mesh.vertices.size();
+            mesh.vertices.push_back(m);
+            midpointIndex[key] = newIndex;
+            return newIndex;
+        };
+
+        for (size_t i = 0; i + 2 < mesh.indices.size(); i += 3)
+        {
+            uint32_t i0 = mesh.indices[i + 0];
+            uint32_t i1 = mesh.indices[i + 1];
+            uint32_t i2 = mesh.indices[i + 2];
+
+            uint32_t m01 = getMidpoint(i0, i1);
+            uint32_t m12 = getMidpoint(i1, i2);
+            uint32_t m20 = getMidpoint(i2, i0);
+
+            // 4 new triangles.
+            newIndices.push_back(i0);  newIndices.push_back(m01); newIndices.push_back(m20);
+            newIndices.push_back(i1);  newIndices.push_back(m12); newIndices.push_back(m01);
+            newIndices.push_back(i2);  newIndices.push_back(m20); newIndices.push_back(m12);
+            newIndices.push_back(m01); newIndices.push_back(m12); newIndices.push_back(m20);
+        }
+
+        mesh.indices.swap(newIndices);
     }
 }
 
@@ -4908,12 +4618,7 @@ static void RenderInspectorBody(Instance* selectedInstance, std::vector<Instance
             bool hasMesh = HasEditableMeshData(selectedInstance);
             if (!hasMesh)
             {
-                ImGui::TextWrapped("No editable mesh data available for this object. This usually means it was created from a primitive type (cube, sphere, etc.) but not defined as editable, or was loaded externally without being registered.");
-                ImGui::Spacing();
-                if (ImGui::Button("Use primitives instead (Cube, Sphere, etc.)"))
-                {
-                    // Just show an info message
-                }
+                ImGui::TextWrapped("No editable mesh data available for this object.");
             }
             else
             {
