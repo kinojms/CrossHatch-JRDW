@@ -4402,6 +4402,7 @@ static void RenderLeftSidebar()
             {
                 currentGizmoOperation = op;
                 g_VertexOperationActive = false;
+                g_MeshEditModeActive = false; // mesh view off so object is movable with gizmo
             }
 
             const ImRect r(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
@@ -4443,8 +4444,8 @@ static void RenderLeftSidebar()
                 ImGui::BeginDisabled();
             if (ImGui::Button("##op_vertex", ImVec2(button_sz, button_sz)))
             {
-                g_VertexOperationActive = true;
-                g_MeshEditModeActive = true;
+                g_VertexOperationActive = !g_VertexOperationActive;
+                g_MeshEditModeActive = g_VertexOperationActive; // mesh view on only when vertex op is on
             }
             const ImRect r(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
             ImDrawList* dl = ImGui::GetWindowDrawList();
@@ -5888,18 +5889,21 @@ int main(){
             if (ImGui::IsKeyPressed(ImGuiKey_1)) {
                 currentGizmoOperation = ImGuizmo::TRANSLATE;
                 g_VertexOperationActive = false;
+                g_MeshEditModeActive = false;
             }
             if (ImGui::IsKeyPressed(ImGuiKey_2)) {
                 currentGizmoOperation = ImGuizmo::ROTATE;
                 g_VertexOperationActive = false;
+                g_MeshEditModeActive = false;
             }
             if (ImGui::IsKeyPressed(ImGuiKey_3)) {
                 currentGizmoOperation = ImGuizmo::SCALE;
                 g_VertexOperationActive = false;
+                g_MeshEditModeActive = false;
             }
             if (ImGui::IsKeyPressed(ImGuiKey_4)) {
-                g_VertexOperationActive = true;
-                g_MeshEditModeActive = true;
+                g_VertexOperationActive = !g_VertexOperationActive;
+                g_MeshEditModeActive = g_VertexOperationActive;
             }
             // Delete key: in mesh edit mode with vertices selected, delete those vertices; otherwise delete instance (undoable)
             if (ImGui::IsKeyPressed(ImGuiKey_Delete)) {
