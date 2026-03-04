@@ -277,6 +277,42 @@ static void SubmitLineList(uint16_t viewId, bgfx::ProgramHandle program, const L
     bgfx::submit(viewId, program);
 }
 
+// Submit triangle list (3 vertices per triangle); uses same LineVertex layout as unlit color program.
+static void SubmitTriangleList(uint16_t viewId, bgfx::ProgramHandle program, const LineVertex* verts, uint32_t numVerts, uint64_t state)
+{
+    if (!bgfx::isValid(program) || verts == nullptr || numVerts < 3)
+        return;
+    if (!bgfx::getAvailTransientVertexBuffer(numVerts, GetLineVertexLayout()))
+        return;
+
+    bgfx::TransientVertexBuffer tvb;
+    bgfx::allocTransientVertexBuffer(&tvb, numVerts, GetLineVertexLayout());
+    std::memcpy(tvb.data, verts, sizeof(LineVertex) * numVerts);
+
+    float id[16];
+    bx::mtxIdentity(id);
+    bgfx::setTransform(id);
+    bgfx::setVertexBuffer(0, &tvb, 0, numVerts);
+    bgfx::setState(state);
+    bgfx::submit(viewId, program);
+}
+
+// Push a small world-space quad (2 triangles, 6 vertices) at (cx,cy,cz) with half-size r in XY plane; color abgr.
+static void PushVertexDot(std::vector<LineVertex>& out, float cx, float cy, float cz, float r, uint32_t abgr)
+{
+    LineVertex v{};
+    v.nx = 0; v.ny = 1; v.nz = 0;
+    v.u = 0; v.v = 0;
+    v.abgr = abgr;
+    auto push = [&](float x, float y, float z) { v.x = x; v.y = y; v.z = z; out.push_back(v); };
+    push(cx - r, cy - r, cz);
+    push(cx + r, cy - r, cz);
+    push(cx + r, cy + r, cz);
+    push(cx - r, cy - r, cz);
+    push(cx + r, cy + r, cz);
+    push(cx - r, cy + r, cz);
+}
+
 static void DrawWorldAxesAndGrid(uint16_t viewId, const Camera& cam, bgfx::ProgramHandle program)
 {
     if (!bgfx::isValid(program))
@@ -1306,49 +1342,6 @@ static inline uint64_t EncodeEdge(uint32_t a, uint32_t b)
     return (uint64_t)std::min(a, b) << 32 | (uint64_t)std::max(a, b);
 }
 
-// Color boundary vertices (vertices that belong to at least one boundary edge).
-static void ColorBoundaryVertices(MeshData& mesh, uint32_t boundaryAbgr)
-{
-    if (mesh.indices.size() < 3 || mesh.vertices.empty())
-        return;
-
-    std::unordered_map<uint64_t, uint32_t> edgeUseCount;
-    edgeUseCount.reserve(mesh.indices.size());
-
-    // Count how many faces reference each undirected edge.
-    for (size_t i = 0; i + 2 < mesh.indices.size(); i += 3)
-    {
-        uint32_t i0 = mesh.indices[i + 0];
-        uint32_t i1 = mesh.indices[i + 1];
-        uint32_t i2 = mesh.indices[i + 2];
-
-        ++edgeUseCount[EncodeEdge(i0, i1)];
-        ++edgeUseCount[EncodeEdge(i1, i2)];
-        ++edgeUseCount[EncodeEdge(i2, i0)];
-    }
-
-    std::vector<uint8_t> isBoundary(mesh.vertices.size(), 0);
-
-    for (const auto& kv : edgeUseCount)
-    {
-        if (kv.second == 1)
-        {
-            uint32_t a = uint32_t(kv.first >> 32);
-            uint32_t b = uint32_t(kv.first & 0xffffffffu);
-            if (a < isBoundary.size()) isBoundary[a] = 1;
-            if (b < isBoundary.size()) isBoundary[b] = 1;
-        }
-    }
-
-    for (size_t i = 0; i < mesh.vertices.size(); ++i)
-    {
-        if (isBoundary[i])
-        {
-            mesh.vertices[i].abgr = boundaryAbgr;
-        }
-    }
-}
-
 // --- Vertex/edge/face selection editing (for Mesh Edit Mode) ---
 static void DeleteSelectedVertices(MeshData& mesh) {
     if (g_SelectedVertices.empty()) return;
@@ -1869,12 +1862,12 @@ static void SmoothMesh(MeshData& mesh, int iterations, float factor)
 
 
 
-// Neon green colors for Mesh Edit Mode (hierarchy: vertices strongest, edges lighter, faces get tint in main draw).
-static const uint32_t kNeonGreenEdge  = PackAbgr(0xff, 0x60, 0xff, 0xa0); // lighter neon green for edges
-static const uint32_t kNeonGreenVert  = PackAbgr(0xff, 0x00, 0xff, 0x00); // strongest neon green for vertices
-static const uint32_t kNeonGreenVertSel = PackAbgr(0xff, 0x00, 0xff, 0x66); // selected vertex even stronger (brighter)
+// Mesh Edit Mode overlay: green edges/vertices; selected vertex is blue so it stands out.
+static const uint32_t kNeonGreenEdge   = PackAbgr(0xff, 0x20, 0xaa, 0x20); // lighter neon green for edges
+static const uint32_t kNeonGreenVert   = PackAbgr(0xff, 0x00, 0xff, 0x00); // neon green for vertices
+static const uint32_t kSelectedVertexBlue = PackAbgr(0xff, 0xff, 0x00, 0x00); // selected vertex: blue (ABGR)
 
-// Draw mesh edit overlay: edges (lighter neon green), then vertices (strongest neon green). Selection highlights.
+// Draw mesh edit overlay: edge outline (lighter neon green), then vertex dots (strongest neon green). Selection highlights.
 static void DrawMeshEditModeOverlay(const Instance* inst, const float* worldMatrix, uint16_t viewId)
 {
     if (!inst || !g_MeshEditModeActive) return;
@@ -1885,18 +1878,21 @@ static void DrawMeshEditModeOverlay(const Instance* inst, const float* worldMatr
     const MeshData& mesh = it->second;
     if (mesh.vertices.empty() || mesh.indices.empty()) return;
 
-    std::vector<LineVertex> verts;
-    verts.reserve(mesh.indices.size() * 2 + mesh.vertices.size() * 6 * 2);
+    const uint64_t lineState = BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_BLEND_ALPHA | BGFX_STATE_PT_LINES;
+    const uint64_t overlayLineState = BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_DEPTH_TEST_ALWAYS | BGFX_STATE_BLEND_ALPHA | BGFX_STATE_PT_LINES;
 
-    auto pushLine = [&](float x0, float y0, float z0, float x1, float y1, float z1, uint32_t abgr)
+    std::vector<LineVertex> edgeVerts;
+    edgeVerts.reserve(mesh.indices.size() * 2);
+
+    auto pushLine = [&](std::vector<LineVertex>& out, float x0, float y0, float z0, float x1, float y1, float z1, uint32_t abgr)
     {
         LineVertex a{}; a.x = x0; a.y = y0; a.z = z0; a.nx = 0; a.ny = 1; a.nz = 0; a.abgr = abgr; a.u = a.v = 0;
         LineVertex b{}; b.x = x1; b.y = y1; b.z = z1; b.nx = 0; b.ny = 1; b.nz = 0; b.abgr = abgr; b.u = b.v = 0;
-        verts.push_back(a);
-        verts.push_back(b);
+        out.push_back(a);
+        out.push_back(b);
     };
 
-    // 1) Edges: lighter neon green (selected edges could use same color or slightly brighter)
+    // 1) Edges: lighter neon green overlay outline (depth-tested first, then overlay on top)
     for (size_t i = 0; i + 2 < mesh.indices.size(); i += 3)
     {
         uint32_t i0 = mesh.indices[i], i1 = mesh.indices[i + 1], i2 = mesh.indices[i + 2];
@@ -1905,84 +1901,195 @@ static void DrawMeshEditModeOverlay(const Instance* inst, const float* worldMatr
         TransformPosition(worldMatrix, mesh.vertices[i0].x, mesh.vertices[i0].y, mesh.vertices[i0].z, x0, y0, z0);
         TransformPosition(worldMatrix, mesh.vertices[i1].x, mesh.vertices[i1].y, mesh.vertices[i1].z, x1, y1, z1);
         TransformPosition(worldMatrix, mesh.vertices[i2].x, mesh.vertices[i2].y, mesh.vertices[i2].z, x2, y2, z2);
-        uint64_t e0 = EncodeEdge(i0, i1), e1 = EncodeEdge(i1, i2), e2 = EncodeEdge(i2, i0);
         uint32_t edgeColor = kNeonGreenEdge;
-        pushLine(x0, y0, z0, x1, y1, z1, edgeColor);
-        pushLine(x1, y1, z1, x2, y2, z2, edgeColor);
-        pushLine(x2, y2, z2, x0, y0, z0, edgeColor);
+        pushLine(edgeVerts, x0, y0, z0, x1, y1, z1, edgeColor);
+        pushLine(edgeVerts, x1, y1, z1, x2, y2, z2, edgeColor);
+        pushLine(edgeVerts, x2, y2, z2, x0, y0, z0, edgeColor);
+    }
+    if (!edgeVerts.empty())
+    {
+        SubmitLineList(viewId, unlitColorProgram, edgeVerts.data(), static_cast<uint32_t>(edgeVerts.size()), lineState);
+        SubmitLineList(viewId, unlitColorProgram, edgeVerts.data(), static_cast<uint32_t>(edgeVerts.size()), overlayLineState);
     }
 
-    // 2) Vertices: strongest neon green; larger cross for selected
-    const float rNorm = 0.015f;
-    const float rSel  = 0.025f;
+    // 2) Vertex dots: clear visual feedback at every vertex (green; blue when selected). Draw on top so they're always visible and clickable.
+    const float rNorm = 0.045f;
+    const float rSel  = 0.065f;
+    std::vector<LineVertex> dotVerts;
+    dotVerts.reserve(mesh.vertices.size() * 6);
     for (size_t idx = 0; idx < mesh.vertices.size(); ++idx)
     {
         const auto& v = mesh.vertices[idx];
         float cx, cy, cz;
         TransformPosition(worldMatrix, v.x, v.y, v.z, cx, cy, cz);
         bool sel = g_SelectedVertices.count((int)idx) != 0;
-        uint32_t color = sel ? kNeonGreenVertSel : kNeonGreenVert;
+        uint32_t color = sel ? kSelectedVertexBlue : kNeonGreenVert;
         float r = sel ? rSel : rNorm;
-        pushLine(cx - r, cy, cz, cx + r, cy, cz, color);
-        pushLine(cx, cy - r, cz, cx, cy + r, cz, color);
-        pushLine(cx, cy, cz - r, cx, cy, cz + r, color);
+        PushVertexDot(dotVerts, cx, cy, cz, r, color);
     }
-
-    if (!verts.empty())
-        SubmitLineList(viewId, unlitColorProgram, verts.data(), static_cast<uint32_t>(verts.size()),
+    if (!dotVerts.empty())
+    {
+        SubmitTriangleList(viewId, unlitColorProgram, dotVerts.data(), static_cast<uint32_t>(dotVerts.size()),
             BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_BLEND_ALPHA);
+        // Draw dots again on top (no depth test) so they're always visible for selection/click feedback
+        SubmitTriangleList(viewId, unlitColorProgram, dotVerts.data(), static_cast<uint32_t>(dotVerts.size()),
+            BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_DEPTH_TEST_ALWAYS | BGFX_STATE_BLEND_ALPHA);
+    }
 }
-
-// Draw selected instance's mesh as green vertices and edges (when not in full Mesh Edit Mode).
-static void DrawSelectedMeshOverlay(const Instance* inst, const float* worldMatrix, uint16_t viewId)
+// Draw overlay for selected mesh (edges + vertex dots)
+// Assumes mesh data already exists in g_InstanceMeshData.
+static void DrawSelectedMeshOverlay(const Instance* inst,
+    const float* worldMatrix,
+    uint16_t viewId)
 {
-    if (!inst) return;
+    if (!inst)
+        return;
+
+    // Validate shader program
+    if (!bgfx::isValid(unlitColorProgram))
+        return;
+
+    // Mesh edit mode handled separately
     if (g_MeshEditModeActive)
     {
         DrawMeshEditModeOverlay(inst, worldMatrix, viewId);
         return;
     }
-    auto it = g_InstanceMeshData.find(inst->id);
-    if (it == g_InstanceMeshData.end()) return;
-    const MeshData& mesh = it->second;
-    if (mesh.vertices.empty() || mesh.indices.empty()) return;
 
-    const uint32_t edgeColor = PackAbgr(0xff, 0x20, 0xff, 0x20);
-    const uint32_t vertColor = PackAbgr(0xff, 0x40, 0xff, 0x40);
-    std::vector<LineVertex> verts;
-    verts.reserve(mesh.indices.size() * 2 + mesh.vertices.size() * 6);
-    auto pushLine = [&](float x0, float y0, float z0, float x1, float y1, float z1, uint32_t abgr)
-    {
-        LineVertex a{}; a.x = x0; a.y = y0; a.z = z0; a.nx = 0; a.ny = 1; a.nz = 0; a.abgr = abgr; a.u = a.v = 0;
-        LineVertex b{}; b.x = x1; b.y = y1; b.z = z1; b.nx = 0; b.ny = 1; b.nz = 0; b.abgr = abgr; b.u = b.v = 0;
-        verts.push_back(a); verts.push_back(b);
-    };
+    auto it = g_InstanceMeshData.find(inst->id);
+    if (it == g_InstanceMeshData.end())
+        return;
+
+    const MeshData& mesh = it->second;
+
+    if (mesh.vertices.empty() || mesh.indices.empty())
+        return;
+
+    // ------------------------------------------------------------
+    // Setup render state (ALWAYS render on top)
+    // ------------------------------------------------------------
+
+    const uint64_t overlayState =
+        BGFX_STATE_WRITE_RGB |
+        BGFX_STATE_WRITE_A |
+        BGFX_STATE_BLEND_ALPHA |
+        BGFX_STATE_DEPTH_TEST_ALWAYS;
+
+    const uint64_t lineState =
+        overlayState |
+        BGFX_STATE_PT_LINES;
+
+    const uint64_t triState =
+        overlayState;
+
+    // Because we are manually transforming vertices to world space,
+    // we use identity transform for submission.
+    float identity[16];
+    bx::mtxIdentity(identity);
+    bgfx::setTransform(identity);
+
+    // ------------------------------------------------------------
+    // 1️⃣ Draw Edges
+    // ------------------------------------------------------------
+
+    std::vector<LineVertex> edgeVerts;
+    edgeVerts.reserve(mesh.indices.size() * 2);
+
+    auto pushLine = [&](float x0, float y0, float z0,
+        float x1, float y1, float z1,
+        uint32_t color)
+        {
+            LineVertex a{};
+            a.x = x0; a.y = y0; a.z = z0;
+            a.abgr = color;
+
+            LineVertex b{};
+            b.x = x1; b.y = y1; b.z = z1;
+            b.abgr = color;
+
+            edgeVerts.push_back(a);
+            edgeVerts.push_back(b);
+        };
+
     for (size_t i = 0; i + 2 < mesh.indices.size(); i += 3)
     {
-        uint32_t i0 = mesh.indices[i], i1 = mesh.indices[i + 1], i2 = mesh.indices[i + 2];
-        if (i0 >= mesh.vertices.size() || i1 >= mesh.vertices.size() || i2 >= mesh.vertices.size()) continue;
-        float x0, y0, z0, x1, y1, z1, x2, y2, z2;
-        TransformPosition(worldMatrix, mesh.vertices[i0].x, mesh.vertices[i0].y, mesh.vertices[i0].z, x0, y0, z0);
-        TransformPosition(worldMatrix, mesh.vertices[i1].x, mesh.vertices[i1].y, mesh.vertices[i1].z, x1, y1, z1);
-        TransformPosition(worldMatrix, mesh.vertices[i2].x, mesh.vertices[i2].y, mesh.vertices[i2].z, x2, y2, z2);
-        pushLine(x0, y0, z0, x1, y1, z1, edgeColor);
-        pushLine(x1, y1, z1, x2, y2, z2, edgeColor);
-        pushLine(x2, y2, z2, x0, y0, z0, edgeColor);
+        uint32_t i0 = mesh.indices[i];
+        uint32_t i1 = mesh.indices[i + 1];
+        uint32_t i2 = mesh.indices[i + 2];
+
+        if (i0 >= mesh.vertices.size() ||
+            i1 >= mesh.vertices.size() ||
+            i2 >= mesh.vertices.size())
+            continue;
+
+        float x0, y0, z0;
+        float x1, y1, z1;
+        float x2, y2, z2;
+
+        TransformPosition(worldMatrix,
+            mesh.vertices[i0].x,
+            mesh.vertices[i0].y,
+            mesh.vertices[i0].z,
+            x0, y0, z0);
+
+        TransformPosition(worldMatrix,
+            mesh.vertices[i1].x,
+            mesh.vertices[i1].y,
+            mesh.vertices[i1].z,
+            x1, y1, z1);
+
+        TransformPosition(worldMatrix,
+            mesh.vertices[i2].x,
+            mesh.vertices[i2].y,
+            mesh.vertices[i2].z,
+            x2, y2, z2);
+
+        pushLine(x0, y0, z0, x1, y1, z1, kNeonGreenEdge);
+        pushLine(x1, y1, z1, x2, y2, z2, kNeonGreenEdge);
+        pushLine(x2, y2, z2, x0, y0, z0, kNeonGreenEdge);
     }
-    const float r = 0.01f;
+
+    if (!edgeVerts.empty())
+    {
+        SubmitLineList(viewId,
+            unlitColorProgram,
+            edgeVerts.data(),
+            static_cast<uint32_t>(edgeVerts.size()),
+            lineState);
+    }
+
+    // ------------------------------------------------------------
+    // 2️⃣ Draw Vertex Dots
+    // ------------------------------------------------------------
+
+    std::vector<LineVertex> dotVerts;
+    dotVerts.reserve(mesh.vertices.size() * 6);
+
+    const float radius = 0.018f;
+
     for (const auto& v : mesh.vertices)
     {
         float cx, cy, cz;
-        TransformPosition(worldMatrix, v.x, v.y, v.z, cx, cy, cz);
-        pushLine(cx - r, cy, cz, cx + r, cy, cz, vertColor);
-        pushLine(cx, cy - r, cz, cx, cy + r, cz, vertColor);
-        pushLine(cx, cy, cz - r, cx, cy, cz + r, vertColor);
-    }
-    if (!verts.empty())
-        SubmitLineList(viewId, unlitColorProgram, verts.data(), static_cast<uint32_t>(verts.size()),
-            BGFX_STATE_WRITE_RGB | BGFX_STATE_DEPTH_TEST_LESS);
-}
 
+        TransformPosition(worldMatrix,
+            v.x, v.y, v.z,
+            cx, cy, cz);
+
+        PushVertexDot(dotVerts,
+            cx, cy, cz,
+            radius,
+            kNeonGreenVert);
+    }
+
+    if (!dotVerts.empty())
+    {
+        SubmitTriangleList(viewId,
+            unlitColorProgram,
+            dotVerts.data(),
+            static_cast<uint32_t>(dotVerts.size()),
+            triState);
+    }
+}
 std::string openFileDialog(bool save) {
 #ifdef _WIN32
     char filePath[MAX_PATH] = { 0 };
@@ -4758,14 +4865,7 @@ static void RenderInspectorBody(Instance* selectedInstance, std::vector<Instance
                 {
                     // Normal mode: show all tools (Boundary, Subdivision, Merge, Smoothing).
                     static ImVec4 s_boundaryColor = ImVec4(1.0f, 0.1f, 0.1f, 1.0f);
-                    ImGui::Separator();
-                    ImGui::Text("Boundaries");
-                    ImGui::SameLine();
-                    ImGui::ColorEdit4("##boundaryColor", (float*)&s_boundaryColor, ImGuiColorEditFlags_NoInputs);
-                    if (ImGui::Button("Color Boundary Vertices"))
-                    {
-                        if (mesh) { ColorBoundaryVertices(*mesh, PackAbgr((uint8_t)(s_boundaryColor.w * 255), (uint8_t)(s_boundaryColor.z * 255), (uint8_t)(s_boundaryColor.y * 255), (uint8_t)(s_boundaryColor.x * 255))); ApplyEditableMeshToInstance(selectedInstance); }
-                    }
+                  
                     static int s_subdivideLevels = 1;
                     ImGui::Separator();
                     ImGui::Text("Subdivision");
@@ -4799,91 +4899,25 @@ static void RenderInspectorBody(Instance* selectedInstance, std::vector<Instance
                 }
             }
 
-            // Object-level morphing (hidden when in Mesh Edit Mode)
-            if (!g_MeshEditModeActive)
+            ImGui::Spacing();
+            if (ImGui::Button("Delete Object"))
             {
-                ImGui::Separator();
-                ImGui::Text("Morph To Other Object");
-                // Build list of candidate instances (exclude lights and self).
-                std::vector<Instance*> morphCandidates;
-                morphCandidates.reserve(instances.size());
-                for (Instance* inst : instances)
+                if (selectedInstance->parent)
                 {
-                    if (!inst || inst == selectedInstance) continue;
-                    if (inst->isLight) continue;
-                    morphCandidates.push_back(inst);
-                }
-
-                static int s_morphIndex = -1;
-                if (!morphCandidates.empty())
-                {
-                    // Clamp stored index if candidate list shrank.
-                    if (s_morphIndex >= (int)morphCandidates.size())
-                        s_morphIndex = (int)morphCandidates.size() - 1;
-
-                    std::vector<const char*> names;
-                    names.reserve(morphCandidates.size());
-                    for (Instance* inst : morphCandidates)
-                        names.push_back(inst->name.c_str());
-
-                    ImGui::SetNextItemWidth(input_width);
-                    ImGui::Combo("Target##morph", &s_morphIndex,
-                        names.data(), (int)names.size());
-
-                    static float s_morphT = 0.0f;
-                    ImGui::SetNextItemWidth(input_width);
-                    ImGui::SliderFloat("Amount##morph", &s_morphT, 0.0f, 1.0f);
-
-                    if (s_morphIndex >= 0 && s_morphIndex < (int)morphCandidates.size())
-                    {
-                        Instance* target = morphCandidates[s_morphIndex];
-                        if (target)
-                        {
-                            float t = s_morphT;
-                            // Simple linear interpolation of transform and color.
-                            for (int i = 0; i < 3; ++i)
-                            {
-                                selectedInstance->position[i] =
-                                    selectedInstance->position[i] * (1.0f - t) + target->position[i] * t;
-                                selectedInstance->rotation[i] =
-                                    selectedInstance->rotation[i] * (1.0f - t) + target->rotation[i] * t;
-                                selectedInstance->scale[i] =
-                                    selectedInstance->scale[i] * (1.0f - t) + target->scale[i] * t;
-                            }
-                            for (int i = 0; i < 4; ++i)
-                            {
-                                selectedInstance->objectColor[i] =
-                                    selectedInstance->objectColor[i] * (1.0f - t) + target->objectColor[i] * t;
-                            }
-                        }
-                    }
+                    auto it = std::find(selectedInstance->parent->children.begin(), selectedInstance->parent->children.end(), selectedInstance);
+                    if (it != selectedInstance->parent->children.end())
+                        gCmdManager.executeCommand(std::make_unique<DeleteInstanceCommand>(selectedInstance, selectedInstance->parent, std::distance(selectedInstance->parent->children.begin(), it)));
                 }
                 else
                 {
-                    ImGui::TextDisabled("No other non-light objects available to morph to.");
+                    auto it = std::find(instances.begin(), instances.end(), selectedInstance);
+                    if (it != instances.end())
+                        gCmdManager.executeCommand(std::make_unique<DeleteInstanceCommand>(selectedInstance, &instances, std::distance(instances.begin(), it)));
                 }
+                selectedInstance = nullptr;
             }
         }
 
-        ImGui::Spacing();
-        if (ImGui::Button("Delete Object"))
-        {
-            if (selectedInstance->parent)
-            {
-                auto it = std::find(selectedInstance->parent->children.begin(), selectedInstance->parent->children.end(), selectedInstance);
-                if (it != selectedInstance->parent->children.end())
-                    gCmdManager.executeCommand(std::make_unique<DeleteInstanceCommand>(selectedInstance, selectedInstance->parent, std::distance(selectedInstance->parent->children.begin(), it)));
-            }
-            else
-            {
-                auto it = std::find(instances.begin(), instances.end(), selectedInstance);
-                if (it != instances.end())
-                    gCmdManager.executeCommand(std::make_unique<DeleteInstanceCommand>(selectedInstance, &instances, std::distance(instances.begin(), it)));
-            }
-            selectedInstance = nullptr;
-        }
-        bool highlighted = highlightVisible;
-        if (ImGui::Checkbox("Show highlight tint", &highlighted)) highlightVisible = highlighted;
     }
 
 }
@@ -5915,9 +5949,15 @@ int main(){
             if (ImGui::IsKeyPressed(ImGuiKey_3)) {
                 currentGizmoOperation = ImGuizmo::SCALE;
             }
-            // Delete selected instance with Delete key (undoable)
+            // Delete key: in mesh edit mode with vertices selected, delete those vertices; otherwise delete instance (undoable)
             if (ImGui::IsKeyPressed(ImGuiKey_Delete)) {
-                if (selectedInstance)
+                Instance* editInst = GetInstanceWithEditableMesh(selectedInstance);
+                if (g_MeshEditModeActive && !g_SelectedVertices.empty() && editInst)
+                {
+                    MeshData* mesh = GetEditableMeshData(editInst);
+                    if (mesh) { DeleteSelectedVertices(*mesh); ApplyEditableMeshToInstance(selectedInstance); }
+                }
+                else if (selectedInstance)
                 {
                     if (selectedInstance->parent)
                     {
@@ -7648,18 +7688,78 @@ int main(){
             bool skipPickingForGizmo = ImGuizmo::IsOver() || ImGuizmo::IsUsing();
             if (InputManager::isMouseClicked(GLFW_MOUSE_BUTTON_LEFT) && mouseIn3DArea && !skipPickingForGizmo)
             {
-                if (InputManager::getSkipPickingPass) {
-                    // Use a dedicated view ID for picking (choose one not used by your normal rendering)
+                Camera& activeCamera = cameras[currentCameraIndex];
+                float view[16];
+                bx::mtxLookAt(view, activeCamera.position, bx::add(activeCamera.position, activeCamera.front), activeCamera.up);
+                float proj[16];
+                bx::mtxProj(proj, activeCamera.fov, float(view3DWidth) / float(view3DHeight), activeCamera.nearClip, activeCamera.farClip, bgfx::getCaps()->homogeneousDepth);
+
+                // Mesh Edit Mode: click on a vertex to select it (or Ctrl+click to add/remove from selection).
+                bool vertexPicked = false;
+                if (g_MeshEditModeActive && selectedInstance)
+                {
+                    Instance* editInst = GetInstanceWithEditableMesh(selectedInstance);
+                    if (editInst)
+                    {
+                        auto mit = g_InstanceMeshData.find(editInst->id);
+                        if (mit != g_InstanceMeshData.end())
+                        {
+                            const MeshData& mesh = mit->second;
+                            if (!mesh.vertices.empty())
+                            {
+                                float world[16];
+                                BuildWorldMatrix(editInst, world);
+                                float viewProj[16];
+                                bx::mtxMul(viewProj, proj, view);
+                                float mouseLocalX = (float)(mouseX_input - (int)g_ViewportRectX);
+                                float mouseLocalY = (float)(mouseY_input - (int)g_ViewportRectY);
+                                const float pickRadius = 28.0f;
+                                int bestVi = -1;
+                                float bestDist2 = pickRadius * pickRadius;
+                                for (int vi = 0; vi < (int)mesh.vertices.size(); ++vi)
+                                {
+                                    const auto& v = mesh.vertices[vi];
+                                    float wx, wy, wz;
+                                    TransformPosition(world, v.x, v.y, v.z, wx, wy, wz);
+                                    float clip[4];
+                                    clip[0] = viewProj[0]*wx + viewProj[4]*wy + viewProj[8]*wz + viewProj[12];
+                                    clip[1] = viewProj[1]*wx + viewProj[5]*wy + viewProj[9]*wz + viewProj[13];
+                                    clip[2] = viewProj[2]*wx + viewProj[6]*wy + viewProj[10]*wz + viewProj[14];
+                                    clip[3] = viewProj[3]*wx + viewProj[7]*wy + viewProj[11]*wz + viewProj[15];
+                                    if (clip[3] <= 0.0f) continue;
+                                    float ndcX = clip[0] / clip[3];
+                                    float ndcY = clip[1] / clip[3];
+                                    float sx = (ndcX * 0.5f + 0.5f) * (float)view3DWidth;
+                                    float sy = (float)view3DHeight - (ndcY * 0.5f + 0.5f) * (float)view3DHeight;
+                                    float dx = sx - mouseLocalX;
+                                    float dy = sy - mouseLocalY;
+                                    float d2 = dx*dx + dy*dy;
+                                    if (d2 < bestDist2) { bestDist2 = d2; bestVi = vi; }
+                                }
+                                if (bestVi >= 0)
+                                {
+                                    vertexPicked = true;
+                                    bool ctrl = InputManager::isKeyPressed(GLFW_KEY_LEFT_CONTROL) || InputManager::isKeyPressed(GLFW_KEY_RIGHT_CONTROL);
+                                    if (ctrl)
+                                    {
+                                        if (g_SelectedVertices.count(bestVi)) g_SelectedVertices.erase(bestVi);
+                                        else g_SelectedVertices.insert(bestVi);
+                                    }
+                                    else
+                                    {
+                                        g_SelectedVertices.clear();
+                                        g_SelectedVertices.insert(bestVi);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (!vertexPicked && InputManager::getSkipPickingPass) {
                     const uint32_t PICKING_VIEW_ID = 0;
                     bgfx::setViewFrameBuffer(PICKING_VIEW_ID, s_pickingFB);
                     bgfx::setViewRect(PICKING_VIEW_ID, 0, 0, PICKING_DIM, PICKING_DIM);
-
-                    // Use the same camera for the picking pass.
-                    Camera& activeCamera = cameras[currentCameraIndex];
-                    float view[16];
-                    bx::mtxLookAt(view, activeCamera.position, bx::add(activeCamera.position, activeCamera.front), activeCamera.up);
-                    float proj[16];
-                    bx::mtxProj(proj, activeCamera.fov, float(view3DWidth) / float(view3DHeight), activeCamera.nearClip, activeCamera.farClip, bgfx::getCaps()->homogeneousDepth);
                     bgfx::setViewTransform(PICKING_VIEW_ID, view, proj);
 
                     // Render each instance with the picking shader.
@@ -7685,72 +7785,50 @@ int main(){
                     bgfx::setViewTransform(1, view, proj);
                     InputManager::toggleSkipPickingPass();
                 }
-                // Use a dedicated view ID for picking (choose one not used by your normal rendering)
-                const uint32_t PICKING_VIEW_ID = 0;
-                bgfx::setViewFrameBuffer(PICKING_VIEW_ID, s_pickingFB);
-                bgfx::setViewRect(PICKING_VIEW_ID, 0, 0, PICKING_DIM, PICKING_DIM);
-
-                // Use the same camera for the picking pass.
-                Camera& activeCamera = cameras[currentCameraIndex];
-                float view[16];
-                bx::mtxLookAt(view, activeCamera.position, bx::add(activeCamera.position, activeCamera.front), activeCamera.up);
-                float proj[16];
-                bx::mtxProj(proj, activeCamera.fov, float(view3DWidth) / float(view3DHeight), activeCamera.nearClip, activeCamera.farClip, bgfx::getCaps()->homogeneousDepth);
-                bgfx::setViewTransform(PICKING_VIEW_ID, view, proj);
-
-                // Render each instance with the picking shader.
-                for (const Instance* instance : instances)
+                if (!vertexPicked)
                 {
-                    renderInstancePickingRecursive(instance, nullptr, PICKING_VIEW_ID);
-                }
+                    const uint32_t PICKING_VIEW_ID = 0;
+                    bgfx::setViewFrameBuffer(PICKING_VIEW_ID, s_pickingFB);
+                    bgfx::setViewRect(PICKING_VIEW_ID, 0, 0, PICKING_DIM, PICKING_DIM);
+                    bgfx::setViewTransform(PICKING_VIEW_ID, view, proj);
 
-                // Blit the picking render target to the CPU-readable texture.
-                const uint32_t PICKING_BLIT_VIEW = 2;
-                bgfx::blit(PICKING_BLIT_VIEW, s_pickingReadTex, 0, 0, s_pickingRT);
-                // Submit a frame to ensure the blit is complete.
-                bgfx::frame();
+                    for (const Instance* instance : instances)
+                        renderInstancePickingRecursive(instance, nullptr, PICKING_VIEW_ID);
 
-                // Read back the texture data into s_pickingBlitData.
-                bgfx::readTexture(s_pickingReadTex, s_pickingBlitData);
+                    const uint32_t PICKING_BLIT_VIEW = 2;
+                    bgfx::blit(PICKING_BLIT_VIEW, s_pickingReadTex, 0, 0, s_pickingRT);
+                    bgfx::frame();
+                    bgfx::readTexture(s_pickingReadTex, s_pickingBlitData);
 
-                // Convert mouse to viewport-window-local coords for picking.
-                float mouseLocalX = (float)(mouseX_input - (int)g_ViewportRectX);
-                float mouseLocalY = (float)(mouseY_input - (int)g_ViewportRectY);
-                int mouseY_flip = view3DHeight - (int)mouseLocalY;
-                int pickX = (int)(mouseLocalX * (float)PICKING_DIM / (float)view3DWidth);
-                int pickY = (mouseY_flip * PICKING_DIM) / view3DHeight;
+                    float mouseLocalX = (float)(mouseX_input - (int)g_ViewportRectX);
+                    float mouseLocalY = (float)(mouseY_input - (int)g_ViewportRectY);
+                    int mouseY_flip = view3DHeight - (int)mouseLocalY;
+                    int pickX = (int)(mouseLocalX * (float)PICKING_DIM / (float)view3DWidth);
+                    int pickY = (mouseY_flip * PICKING_DIM) / view3DHeight;
+                    pickX = std::max(0, std::min(pickX, PICKING_DIM - 1));
+                    pickY = std::max(0, std::min(pickY, PICKING_DIM - 1));
 
-                // Clamp the coordinates.
-                pickX = std::max(0, std::min(pickX, PICKING_DIM - 1));
-                pickY = std::max(0, std::min(pickY, PICKING_DIM - 1));
+                    int pixelIndex = (pickY * PICKING_DIM + pickX) * 4;
+                    uint8_t r = s_pickingBlitData[pixelIndex + 0];
+                    uint8_t g = s_pickingBlitData[pixelIndex + 1];
+                    uint8_t b = s_pickingBlitData[pixelIndex + 2];
+                    uint32_t pickedID = (r << 16) | (g << 8) | b;
 
-                // Read the pixel (RGBA8: 4 bytes per pixel)
-                int pixelIndex = (pickY * PICKING_DIM + pickX) * 4;
-                uint8_t r = s_pickingBlitData[pixelIndex + 0];
-                uint8_t g = s_pickingBlitData[pixelIndex + 1];
-                uint8_t b = s_pickingBlitData[pixelIndex + 2];
-
-                // Decode the ID from the red channel.
-                uint32_t pickedID = (r << 16) | (g << 8) | b;
-
-                // Search through instances to find the one with this ID.
-                Instance* pickedInstance = findInstanceById(instances, pickedID);
-                if (pickedInstance)
-                {
-                    if (selectedInstance == pickedInstance) {
-                        selectedInstance = nullptr;
+                    Instance* pickedInstance = findInstanceById(instances, pickedID);
+                    if (pickedInstance)
+                    {
+                        if (selectedInstance == pickedInstance)
+                            selectedInstance = nullptr;
+                        else
+                        {
+                            selectedInstance = pickedInstance;
+                            std::cout << "Picked object: " << selectedInstance->name << std::endl;
+                        }
                     }
-                    else {
-                        selectedInstance = pickedInstance;
-                        std::cout << "Picked object: " << selectedInstance->name << std::endl;
-                    }
+                    bgfx::setViewFrameBuffer(0, BGFX_INVALID_HANDLE);
+                    bgfx::setViewRect(1, (uint16_t)g_ViewportRectX, (uint16_t)g_ViewportRectY, (uint16_t)view3DWidth, (uint16_t)view3DHeight);
+                    bgfx::setViewTransform(1, view, proj);
                 }
-                // Detach the picking framebuffer by setting it to BGFX_INVALID_HANDLE.
-                bgfx::setViewFrameBuffer(0, BGFX_INVALID_HANDLE);
-                // Reset the viewport to the 3D viewport window rect (view 1).
-                bgfx::setViewRect(1, (uint16_t)g_ViewportRectX, (uint16_t)g_ViewportRectY, (uint16_t)view3DWidth, (uint16_t)view3DHeight);
-                // Reset the view transforms for your normal scene.
-                bgfx::setViewTransform(1, view, proj);
             }
         }
 
