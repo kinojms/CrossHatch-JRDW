@@ -1907,9 +1907,14 @@ static void SmoothMesh(MeshData& mesh, int iterations, float factor)
 
 // Mesh Edit Mode overlay: green edges/vertices; selected vertex is blue so it stands out.
 // Wireframe overlay colors: thick blue outline and vertex dots (visible like in reference).
-static const uint32_t kWireframeEdge  = PackAbgr(0xff, 0xff, 0x60, 0x40); // bright blue for edges (ABGR)
-static const uint32_t kWireframeVert  = PackAbgr(0xff, 0xff, 0xa0, 0x80); // blue for vertices
-static const uint32_t kSelectedVertexBlue = PackAbgr(0xff, 0xff, 0x00, 0x00); // selected: solid blue
+static const uint32_t kWireframeEdge =
+PackAbgr(0xff, 0x00, 0x55, 0x00); // dark green for edges
+
+static const uint32_t kWireframeVert =
+PackAbgr(0xff, 0x00, 0x99, 0x00); // medium green for vertices
+
+static const uint32_t kSelectedVertexGreen =
+PackAbgr(0xff, 0x00, 0xff, 0x00); // bright neon green for selected vertex
 
 // Draw mesh edit overlay: thick edges (quads) and billboard vertex dots. Uses view/camera so overlay is always visible.
 // FallbackProgram used when unlitColorProgram is invalid so overlay always draws.
@@ -1934,7 +1939,7 @@ static void DrawMeshEditModeOverlay(const Instance* inst, const float* worldMatr
     const MeshData& mesh = it->second;
     if (mesh.vertices.empty() || mesh.indices.empty()) return;
 
-    const float lineHalfWidth = 0.04f;  // thick edges
+    const float lineHalfWidth = 0.02f;  // thick edges
     const float rNorm = 0.08f;
     const float rSel  = 0.11f;
     const uint64_t triState = BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_BLEND_ALPHA;
@@ -1970,7 +1975,7 @@ static void DrawMeshEditModeOverlay(const Instance* inst, const float* worldMatr
         float cx, cy, cz;
         TransformPosition(worldMatrix, v.x, v.y, v.z, cx, cy, cz);
         bool sel = g_SelectedVertices.count((int)idx) != 0;
-        uint32_t color = sel ? kSelectedVertexBlue : kWireframeVert;
+        uint32_t color = sel ? kSelectedVertexGreen : kWireframeVert;
         float r = sel ? rSel : rNorm;
         PushBillboardDot(dotVerts, cx, cy, cz, r, color, viewMatrix);
     }
