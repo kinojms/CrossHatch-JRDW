@@ -64,19 +64,16 @@ bool ObjLoader::loadObj(const std::string& filepath,
             iss >> pos.x >> pos.y >> pos.z;
             positions.push_back(pos);
             
-            // Check if vertex color data follows (r g b or r g b a)
-            // OBJ format: "v x y z [r g b] [a]"
-            float r, g, b, a = 1.0f;
-            if (iss >> r >> g >> b) {
-                // Successfully read r, g, b - this is a colored vertex
-                // Try to read alpha, but it's optional
-                if (!(iss >> a)) {
-                    a = 1.0f; // Default alpha to 1.0 if not provided
-                }
+            // Vertex color: 6 floats total for nerf/instant-ngp "v x y z r b g" (r,b,g order).
+            // Also support common OBJ "v x y z r g b [a]".
+            float c0, c1, c2, a = 1.0f;
+            if (iss >> c0 >> c1 >> c2) {
+                if (!(iss >> a)) a = 1.0f;
+                // Nerf/instant-ngp custom format: file order is r b g -> store as (r,g,b) = (c0, c2, c1).
+                float r = c0, g = c2, b = c1;
                 colors.push_back({r, g, b, a});
                 hasVertexColors = true;
             } else {
-                // No color data, add default white
                 colors.push_back({1.0f, 1.0f, 1.0f, 1.0f});
             }
         }

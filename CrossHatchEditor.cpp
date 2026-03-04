@@ -22,6 +22,7 @@
 
 #include <map>
 #include <set>
+#include <unordered_set>
 #include <algorithm> // For std::max and std::min
 #endif
 #include <filesystem>
@@ -276,6 +277,42 @@ static void SubmitLineList(uint16_t viewId, bgfx::ProgramHandle program, const L
     bgfx::submit(viewId, program);
 }
 
+// Submit triangle list (3 vertices per triangle); uses same LineVertex layout as unlit color program.
+static void SubmitTriangleList(uint16_t viewId, bgfx::ProgramHandle program, const LineVertex* verts, uint32_t numVerts, uint64_t state)
+{
+    if (!bgfx::isValid(program) || verts == nullptr || numVerts < 3)
+        return;
+    if (!bgfx::getAvailTransientVertexBuffer(numVerts, GetLineVertexLayout()))
+        return;
+
+    bgfx::TransientVertexBuffer tvb;
+    bgfx::allocTransientVertexBuffer(&tvb, numVerts, GetLineVertexLayout());
+    std::memcpy(tvb.data, verts, sizeof(LineVertex) * numVerts);
+
+    float id[16];
+    bx::mtxIdentity(id);
+    bgfx::setTransform(id);
+    bgfx::setVertexBuffer(0, &tvb, 0, numVerts);
+    bgfx::setState(state);
+    bgfx::submit(viewId, program);
+}
+
+// Push a small world-space quad (2 triangles, 6 vertices) at (cx,cy,cz) with half-size r in XY plane; color abgr.
+static void PushVertexDot(std::vector<LineVertex>& out, float cx, float cy, float cz, float r, uint32_t abgr)
+{
+    LineVertex v{};
+    v.nx = 0; v.ny = 1; v.nz = 0;
+    v.u = 0; v.v = 0;
+    v.abgr = abgr;
+    auto push = [&](float x, float y, float z) { v.x = x; v.y = y; v.z = z; out.push_back(v); };
+    push(cx - r, cy - r, cz);
+    push(cx + r, cy - r, cz);
+    push(cx + r, cy + r, cz);
+    push(cx - r, cy - r, cz);
+    push(cx + r, cy + r, cz);
+    push(cx - r, cy + r, cz);
+}
+
 static void DrawWorldAxesAndGrid(uint16_t viewId, const Camera& cam, bgfx::ProgramHandle program)
 {
     if (!bgfx::isValid(program))
@@ -385,7 +422,10 @@ struct LightAnimation {
     float frequency[3] = { 1.0f, 1.0f, 1.0f };  // Frequency (Hz) for each axis.
     float phase[3] = { 0.0f, 0.0f, 0.0f };  // Phase offset for each axis.
 };
-
+struct MeshData {
+    std::vector<PosColorVertex> vertices;
+    std::vector<uint32_t> indices;
+};
 struct Instance
 {
     int id;
@@ -399,6 +439,9 @@ struct Instance
     bgfx::VertexBufferHandle vertexBuffer;
     bgfx::IndexBufferHandle indexBuffer;
     bool selected = false;
+
+    MeshData meshData;
+    bool hasMeshData = false;
 
     // Add an override object color (RGBA)
     float objectColor[4];
@@ -727,10 +770,7 @@ public:
 
 CommandManager gCmdManager;
 
-struct MeshData {
-    std::vector<PosColorVertex> vertices;
-    std::vector<uint32_t> indices;
-};
+
 
 // CPU-side editable mesh data for instances that support geometry operations.
 // Keyed by Instance::id.
@@ -738,6 +778,34 @@ static std::unordered_map<int, MeshData> g_InstanceMeshData;
 // Base mesh templates keyed by instance type (e.g. "cube", "plane", "mesh").
 // These are cloned into g_InstanceMeshData when instances are created.
 static std::unordered_map<std::string, MeshData> g_BaseMeshData;
+
+// --- Mesh Edit Mode (Blender/ProBuilder-style): dedicated editing state ---
+static bool g_MeshEditModeActive = false;
+// When true, left-pane "Vertex Operation" is selected; mesh edit overlay (vertex dots) is shown and object gizmo is hidden.
+static bool g_VertexOperationActive = false;
+enum class MeshEditMode { Object, Vertex, Edge, Face };
+static MeshEditMode g_MeshEditMode = MeshEditMode::Vertex;
+static std::set<int> g_SelectedVertices;
+static std::set<uint64_t> g_SelectedEdges;  // EncodeEdge(va,vb)
+static std::set<int> g_SelectedFaces;        // triangle index
+
+// Shared (global) buffer handles used by primitive types. When we apply mesh edits we must
+// not destroy these, or new instances would get invalid handles and crash. We only destroy
+// buffers that are instance-owned (created for that instance).
+static std::unordered_set<uint16_t> g_SharedVertexBufferIndices;
+static std::unordered_set<uint16_t> g_SharedIndexBufferIndices;
+void RegisterSharedBuffers(const std::unordered_map<std::string, std::pair<bgfx::VertexBufferHandle, bgfx::IndexBufferHandle>>& bufferMap)
+{
+    g_SharedVertexBufferIndices.clear();
+    g_SharedIndexBufferIndices.clear();
+    for (const auto& kv : bufferMap)
+    {
+        if (bgfx::isValid(kv.second.first))
+            g_SharedVertexBufferIndices.insert(kv.second.first.idx);
+        if (bgfx::isValid(kv.second.second))
+            g_SharedIndexBufferIndices.insert(kv.second.second.idx);
+    }
+}
 
 struct Vec3 {
     float x, y, z;
@@ -802,208 +870,243 @@ void DecomposeMatrixToInstance_ImGuizmo(const float* matrix, Instance* inst)
     inst->scale[2] = scl[2];
 }
 
-// Sphere-based orientation gizmo (replaces cube-based ViewManipulate)
-// Renders 6 colored spheres at each axis direction for camera orientation control
-// The spheres are positioned based on how the world axes appear in the camera's view
-// They stay in a circle in the gizmo area at the bottom-right, never disappearing
-void DrawOrientationSphereGizmo(float* view, float* proj, ImVec2 position, ImVec2 size, float rectW, float rectH, Camera& cam)
+// Forward declaration so geometry tools can recreate GPU buffers.
+void createMeshBuffers(const MeshData& meshData, bgfx::VertexBufferHandle& vbh, bgfx::IndexBufferHandle& ibh);
+
+// Helper: get the instance that actually holds editable mesh data. When the user selects
+// a group (e.g. clean-mono.obj_group), the group has no mesh; the mesh is on a child.
+// This returns the selected instance if it has mesh, else the first child that has mesh.
+static Instance* GetInstanceWithEditableMesh(Instance* inst)
 {
-    const float sphereRadius = 12.0f;
-    const float centerX = position.x + size.x * 0.5f;
-    const float centerY = position.y + size.y * 0.5f;
-    const ImVec2 gizmoCenter(centerX, centerY);
-    const float orbitRadius = std::min(size.x, size.y) * 0.35f;
-
-    // Axis colors (matching the world axes: Red=X, Green=Y, Blue=Z)
-    const ImVec4 colorX(1.0f, 0.2f, 0.2f, 0.8f);  // Red for X axis
-    const ImVec4 colorY(0.2f, 1.0f, 0.2f, 0.8f);  // Green for Y axis
-    const ImVec4 colorZ(0.2f, 0.2f, 1.0f, 0.8f);  // Blue for Z axis
-    const ImVec4 colorBg(0.15f, 0.15f, 0.15f, 0.5f);  // Background
-
-    // Get the draw list for rendering to the gizmo area
-    ImDrawList* drawList = ImGui::GetWindowDrawList();
-
-    // Normalize camera basis vectors to ensure consistent projection
-    bx::Vec3 camRight = bx::normalize(cam.right);
-    bx::Vec3 camUp = bx::normalize(cam.up);
-
-    // Helper function to project a world direction to a 2D position within the gizmo area
-    // The spheres move freely within the circular region based on their 3D orientation
-    auto directionToGizmoPos = [&](bx::Vec3 worldDir) -> ImVec2 {
-        // Project the world direction onto the camera's view plane
-        // using the camera's normalized right and up vectors
-        float x = bx::dot(worldDir, camRight);
-        float y = bx::dot(worldDir, camUp);
-        
-        // Use raw projections scaled to fill the circular region
-        // This gives a true 3D visualization where the distance from center
-        // indicates how much the axis is pointing toward/away from camera
-        float screenX = gizmoCenter.x + x * orbitRadius;
-        float screenY = gizmoCenter.y + y * orbitRadius;
-        
-        return ImVec2(screenX, screenY);
-    };
-
-    // Define the 6 sphere positions (axis directions)
-    struct SphereAxis {
-        ImVec2 screenPos;
-        bx::Vec3 viewDirection;  // Direction to look along this axis
-        ImVec4 color;
-        const char* label;
-        SphereAxis() : screenPos(0,0), viewDirection(0,0,0), color(0,0,0,0), label("") {}
-        SphereAxis(ImVec2 sp, bx::Vec3 vd, ImVec4 c, const char* l) 
-            : screenPos(sp), viewDirection(vd), color(c), label(l) {}
-    };
-
-    std::vector<SphereAxis> spheres;
-    
-    // Create 6 spheres for each axis direction
-    // Positive/Negative X (Red)
-    bx::Vec3 dirX(1.0f, 0.0f, 0.0f);
-    bx::Vec3 dirNegX(-1.0f, 0.0f, 0.0f);
-    spheres.push_back(SphereAxis(directionToGizmoPos(dirX), dirX, colorX, "+X"));
-    spheres.push_back(SphereAxis(directionToGizmoPos(dirNegX), dirNegX, colorX, "-X"));
-    
-    // Positive/Negative Y (Green)
-    bx::Vec3 dirY(0.0f, 1.0f, 0.0f);
-    bx::Vec3 dirNegY(0.0f, -1.0f, 0.0f);
-    spheres.push_back(SphereAxis(directionToGizmoPos(dirY), dirY, colorY, "+Y"));
-    spheres.push_back(SphereAxis(directionToGizmoPos(dirNegY), dirNegY, colorY, "-Y"));
-    
-    // Positive/Negative Z (Blue)
-    bx::Vec3 dirZ(0.0f, 0.0f, 1.0f);
-    bx::Vec3 dirNegZ(0.0f, 0.0f, -1.0f);
-    spheres.push_back(SphereAxis(directionToGizmoPos(dirZ), dirZ, colorZ, "+Z"));
-    spheres.push_back(SphereAxis(directionToGizmoPos(dirNegZ), dirNegZ, colorZ, "-Z"));
-
-    // Draw background circle
-    drawList->AddCircleFilled(gizmoCenter, orbitRadius + sphereRadius + 4.0f, ImGui::GetColorU32(colorBg), 32);
-
-    ImGuiIO& io = ImGui::GetIO();
-    ImVec2 mousePos = io.MousePos;
-    int hoveredSphere = -1;
-    bool mousePressed = ImGui::IsMouseClicked(ImGuiMouseButton_Left);
-
-    // Draw spheres and check for interaction
-    for (size_t i = 0; i < spheres.size(); ++i)
+    if (!inst || inst->isLight) return nullptr;
+    if (g_InstanceMeshData.find(inst->id) != g_InstanceMeshData.end())
+        return inst;
+    if (inst->hasMeshData && !inst->meshData.vertices.empty())
+        return inst;
+    for (Instance* child : inst->children)
     {
-        const SphereAxis& sphere = spheres[i];
-        ImVec2 delta = ImVec2(mousePos.x - sphere.screenPos.x, mousePos.y - sphere.screenPos.y);
-        float distSq = delta.x * delta.x + delta.y * delta.y;
-        bool isHovered = distSq < (sphereRadius * sphereRadius);
+        if (!child || child->isLight) continue;
+        if (g_InstanceMeshData.find(child->id) != g_InstanceMeshData.end())
+            return child;
+        if (child->hasMeshData && !child->meshData.vertices.empty())
+            return child;
+    }
+    return nullptr;
+}
+static const Instance* GetInstanceWithEditableMeshConst(const Instance* inst)
+{
+    if (!inst || inst->isLight) return nullptr;
+    if (g_InstanceMeshData.find(inst->id) != g_InstanceMeshData.end())
+        return inst;
+    if (inst->hasMeshData && !inst->meshData.vertices.empty())
+        return inst;
+    for (Instance* child : inst->children)
+    {
+        if (!child || child->isLight) continue;
+        if (g_InstanceMeshData.find(child->id) != g_InstanceMeshData.end())
+            return child;
+        if (child->hasMeshData && !child->meshData.vertices.empty())
+            return child;
+    }
+    return nullptr;
+}
 
-        if (isHovered) {
-            hoveredSphere = static_cast<int>(i);
+// Helper: get editable mesh data for an instance, if available.
+static MeshData* GetEditableMeshData(Instance* inst)
+{
+    Instance* target = GetInstanceWithEditableMesh(inst);
+    if (!target) return nullptr;
+    if (g_InstanceMeshData.find(target->id) == g_InstanceMeshData.end())
+    {
+        if (target->hasMeshData && !target->meshData.vertices.empty())
+            g_InstanceMeshData[target->id] = target->meshData;
+        else
+            return nullptr;
+    }
+    return &g_InstanceMeshData[target->id];
+}
+// Transform a position by a 4x4 matrix.
+static void TransformPosition(const float* m, float x, float y, float z, float& outX, float& outY, float& outZ)
+{
+    outX = m[0] * x + m[4] * y + m[8] * z + m[12];
+    outY = m[1] * x + m[5] * y + m[9] * z + m[13];
+    outZ = m[2] * x + m[6] * y + m[10] * z + m[14];
+}
+
+static void MoveSelectedVertices(MeshData& mesh, float dx, float dy, float dz) {
+    for (int vi : g_SelectedVertices) {
+        if (vi < 0 || vi >= (int)mesh.vertices.size()) continue;
+        mesh.vertices[vi].x += dx;
+        mesh.vertices[vi].y += dy;
+        mesh.vertices[vi].z += dz;
+    }
+}
+
+//transfer to ObjLoader.cpp
+void computeNormals(std::vector<PosColorVertex>& vertices, const std::vector<uint32_t>& indices) {
+
+    // Reset all normals to zero
+    for (auto& vertex : vertices) {
+        vertex.nx = 0.0f;
+        vertex.ny = 0.0f;
+        vertex.nz = 0.0f;
+    }
+    // Create an array to accumulate normals
+    std::vector<Vec3> accumulatedNormals(vertices.size(), { 0.0f, 0.0f, 0.0f });
+
+    for (size_t i = 0; i < indices.size(); i += 3) {
+        uint32_t i0 = indices[i];
+        uint32_t i1 = indices[i + 1];
+        uint32_t i2 = indices[i + 2];
+
+        Vec3 v0 = { vertices[i0].x, vertices[i0].y, vertices[i0].z };
+        Vec3 v1 = { vertices[i1].x, vertices[i1].y, vertices[i1].z };
+        Vec3 v2 = { vertices[i2].x, vertices[i2].y, vertices[i2].z };
+
+        Vec3 edge1 = { v1.x - v0.x, v1.y - v0.y, v1.z - v0.z };
+        Vec3 edge2 = { v2.x - v0.x, v2.y - v0.y, v2.z - v0.z };
+
+        Vec3 normal = {
+            edge2.y * edge1.z - edge2.z * edge1.y,
+            edge2.z * edge1.x - edge2.x * edge1.z,
+            edge2.x * edge1.y - edge2.y * edge1.x
+        };
+
+        float length = std::sqrt(normal.x * normal.x + normal.y * normal.y + normal.z * normal.z);
+        if (length > 0.0f) {
+            normal.x /= length;
+            normal.y /= length;
+            normal.z /= length;
         }
 
-        // Draw sphere (as a filled circle with border)
-        ImU32 sphereColor = ImGui::GetColorU32(isHovered ? 
-            ImVec4(sphere.color.x * 1.3f, sphere.color.y * 1.3f, sphere.color.z * 1.3f, 1.0f) :
-            sphere.color);
-        
-        drawList->AddCircleFilled(sphere.screenPos, sphereRadius, sphereColor, 32);
-        drawList->AddCircle(sphere.screenPos, sphereRadius, 
-                           ImGui::GetColorU32(ImVec4(1.0f, 1.0f, 1.0f, 0.6f)), 32, 1.5f);
 
-        // If clicked, snap camera to this axis direction looking at world origin
-        if (isHovered && mousePressed)
-        {
-            // Position camera along the axis direction at a reasonable distance from origin
-            float viewDistance = 20.0f;
-            bx::Vec3 worldOrigin(0.0f, 0.0f, 0.0f);
-            cam.position = bx::mul(sphere.viewDirection, viewDistance);
-            
-            // Make camera look at the world origin
-            float viewTemp[16];
-            bx::mtxLookAt(viewTemp, cam.position, worldOrigin, bx::Vec3(0.0f, 1.0f, 0.0f));
-            
-            // Extract new camera orientation from the view matrix
-            float invView[16];
-            bx::mtxInverse(invView, viewTemp);
-            
-            // Extract basis vectors from inverse view matrix (camera transform)
-            // Column-major: first 3 columns are basis, last column is translation
-            cam.right = bx::normalize(bx::Vec3(invView[0], invView[4], invView[8]));
-            cam.up = bx::normalize(bx::Vec3(invView[1], invView[5], invView[9]));
-            cam.front = bx::normalize(bx::sub(worldOrigin, cam.position));
-            
-            // Set FOV to a lower value for flat appearance
-            cam.fov = 25.0f;
-        }
+        // Accumulate the normal for each vertex in the face
+        accumulatedNormals[i0].x += normal.x; accumulatedNormals[i0].y += normal.y; accumulatedNormals[i0].z += normal.z;
+        accumulatedNormals[i1].x += normal.x; accumulatedNormals[i1].y += normal.y; accumulatedNormals[i1].z += normal.z;
+        accumulatedNormals[i2].x += normal.x; accumulatedNormals[i2].y += normal.y; accumulatedNormals[i2].z += normal.z;
     }
 
-    // Handle dragging for smooth rotation
-    if (ImGui::IsMouseDragging(ImGuiMouseButton_Left) && hoveredSphere >= 0)
-    {
-        // Calculate rotation based on mouse movement
-        ImVec2 mouseDelta = ImGui::GetIO().MouseDelta;
-        if (std::abs(mouseDelta.x) > 0.1f || std::abs(mouseDelta.y) > 0.1f)
-        {
-            // Simple trackball-like rotation around view center
-            float rotSpeed = 0.01f;
-            
-            // Rotate around up axis (yaw)
-            float yawAngle = mouseDelta.x * rotSpeed;
-            
-            // Create rotation matrix for yaw (around Y axis)
-            float cosy = std::cos(yawAngle);
-            float siny = std::sin(yawAngle);
-            
-            // Rotate cam.front and cam.right around world Y axis
-            bx::Vec3 newFront(
-                cam.front.x * cosy - cam.front.z * siny,
-                cam.front.y,
-                cam.front.x * siny + cam.front.z * cosy
-            );
-            cam.front = bx::normalize(newFront);
-            
-            bx::Vec3 newRight(
-                cam.right.x * cosy - cam.right.z * siny,
-                cam.right.y,
-                cam.right.x * siny + cam.right.z * cosy
-            );
-            cam.right = bx::normalize(newRight);
-            
-            // Pitch rotation
-            float pitchAngle = mouseDelta.y * rotSpeed;
-            float cosp = std::cos(pitchAngle);
-            float sinp = std::sin(pitchAngle);
-            
-            // Rotate cam.front and cam.up around the right axis
-            newFront = bx::Vec3(
-                cam.front.x * cosp + cam.up.x * sinp,
-                cam.front.y * cosp + cam.up.y * sinp,
-                cam.front.z * cosp + cam.up.z * sinp
-            );
-            cam.front = bx::normalize(newFront);
-            
-            bx::Vec3 newUp(
-                -cam.front.x * sinp + cam.up.x * cosp,
-                -cam.front.y * sinp + cam.up.y * cosp,
-                -cam.front.z * sinp + cam.up.z * cosp
-            );
-            cam.up = bx::normalize(newUp);
+    // Normalize the accumulated normals for each vertex
+    for (size_t i = 0; i < vertices.size(); i++) {
+        Vec3& normal = accumulatedNormals[i];
+        float length = std::sqrt(normal.x * normal.x + normal.y * normal.y + normal.z * normal.z);
+        if (length > 0.0f) {
+            normal.x /= length;
+            normal.y /= length;
+            normal.z /= length;
         }
+
+        // Assign the normalized normal to the vertex
+        vertices[i].nx = normal.x;
+        vertices[i].ny = normal.y;
+        vertices[i].nz = normal.z;
     }
+}
+
+// Rebuild GPU buffers from CPU-side mesh data for the given instance.
+static void ApplyEditableMeshToInstance(Instance* inst)
+{
+    Instance* target = GetInstanceWithEditableMesh(inst);
+    if (!target) return;
+    auto it = g_InstanceMeshData.find(target->id);
+    if (it == g_InstanceMeshData.end()) return;
+
+    MeshData& mesh = it->second;
+
+    // Recompute normals after topology/position changes.
+    computeNormals(mesh.vertices, mesh.indices);
+
+    // Do not destroy shared (global) buffers: primitives (cube, cylinder, etc.) share
+    // buffers from bufferMap. Destroying them would invalidate handles used when adding
+    // new instances and cause crashes. Only destroy buffers that are instance-owned.
+    bool vbShared = g_SharedVertexBufferIndices.count(target->vertexBuffer.idx) != 0;
+    bool ibShared = g_SharedIndexBufferIndices.count(target->indexBuffer.idx) != 0;
+    if (bgfx::isValid(target->vertexBuffer) && !vbShared)
+        bgfx::destroy(target->vertexBuffer);
+    if (bgfx::isValid(target->indexBuffer) && !ibShared)
+        bgfx::destroy(target->indexBuffer);
+
+    createMeshBuffers(mesh, target->vertexBuffer, target->indexBuffer);
 }
 
 void DrawGizmoForSelected(Instance* selectedInstance, float originX, float originY, const float* view, const float* proj, float rectWidth, float rectHeight)
 {
-    // Static state for this function:
     static bool wasUsing = false;
     static float oldPos[3] = { 0.0f, 0.0f, 0.0f };
     static float oldRot[3] = { 0.0f, 0.0f, 0.0f };
     static float oldScale[3] = { 0.0f, 0.0f, 0.0f };
+    static float prevVertexGizmoWorld[3] = { 0.0f, 0.0f, 0.0f };
     if (!selectedInstance)
         return;
 
-    // 1) Build world matrix from the selected instance (correctly accounting for parent hierarchy)
-    float matrix[16];
-    BuildWorldMatrix(selectedInstance, matrix);
-
-    // 2) Draw and hit-test in the current window (viewport); required for correct input when gizmo is in its own window
     ImGuizmo::SetDrawlist(ImGui::GetWindowDrawList());
     ImGuizmo::SetRect(originX, originY, rectWidth, rectHeight);
+
+    // --- Mesh Edit Mode: vertex translation gizmo at selection centroid ---
+    if (g_MeshEditModeActive && !g_SelectedVertices.empty())
+    {
+        Instance* target = GetInstanceWithEditableMesh(selectedInstance);
+        MeshData* mesh = GetEditableMeshData(selectedInstance);
+        if (target && mesh)
+        {
+            float world[16];
+            BuildWorldMatrix(target, world);
+            float cx = 0, cy = 0, cz = 0;
+            int n = 0;
+            for (int vi : g_SelectedVertices)
+            {
+                if (vi < 0 || vi >= (int)mesh->vertices.size()) continue;
+                cx += mesh->vertices[vi].x;
+                cy += mesh->vertices[vi].y;
+                cz += mesh->vertices[vi].z;
+                ++n;
+            }
+            if (n > 0)
+            {
+                cx /= n; cy /= n; cz /= n;
+                float worldCentroid[3];
+                TransformPosition(world, cx, cy, cz, worldCentroid[0], worldCentroid[1], worldCentroid[2]);
+                float vertexGizmoMatrix[16];
+                bx::mtxIdentity(vertexGizmoMatrix);
+                vertexGizmoMatrix[12] = worldCentroid[0];
+                vertexGizmoMatrix[13] = worldCentroid[1];
+                vertexGizmoMatrix[14] = worldCentroid[2];
+
+                bool changed = ImGuizmo::Manipulate(view, proj, ImGuizmo::TRANSLATE, ImGuizmo::WORLD,
+                    vertexGizmoMatrix, nullptr, nullptr);
+                if (changed)
+                {
+                    float newWorld[3] = { vertexGizmoMatrix[12], vertexGizmoMatrix[13], vertexGizmoMatrix[14] };
+                    float dx = newWorld[0] - prevVertexGizmoWorld[0];
+                    float dy = newWorld[1] - prevVertexGizmoWorld[1];
+                    float dz = newWorld[2] - prevVertexGizmoWorld[2];
+                    prevVertexGizmoWorld[0] = newWorld[0];
+                    prevVertexGizmoWorld[1] = newWorld[1];
+                    prevVertexGizmoWorld[2] = newWorld[2];
+                    float invWorld[16];
+                    bx::mtxInverse(invWorld, world);
+                    float ldx = invWorld[0] * dx + invWorld[4] * dy + invWorld[8] * dz;
+                    float ldy = invWorld[1] * dx + invWorld[5] * dy + invWorld[9] * dz;
+                    float ldz = invWorld[2] * dx + invWorld[6] * dy + invWorld[10] * dz;
+                    MoveSelectedVertices(*mesh, ldx, ldy, ldz);
+                    ApplyEditableMeshToInstance(selectedInstance);
+                }
+                else
+                {
+                    prevVertexGizmoWorld[0] = worldCentroid[0];
+                    prevVertexGizmoWorld[1] = worldCentroid[1];
+                    prevVertexGizmoWorld[2] = worldCentroid[2];
+                }
+            }
+            return; // In vertex gizmo mode we don't draw the object gizmo.
+        }
+        if (g_VertexOperationActive)
+            return; // Vertex operation: show only vertex overlay, no object gizmo.
+    }
+
+    // 1) Build world matrix from the selected instance
+    float matrix[16];
+    BuildWorldMatrix(selectedInstance, matrix);
 
     // 3) Store the original object's local transform before manipulation
     float localMatrix[16];
@@ -1181,66 +1284,6 @@ void DrawGizmoForSelected(Instance* selectedInstance, float originX, float origi
         }
     }
 }
-//transfer to ObjLoader.cpp
-void computeNormals(std::vector<PosColorVertex>& vertices, const std::vector<uint32_t>& indices) {
-
-    // Reset all normals to zero
-    for (auto& vertex : vertices) {
-        vertex.nx = 0.0f;
-        vertex.ny = 0.0f;
-        vertex.nz = 0.0f;
-    }
-    // Create an array to accumulate normals
-    std::vector<Vec3> accumulatedNormals(vertices.size(), { 0.0f, 0.0f, 0.0f });
-
-    for (size_t i = 0; i < indices.size(); i += 3) {
-        uint32_t i0 = indices[i];
-        uint32_t i1 = indices[i + 1];
-        uint32_t i2 = indices[i + 2];
-
-        Vec3 v0 = { vertices[i0].x, vertices[i0].y, vertices[i0].z };
-        Vec3 v1 = { vertices[i1].x, vertices[i1].y, vertices[i1].z };
-        Vec3 v2 = { vertices[i2].x, vertices[i2].y, vertices[i2].z };
-
-        Vec3 edge1 = { v1.x - v0.x, v1.y - v0.y, v1.z - v0.z };
-        Vec3 edge2 = { v2.x - v0.x, v2.y - v0.y, v2.z - v0.z };
-
-        Vec3 normal = {
-            edge2.y * edge1.z - edge2.z * edge1.y,
-            edge2.z * edge1.x - edge2.x * edge1.z,
-            edge2.x * edge1.y - edge2.y * edge1.x
-        };
-
-        float length = std::sqrt(normal.x * normal.x + normal.y * normal.y + normal.z * normal.z);
-        if (length > 0.0f) {
-            normal.x /= length;
-            normal.y /= length;
-            normal.z /= length;
-        }
-
-
-        // Accumulate the normal for each vertex in the face
-        accumulatedNormals[i0].x += normal.x; accumulatedNormals[i0].y += normal.y; accumulatedNormals[i0].z += normal.z;
-        accumulatedNormals[i1].x += normal.x; accumulatedNormals[i1].y += normal.y; accumulatedNormals[i1].z += normal.z;
-        accumulatedNormals[i2].x += normal.x; accumulatedNormals[i2].y += normal.y; accumulatedNormals[i2].z += normal.z;
-    }
-
-    // Normalize the accumulated normals for each vertex
-    for (size_t i = 0; i < vertices.size(); i++) {
-        Vec3& normal = accumulatedNormals[i];
-        float length = std::sqrt(normal.x * normal.x + normal.y * normal.y + normal.z * normal.z);
-        if (length > 0.0f) {
-            normal.x /= length;
-            normal.y /= length;
-            normal.z /= length;
-        }
-
-        // Assign the normalized normal to the vertex
-        vertices[i].nx = normal.x;
-        vertices[i].ny = normal.y;
-        vertices[i].nz = normal.z;
-    }
-}
 
 // Register base mesh data helpers --------------------------------------------
 
@@ -1283,47 +1326,17 @@ static void RegisterInstanceMeshFromType(Instance* inst)
     }
 }
 
-// Forward declaration so geometry tools can recreate GPU buffers.
-void createMeshBuffers(const MeshData& meshData, bgfx::VertexBufferHandle& vbh, bgfx::IndexBufferHandle& ibh);
 
-// Helper: get editable mesh data for an instance, if available.
-static MeshData* GetEditableMeshData(Instance* inst)
-{
-    if (!inst) return nullptr;
-    auto it = g_InstanceMeshData.find(inst->id);
-    if (it == g_InstanceMeshData.end()) return nullptr;
-    return &it->second;
-}
 
 static bool HasEditableMeshData(const Instance* inst)
 {
     if (!inst || inst->isLight) return false;
-    return g_InstanceMeshData.find(inst->id) != g_InstanceMeshData.end();
+    if (GetInstanceWithEditableMeshConst(inst) != nullptr)
+        return true;
+    return false;
 }
 
-// Rebuild GPU buffers from CPU-side mesh data for the given instance.
-static void ApplyEditableMeshToInstance(Instance* inst)
-{
-    if (!inst) return;
-    auto it = g_InstanceMeshData.find(inst->id);
-    if (it == g_InstanceMeshData.end()) return;
 
-    MeshData& mesh = it->second;
-
-    // Recompute normals after topology/position changes.
-    computeNormals(mesh.vertices, mesh.indices);
-
-    if (bgfx::isValid(inst->vertexBuffer))
-    {
-        bgfx::destroy(inst->vertexBuffer);
-    }
-    if (bgfx::isValid(inst->indexBuffer))
-    {
-        bgfx::destroy(inst->indexBuffer);
-    }
-
-    createMeshBuffers(mesh, inst->vertexBuffer, inst->indexBuffer);
-}
 
 // --- Geometry modification helpers (subdivision, merging, smoothing, boundaries) ---
 
@@ -1333,48 +1346,60 @@ static inline uint64_t EncodeEdge(uint32_t a, uint32_t b)
     return (uint64_t)std::min(a, b) << 32 | (uint64_t)std::max(a, b);
 }
 
-// Color boundary vertices (vertices that belong to at least one boundary edge).
-static void ColorBoundaryVertices(MeshData& mesh, uint32_t boundaryAbgr)
-{
-    if (mesh.indices.size() < 3 || mesh.vertices.empty())
-        return;
-
-    std::unordered_map<uint64_t, uint32_t> edgeUseCount;
-    edgeUseCount.reserve(mesh.indices.size());
-
-    // Count how many faces reference each undirected edge.
-    for (size_t i = 0; i + 2 < mesh.indices.size(); i += 3)
-    {
-        uint32_t i0 = mesh.indices[i + 0];
-        uint32_t i1 = mesh.indices[i + 1];
-        uint32_t i2 = mesh.indices[i + 2];
-
-        ++edgeUseCount[EncodeEdge(i0, i1)];
-        ++edgeUseCount[EncodeEdge(i1, i2)];
-        ++edgeUseCount[EncodeEdge(i2, i0)];
+// --- Vertex/edge/face selection editing (for Mesh Edit Mode) ---
+static void DeleteSelectedVertices(MeshData& mesh) {
+    if (g_SelectedVertices.empty()) return;
+    std::vector<uint8_t> removeVert(mesh.vertices.size(), 0);
+    for (int vi : g_SelectedVertices)
+        if (vi >= 0 && vi < (int)mesh.vertices.size()) removeVert[vi] = 1;
+    std::vector<uint32_t> oldToNew(mesh.vertices.size(), UINT32_MAX);
+    std::vector<PosColorVertex> newVerts;
+    for (size_t i = 0; i < mesh.vertices.size(); ++i) {
+        if (removeVert[i]) continue;
+        oldToNew[i] = (uint32_t)newVerts.size();
+        newVerts.push_back(mesh.vertices[i]);
     }
-
-    std::vector<uint8_t> isBoundary(mesh.vertices.size(), 0);
-
-    for (const auto& kv : edgeUseCount)
-    {
-        if (kv.second == 1)
-        {
-            uint32_t a = uint32_t(kv.first >> 32);
-            uint32_t b = uint32_t(kv.first & 0xffffffffu);
-            if (a < isBoundary.size()) isBoundary[a] = 1;
-            if (b < isBoundary.size()) isBoundary[b] = 1;
-        }
+    std::vector<uint32_t> newIndices;
+    for (size_t i = 0; i + 2 < mesh.indices.size(); i += 3) {
+        uint32_t a = mesh.indices[i], b = mesh.indices[i + 1], c = mesh.indices[i + 2];
+        if (removeVert[a] || removeVert[b] || removeVert[c]) continue;
+        newIndices.push_back(oldToNew[a]);
+        newIndices.push_back(oldToNew[b]);
+        newIndices.push_back(oldToNew[c]);
     }
-
-    for (size_t i = 0; i < mesh.vertices.size(); ++i)
-    {
-        if (isBoundary[i])
-        {
-            mesh.vertices[i].abgr = boundaryAbgr;
-        }
-    }
+    mesh.vertices.swap(newVerts);
+    mesh.indices.swap(newIndices);
+    g_SelectedVertices.clear();
 }
+static void DeleteSelectedEdges(MeshData& mesh) {
+    if (g_SelectedEdges.empty()) return;
+    std::vector<uint32_t> newIndices;
+    for (size_t t = 0; t + 2 < mesh.indices.size(); t += 3) {
+        uint32_t i0 = mesh.indices[t], i1 = mesh.indices[t + 1], i2 = mesh.indices[t + 2];
+        uint64_t e0 = EncodeEdge(i0, i1), e1 = EncodeEdge(i1, i2), e2 = EncodeEdge(i2, i0);
+        if (g_SelectedEdges.count(e0) || g_SelectedEdges.count(e1) || g_SelectedEdges.count(e2))
+            continue;
+        newIndices.push_back(i0);
+        newIndices.push_back(i1);
+        newIndices.push_back(i2);
+    }
+    mesh.indices.swap(newIndices);
+    g_SelectedEdges.clear();
+}
+static void DeleteSelectedFaces(MeshData& mesh) {
+    if (g_SelectedFaces.empty()) return;
+    std::vector<uint32_t> newIndices;
+    int numTris = (int)(mesh.indices.size() / 3);
+    for (int t = 0; t < numTris; ++t) {
+        if (g_SelectedFaces.count(t)) continue;
+        newIndices.push_back(mesh.indices[t * 3]);
+        newIndices.push_back(mesh.indices[t * 3 + 1]);
+        newIndices.push_back(mesh.indices[t * 3 + 2]);
+    }
+    mesh.indices.swap(newIndices);
+    g_SelectedFaces.clear();
+}
+
 
 // Naive triangle subdivision: each triangle is split into 4 using midpoints.
 static void SubdivideMesh(MeshData& mesh, int levels)
@@ -1839,94 +1864,80 @@ static void SmoothMesh(MeshData& mesh, int iterations, float factor)
 }
 
 
-// Transform a position by a 4x4 matrix.
-static void TransformPosition(const float* m, float x, float y, float z, float& outX, float& outY, float& outZ)
+
+
+// Mesh Edit Mode overlay: green edges/vertices; selected vertex is blue so it stands out.
+static const uint32_t kNeonGreenEdge   = PackAbgr(0xff, 0x20, 0xaa, 0x20); // lighter neon green for edges
+static const uint32_t kNeonGreenVert   = PackAbgr(0xff, 0x00, 0xff, 0x00); // neon green for vertices
+static const uint32_t kSelectedVertexBlue = PackAbgr(0xff, 0xff, 0x00, 0x00); // selected vertex: blue (ABGR)
+
+// Draw mesh edit overlay: edge outline (lighter neon green), then vertex dots (strongest neon green). Selection highlights.
+static void DrawMeshEditModeOverlay(const Instance* inst, const float* worldMatrix, uint16_t viewId)
 {
-    outX = m[0] * x + m[4] * y + m[8]  * z + m[12];
-    outY = m[1] * x + m[5] * y + m[9]  * z + m[13];
-    outZ = m[2] * x + m[6] * y + m[10] * z + m[14];
-}
-
-// Draw selected instance's mesh as green vertices (small crosses) and green edges.
-static void DrawSelectedMeshOverlay(const Instance* inst, const float* worldMatrix, uint16_t viewId)
-{
-    if (!inst) return;
-
-    auto it = g_InstanceMeshData.find(inst->id);
-    if (it == g_InstanceMeshData.end())
-        return;
-
+    if (!inst || !g_MeshEditModeActive) return;
+    const Instance* target = GetInstanceWithEditableMeshConst(inst);
+    if (!target) return;
+    auto it = g_InstanceMeshData.find(target->id);
+    if (it == g_InstanceMeshData.end()) return;
     const MeshData& mesh = it->second;
-    if (mesh.vertices.empty() || mesh.indices.empty())
-        return;
+    if (mesh.vertices.empty() || mesh.indices.empty()) return;
 
-    const uint32_t edgeColor = PackAbgr(0xff, 0x20, 0xff, 0x20); // bright green
-    const uint32_t vertColor = PackAbgr(0xff, 0x40, 0xff, 0x40); // slightly brighter green
+    const uint64_t lineState = BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_BLEND_ALPHA | BGFX_STATE_PT_LINES;
+    const uint64_t overlayLineState = BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_DEPTH_TEST_ALWAYS | BGFX_STATE_BLEND_ALPHA | BGFX_STATE_PT_LINES;
 
-    std::vector<LineVertex> verts;
-    verts.reserve(mesh.indices.size() * 2 + mesh.vertices.size() * 6);
+    std::vector<LineVertex> edgeVerts;
+    edgeVerts.reserve(mesh.indices.size() * 2);
 
-    auto pushLine = [&](float x0, float y0, float z0,
-                        float x1, float y1, float z1,
-                        uint32_t abgr)
+    auto pushLine = [&](std::vector<LineVertex>& out, float x0, float y0, float z0, float x1, float y1, float z1, uint32_t abgr)
     {
-        LineVertex a{};
-        a.x = x0; a.y = y0; a.z = z0;
-        a.nx = 0.0f; a.ny = 1.0f; a.nz = 0.0f;
-        a.abgr = abgr;
-        a.u = 0.0f; a.v = 0.0f;
-
-        LineVertex b{};
-        b.x = x1; b.y = y1; b.z = z1;
-        b.nx = 0.0f; b.ny = 1.0f; b.nz = 0.0f;
-        b.abgr = abgr;
-        b.u = 0.0f; b.v = 0.0f;
-
-        verts.push_back(a);
-        verts.push_back(b);
+        LineVertex a{}; a.x = x0; a.y = y0; a.z = z0; a.nx = 0; a.ny = 1; a.nz = 0; a.abgr = abgr; a.u = a.v = 0;
+        LineVertex b{}; b.x = x1; b.y = y1; b.z = z1; b.nx = 0; b.ny = 1; b.nz = 0; b.abgr = abgr; b.u = b.v = 0;
+        out.push_back(a);
+        out.push_back(b);
     };
 
-    // Edges: draw each triangle edge as a green segment.
+    // 1) Edges: lighter neon green overlay outline (depth-tested first, then overlay on top)
     for (size_t i = 0; i + 2 < mesh.indices.size(); i += 3)
     {
-        uint32_t i0 = mesh.indices[i + 0];
-        uint32_t i1 = mesh.indices[i + 1];
-        uint32_t i2 = mesh.indices[i + 2];
-        if (i0 >= mesh.vertices.size() || i1 >= mesh.vertices.size() || i2 >= mesh.vertices.size())
-            continue;
-
-        const PosColorVertex& v0 = mesh.vertices[i0];
-        const PosColorVertex& v1 = mesh.vertices[i1];
-        const PosColorVertex& v2 = mesh.vertices[i2];
-
-        float x0, y0, z0;
-        float x1, y1, z1;
-        float x2, y2, z2;
-        TransformPosition(worldMatrix, v0.x, v0.y, v0.z, x0, y0, z0);
-        TransformPosition(worldMatrix, v1.x, v1.y, v1.z, x1, y1, z1);
-        TransformPosition(worldMatrix, v2.x, v2.y, v2.z, x2, y2, z2);
-
-        pushLine(x0, y0, z0, x1, y1, z1, edgeColor);
-        pushLine(x1, y1, z1, x2, y2, z2, edgeColor);
-        pushLine(x2, y2, z2, x0, y0, z0, edgeColor);
+        uint32_t i0 = mesh.indices[i], i1 = mesh.indices[i + 1], i2 = mesh.indices[i + 2];
+        if (i0 >= mesh.vertices.size() || i1 >= mesh.vertices.size() || i2 >= mesh.vertices.size()) continue;
+        float x0, y0, z0, x1, y1, z1, x2, y2, z2;
+        TransformPosition(worldMatrix, mesh.vertices[i0].x, mesh.vertices[i0].y, mesh.vertices[i0].z, x0, y0, z0);
+        TransformPosition(worldMatrix, mesh.vertices[i1].x, mesh.vertices[i1].y, mesh.vertices[i1].z, x1, y1, z1);
+        TransformPosition(worldMatrix, mesh.vertices[i2].x, mesh.vertices[i2].y, mesh.vertices[i2].z, x2, y2, z2);
+        uint32_t edgeColor = kNeonGreenEdge;
+        pushLine(edgeVerts, x0, y0, z0, x1, y1, z1, edgeColor);
+        pushLine(edgeVerts, x1, y1, z1, x2, y2, z2, edgeColor);
+        pushLine(edgeVerts, x2, y2, z2, x0, y0, z0, edgeColor);
+    }
+    if (!edgeVerts.empty())
+    {
+        SubmitLineList(viewId, unlitColorProgram, edgeVerts.data(), static_cast<uint32_t>(edgeVerts.size()), lineState);
+        SubmitLineList(viewId, unlitColorProgram, edgeVerts.data(), static_cast<uint32_t>(edgeVerts.size()), overlayLineState);
     }
 
-    // Vertices: small crosses around each vertex position.
-    const float r = 0.01f; // cross half-size in world units
-    for (const auto& v : mesh.vertices)
+    // 2) Vertex dots: clear visual feedback at every vertex (green; blue when selected). Draw on top so they're always visible and clickable.
+    const float rNorm = 0.045f;
+    const float rSel  = 0.065f;
+    std::vector<LineVertex> dotVerts;
+    dotVerts.reserve(mesh.vertices.size() * 6);
+    for (size_t idx = 0; idx < mesh.vertices.size(); ++idx)
     {
+        const auto& v = mesh.vertices[idx];
         float cx, cy, cz;
         TransformPosition(worldMatrix, v.x, v.y, v.z, cx, cy, cz);
-
-        pushLine(cx - r, cy, cz, cx + r, cy, cz, vertColor);
-        pushLine(cx, cy - r, cz, cx, cy + r, cz, vertColor);
-        pushLine(cx, cy, cz - r, cx, cy, cz + r, vertColor);
+        bool sel = g_SelectedVertices.count((int)idx) != 0;
+        uint32_t color = sel ? kSelectedVertexBlue : kNeonGreenVert;
+        float r = sel ? rSel : rNorm;
+        PushVertexDot(dotVerts, cx, cy, cz, r, color);
     }
-
-    if (!verts.empty())
+    if (!dotVerts.empty())
     {
-        SubmitLineList(viewId, unlitColorProgram, verts.data(), static_cast<uint32_t>(verts.size()),
-            BGFX_STATE_WRITE_RGB | BGFX_STATE_DEPTH_TEST_LESS);
+        SubmitTriangleList(viewId, unlitColorProgram, dotVerts.data(), static_cast<uint32_t>(dotVerts.size()),
+            BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_BLEND_ALPHA);
+        // Draw dots again on top (no depth test) so they're always visible for selection/click feedback
+        SubmitTriangleList(viewId, unlitColorProgram, dotVerts.data(), static_cast<uint32_t>(dotVerts.size()),
+            BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_DEPTH_TEST_ALWAYS | BGFX_STATE_BLEND_ALPHA);
     }
 }
 
@@ -2517,6 +2528,7 @@ bool IsWhite(const float color[4], float epsilon = 0.001f)
 void drawInstance(Instance* instance, bgfx::ProgramHandle defaultProgram, bgfx::ProgramHandle lightDebugProgram, bgfx::ProgramHandle textProgram, bgfx::ProgramHandle comicProgram, bgfx::UniformHandle u_comicColor, bgfx::UniformHandle u_noiseTex, bgfx::UniformHandle u_diffuseTex, bgfx::UniformHandle u_objectColor, bgfx::UniformHandle u_tint, bgfx::UniformHandle u_inkColor, bgfx::UniformHandle u_e, bgfx::UniformHandle u_params, bgfx::UniformHandle u_extraParams, bgfx::UniformHandle u_paramsLayer,
     bgfx::TextureHandle defaultWhiteTexture, bgfx::TextureHandle inheritedNoiseTex, bgfx::TextureHandle inheritedTexture, const float* parentColor = nullptr, const float* parentTransform = nullptr)
 {
+
     float local[16];
     bx::mtxSRT(local,
         instance->scale[0], instance->scale[1], instance->scale[2],
@@ -2566,12 +2578,13 @@ void drawInstance(Instance* instance, bgfx::ProgramHandle defaultProgram, bgfx::
         bgfx::setUniform(u_albedoFactor, instance->material.albedo);
         const float tintBasic[4] = { 1.0f, 1.0f, 1.0f, 0.0f };
         const float tintHighlighted[4] = { 0.3f, 0.3f, 2.0f, 0.1f };
-        if (selectedInstance == instance && highlightVisible) {
+        const float tintMeshEdit[4] = { 0.4f, 1.0f, 0.5f, 0.08f }; // very subtle green overlay for faces in Mesh Edit Mode
+        if (g_MeshEditModeActive && selectedInstance && GetInstanceWithEditableMeshConst(selectedInstance) == instance)
+            bgfx::setUniform(u_tint, tintMeshEdit);
+        else if (selectedInstance == instance && highlightVisible)
             bgfx::setUniform(u_tint, tintHighlighted);
-        }
-        else {
+        else
             bgfx::setUniform(u_tint, tintBasic);
-        }
         if (!useGlobalCrosshatchSettings) {
             bgfx::setUniform(u_inkColor, instance->inkColor);
             // Set epsilon uniform:
@@ -2708,11 +2721,6 @@ void drawInstance(Instance* instance, bgfx::ProgramHandle defaultProgram, bgfx::
             }
         }
 
-        // When this instance is selected, draw its vertices as green dots and edges as green lines.
-        if (selectedInstance == instance && highlightVisible)
-        {
-            DrawSelectedMeshOverlay(instance, world, 1);
-        }
     }
     // Determine what color to pass to children.
     // If the effective color is white, then children should use their own objectColor.
@@ -4251,6 +4259,18 @@ static void RenderLeftSidebar()
             dl->AddTriangleFilled(p_to, ImVec2(p_to.x - ah, p_to.y), ImVec2(p_to.x, p_to.y + ah), col);
         };
 
+        auto draw_vertex_icon = [](ImDrawList* dl, ImVec2 p0, ImVec2 p1, ImU32 col)
+        {
+            const ImVec2 c((p0.x + p1.x) * 0.5f, (p0.y + p1.y) * 0.5f);
+            const float w = (p1.x - p0.x);
+            const float h = (p1.y - p0.y);
+            const float r = ImMin(w, h) * 0.12f;
+            // Three dots in a triangle (vertex-like)
+            dl->AddCircleFilled(ImVec2(c.x - 4.0f, c.y - 2.0f), r, col);
+            dl->AddCircleFilled(ImVec2(c.x + 4.0f, c.y - 2.0f), r, col);
+            dl->AddCircleFilled(ImVec2(c.x, c.y + 4.0f), r, col);
+        };
+
         auto operation_button = [&](const char* id, const char* tooltip, ImGuizmo::OPERATION op, bool enabled, auto&& draw_icon)
         {
             const bool selected = (currentGizmoOperation == op);
@@ -4259,7 +4279,10 @@ static void RenderLeftSidebar()
                 ImGui::BeginDisabled();
 
             if (ImGui::Button(id, ImVec2(button_sz, button_sz)))
+            {
                 currentGizmoOperation = op;
+                g_VertexOperationActive = false;
+            }
 
             const ImRect r(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
             ImDrawList* dl = ImGui::GetWindowDrawList();
@@ -4292,6 +4315,30 @@ static void RenderLeftSidebar()
         operation_button("##op_rotate", "Rotate (2)", ImGuizmo::ROTATE, hasSelection, draw_rotate_icon);
         ImGui::Spacing();
         operation_button("##op_scale", "Scale (3)", ImGuizmo::SCALE, hasSelection, draw_scale_icon);
+        ImGui::Spacing();
+        // Vertex operation: mesh edit overlay with dots on vertices (no object gizmo)
+        {
+            const bool selected = g_VertexOperationActive;
+            if (!hasSelection)
+                ImGui::BeginDisabled();
+            if (ImGui::Button("##op_vertex", ImVec2(button_sz, button_sz)))
+            {
+                g_VertexOperationActive = true;
+                g_MeshEditModeActive = true;
+            }
+            const ImRect r(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
+            ImDrawList* dl = ImGui::GetWindowDrawList();
+            if (selected)
+                dl->AddCircleFilled(ImVec2(r.Min.x + 8.0f, r.Min.y + 8.0f), circle_r, accent);
+            const ImU32 icon_col = hasSelection ? ImGui::GetColorU32(ImGuiCol_Text) : ImGui::GetColorU32(ImGuiCol_TextDisabled);
+            const ImVec2 icon0(r.Min.x + icon_pad, r.Min.y + icon_pad);
+            const ImVec2 icon1(r.Max.x - icon_pad, r.Max.y - icon_pad);
+            draw_vertex_icon(dl, icon0, icon1, icon_col);
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
+                ImGui::SetTooltip("%s", "Vertex Operation (4)");
+            if (!hasSelection)
+                ImGui::EndDisabled();
+        }
 
         // If nothing is selected, hint that the toolbar still affects the gizmo once an object is picked.
         if (!hasSelection)
@@ -4567,9 +4614,13 @@ static void RenderInspectorBody(Instance* selectedInstance, std::vector<Instance
             {
                 selectedInstance->lightProps.type = static_cast<LightType>(currentType);
                 if (selectedInstance->lightProps.type == LightType::Point)
-                { selectedInstance->vertexBuffer = g_vbh_sphere; selectedInstance->indexBuffer = g_ibh_sphere; }
+                {
+                    selectedInstance->vertexBuffer = g_vbh_sphere; selectedInstance->indexBuffer = g_ibh_sphere;
+                }
                 else if (selectedInstance->lightProps.type == LightType::Spot || selectedInstance->lightProps.type == LightType::Directional)
-                { selectedInstance->vertexBuffer = g_vbh_cone; selectedInstance->indexBuffer = g_ibh_cone; }
+                {
+                    selectedInstance->vertexBuffer = g_vbh_cone; selectedInstance->indexBuffer = g_ibh_cone;
+                }
             }
             ImGui::AlignTextToFramePadding();
             ImGui::Text("Color");
@@ -4587,7 +4638,7 @@ static void RenderInspectorBody(Instance* selectedInstance, std::vector<Instance
     }
     else
     {
-        if (ImGui::Checkbox("Attribute (Unlit Vertex Color) Mode", &useAttributeMode)) { }
+        if (ImGui::Checkbox("Attribute (Unlit Vertex Color) Mode", &useAttributeMode)) {}
         ImGui::AlignTextToFramePadding();
         ImGui::Text("Object Color");
         ImGui::SameLine(label_width);
@@ -4615,159 +4666,88 @@ static void RenderInspectorBody(Instance* selectedInstance, std::vector<Instance
         // Geometry / topology tools for selected object.
         if (ImGui::CollapsingHeader("Geometry / Topology Tools"))
         {
+            // Ensure imported OBJ is editable when needed.
+            if (selectedInstance && !selectedInstance->isLight && selectedInstance->hasMeshData
+                && !selectedInstance->meshData.vertices.empty()
+                && g_InstanceMeshData.find(selectedInstance->id) == g_InstanceMeshData.end())
+            {
+                g_InstanceMeshData[selectedInstance->id] = selectedInstance->meshData;
+            }
             bool hasMesh = HasEditableMeshData(selectedInstance);
             if (!hasMesh)
             {
                 ImGui::TextWrapped("No editable mesh data available for this object.");
+                g_MeshEditModeActive = false;
             }
             else
             {
                 MeshData* mesh = GetEditableMeshData(selectedInstance);
-                // Boundary visualization
-                static ImVec4 s_boundaryColor = ImVec4(1.0f, 0.1f, 0.1f, 1.0f);
+                const float input_width = 120.0f;
+
+                // Mesh Edit Mode: when active, panel shows ONLY Subdivision and Smoothing.
                 ImGui::Separator();
-                ImGui::Text("Boundaries");
-                ImGui::SameLine();
-                ImGui::ColorEdit4("##boundaryColor", (float*)&s_boundaryColor, ImGuiColorEditFlags_NoInputs);
-                if (ImGui::Button("Color Boundary Vertices"))
+                
                 {
-                    uint8_t r = (uint8_t)(s_boundaryColor.x * 255.0f);
-                    uint8_t g = (uint8_t)(s_boundaryColor.y * 255.0f);
-                    uint8_t b = (uint8_t)(s_boundaryColor.z * 255.0f);
-                    uint8_t a = (uint8_t)(s_boundaryColor.w * 255.0f);
-                    uint32_t abgr = PackAbgr(a, b, g, r);
-                    ColorBoundaryVertices(*mesh, abgr);
-                    ApplyEditableMeshToInstance(selectedInstance);
-                }
-
-                // Subdivision
-                static int s_subdivideLevels = 1;
-                ImGui::Separator();
-                ImGui::Text("Subdivision");
-                ImGui::SetNextItemWidth(input_width);
-                ImGui::SliderInt("Levels##subdiv", &s_subdivideLevels, 1, 3);
-                if (ImGui::Button("Apply Subdivision"))
-                {
-                    SubdivideMesh(*mesh, s_subdivideLevels);
-                    ApplyEditableMeshToInstance(selectedInstance);
-                }
-
-                // Merge close vertices
-                static float s_mergeEpsilon = 0.001f;
-                ImGui::Separator();
-                ImGui::Text("Merge Vertices");
-                ImGui::SetNextItemWidth(input_width);
-                ImGui::DragFloat("Distance##merge", &s_mergeEpsilon, 0.0001f, 0.0f, 1.0f, "%.5f");
-                if (ImGui::Button("Merge Close Vertices"))
-                {
-                    MergeCloseVertices(*mesh, s_mergeEpsilon);
-                    ApplyEditableMeshToInstance(selectedInstance);
-                }
-
-                // Smoothing
-                static int s_smoothIterations = 1;
-                static float s_smoothFactor = 0.5f;
-                ImGui::Separator();
-                ImGui::Text("Smoothing");
-                ImGui::SetNextItemWidth(input_width);
-                ImGui::SliderInt("Iterations##smooth", &s_smoothIterations, 1, 10);
-                ImGui::SetNextItemWidth(input_width);
-                ImGui::SliderFloat("Factor##smooth", &s_smoothFactor, 0.01f, 1.0f);
-                if (ImGui::Button("Smooth Mesh"))
-                {
-					SubdivideOnce(*mesh); // Subdivide once to add vertices for smoothing
-                    SmoothMesh(*mesh, s_smoothIterations, s_smoothFactor);
-                    ApplyEditableMeshToInstance(selectedInstance);
-                }
-            }
-
-            // Object-level morphing between two instances (transforms & color).
-            ImGui::Separator();
-            ImGui::Text("Morph To Other Object");
-            // Build list of candidate instances (exclude lights and self).
-            std::vector<Instance*> morphCandidates;
-            morphCandidates.reserve(instances.size());
-            for (Instance* inst : instances)
-            {
-                if (!inst || inst == selectedInstance) continue;
-                if (inst->isLight) continue;
-                morphCandidates.push_back(inst);
-            }
-
-            static int s_morphIndex = -1;
-            if (!morphCandidates.empty())
-            {
-                // Clamp stored index if candidate list shrank.
-                if (s_morphIndex >= (int)morphCandidates.size())
-                    s_morphIndex = (int)morphCandidates.size() - 1;
-
-                std::vector<const char*> names;
-                names.reserve(morphCandidates.size());
-                for (Instance* inst : morphCandidates)
-                    names.push_back(inst->name.c_str());
-
-                ImGui::SetNextItemWidth(input_width);
-                ImGui::Combo("Target##morph", &s_morphIndex,
-                    names.data(), (int)names.size());
-
-                static float s_morphT = 0.0f;
-                ImGui::SetNextItemWidth(input_width);
-                ImGui::SliderFloat("Amount##morph", &s_morphT, 0.0f, 1.0f);
-
-                if (s_morphIndex >= 0 && s_morphIndex < (int)morphCandidates.size())
-                {
-                    Instance* target = morphCandidates[s_morphIndex];
-                    if (target)
+                    // Normal mode: show all tools (Boundary, Subdivision, Merge, Smoothing).
+                    static ImVec4 s_boundaryColor = ImVec4(1.0f, 0.1f, 0.1f, 1.0f);
+                  
+                    static int s_subdivideLevels = 1;
+                    ImGui::Separator();
+                    ImGui::Text("Subdivision");
+                    ImGui::SetNextItemWidth(input_width);
+                    ImGui::SliderInt("Levels##subdiv", &s_subdivideLevels, 1, 3);
+                    if (ImGui::Button("Apply Subdivision"))
                     {
-                        float t = s_morphT;
-                        // Simple linear interpolation of transform and color.
-                        for (int i = 0; i < 3; ++i)
-                        {
-                            selectedInstance->position[i] =
-                                selectedInstance->position[i] * (1.0f - t) + target->position[i] * t;
-                            selectedInstance->rotation[i] =
-                                selectedInstance->rotation[i] * (1.0f - t) + target->rotation[i] * t;
-                            selectedInstance->scale[i] =
-                                selectedInstance->scale[i] * (1.0f - t) + target->scale[i] * t;
-                        }
-                        for (int i = 0; i < 4; ++i)
-                        {
-                            selectedInstance->objectColor[i] =
-                                selectedInstance->objectColor[i] * (1.0f - t) + target->objectColor[i] * t;
-                        }
+                        if (mesh) { SubdivideMesh(*mesh, s_subdivideLevels); ApplyEditableMeshToInstance(selectedInstance); }
+                    }
+                    static float s_mergeEpsilon = 0.001f;
+                    ImGui::Separator();
+                    ImGui::Text("Merge Vertices");
+                    ImGui::SetNextItemWidth(input_width);
+                    ImGui::DragFloat("Distance##merge", &s_mergeEpsilon, 0.0001f, 0.0f, 1.0f, "%.5f");
+                    if (ImGui::Button("Merge Close Vertices"))
+                    {
+                        if (mesh) { MergeCloseVertices(*mesh, s_mergeEpsilon); ApplyEditableMeshToInstance(selectedInstance); }
+                    }
+                    static int s_smoothIterations = 1;
+                    static float s_smoothFactor = 0.5f;
+                    ImGui::Separator();
+                    ImGui::Text("Smoothing");
+                    ImGui::SetNextItemWidth(input_width);
+                    ImGui::SliderInt("Iterations##smooth", &s_smoothIterations, 1, 10);
+                    ImGui::SetNextItemWidth(input_width);
+                    ImGui::SliderFloat("Factor##smooth", &s_smoothFactor, 0.01f, 1.0f);
+                    if (ImGui::Button("Smooth Mesh"))
+                    {
+                        if (mesh) { SubdivideOnce(*mesh); SmoothMesh(*mesh, s_smoothIterations, s_smoothFactor); ApplyEditableMeshToInstance(selectedInstance); }
                     }
                 }
             }
-            else
+
+            ImGui::Spacing();
+            if (ImGui::Button("Delete Object"))
             {
-                ImGui::TextDisabled("No other non-light objects available to morph to.");
+                if (selectedInstance->parent)
+                {
+                    auto it = std::find(selectedInstance->parent->children.begin(), selectedInstance->parent->children.end(), selectedInstance);
+                    if (it != selectedInstance->parent->children.end())
+                        gCmdManager.executeCommand(std::make_unique<DeleteInstanceCommand>(selectedInstance, selectedInstance->parent, std::distance(selectedInstance->parent->children.begin(), it)));
+                }
+                else
+                {
+                    auto it = std::find(instances.begin(), instances.end(), selectedInstance);
+                    if (it != instances.end())
+                        gCmdManager.executeCommand(std::make_unique<DeleteInstanceCommand>(selectedInstance, &instances, std::distance(instances.begin(), it)));
+                }
+                selectedInstance = nullptr;
             }
         }
+
     }
 
-    ImGui::Spacing();
-    if (ImGui::Button("Delete Object"))
-    {
-        if (selectedInstance->parent)
-        {
-            auto it = std::find(selectedInstance->parent->children.begin(), selectedInstance->parent->children.end(), selectedInstance);
-            if (it != selectedInstance->parent->children.end())
-                gCmdManager.executeCommand(std::make_unique<DeleteInstanceCommand>(selectedInstance, selectedInstance->parent, std::distance(selectedInstance->parent->children.begin(), it)));
-        }
-        else
-        {
-            auto it = std::find(instances.begin(), instances.end(), selectedInstance);
-            if (it != instances.end())
-                gCmdManager.executeCommand(std::make_unique<DeleteInstanceCommand>(selectedInstance, &instances, std::distance(instances.begin(), it)));
-        }
-        selectedInstance = nullptr;
-    }
-    bool highlighted = highlightVisible;
-    if (ImGui::Checkbox("Show highlight tint", &highlighted)) highlightVisible = highlighted;
 }
 
-int main(void)
-{
+int main(){
     // Initialize GLFW
     if (!glfwInit()) {
         std::cerr << "Failed to initialize GLFW" << std::endl;
@@ -5170,6 +5150,8 @@ int main(void)
     bufferMap["comicbubble6"] = { vbh_comicbubble6, ibh_comicbubble6 };
     bufferMap["comicbubble7"] = { vbh_comicbubble7, ibh_comicbubble7 };
     bufferMap["comicbubble8"] = { vbh_comicbubble8, ibh_comicbubble8 };
+
+    RegisterSharedBuffers(bufferMap);
 
     std::unordered_map<std::string, std::string> importedObjMap;
 
@@ -5785,16 +5767,29 @@ int main(void)
         {
             if (ImGui::IsKeyPressed(ImGuiKey_1)) {
                 currentGizmoOperation = ImGuizmo::TRANSLATE;
+                g_VertexOperationActive = false;
             }
             if (ImGui::IsKeyPressed(ImGuiKey_2)) {
                 currentGizmoOperation = ImGuizmo::ROTATE;
+                g_VertexOperationActive = false;
             }
             if (ImGui::IsKeyPressed(ImGuiKey_3)) {
                 currentGizmoOperation = ImGuizmo::SCALE;
+                g_VertexOperationActive = false;
             }
-            // Delete selected instance with Delete key (undoable)
+            if (ImGui::IsKeyPressed(ImGuiKey_4)) {
+                g_VertexOperationActive = true;
+                g_MeshEditModeActive = true;
+            }
+            // Delete key: in mesh edit mode with vertices selected, delete those vertices; otherwise delete instance (undoable)
             if (ImGui::IsKeyPressed(ImGuiKey_Delete)) {
-                if (selectedInstance)
+                Instance* editInst = GetInstanceWithEditableMesh(selectedInstance);
+                if (g_MeshEditModeActive && !g_SelectedVertices.empty() && editInst)
+                {
+                    MeshData* mesh = GetEditableMeshData(editInst);
+                    if (mesh) { DeleteSelectedVertices(*mesh); ApplyEditableMeshToInstance(selectedInstance); }
+                }
+                else if (selectedInstance)
                 {
                     if (selectedInstance->parent)
                     {
@@ -6825,6 +6820,9 @@ int main(void)
                                                     Instance* childInst = new Instance(instanceCounter++, displayName + "_" + std::to_string(i), displayName,
                                                         0.0f, 0.0f, 0.0f, vbh_imported, ibh_imported);
                                                     childInst->meshNumber = i;
+                                                    childInst->meshData = importedMeshes[i].meshData;
+                                                    childInst->hasMeshData = true;
+                                                    g_InstanceMeshData[childInst->id] = importedMeshes[i].meshData;
 
                                                     aiVector3D scaling, position;
                                                     aiQuaternion rotation;
@@ -7477,18 +7475,78 @@ int main(void)
             bool skipPickingForGizmo = ImGuizmo::IsOver() || ImGuizmo::IsUsing();
             if (InputManager::isMouseClicked(GLFW_MOUSE_BUTTON_LEFT) && mouseIn3DArea && !skipPickingForGizmo)
             {
-                if (InputManager::getSkipPickingPass) {
-                    // Use a dedicated view ID for picking (choose one not used by your normal rendering)
+                Camera& activeCamera = cameras[currentCameraIndex];
+                float view[16];
+                bx::mtxLookAt(view, activeCamera.position, bx::add(activeCamera.position, activeCamera.front), activeCamera.up);
+                float proj[16];
+                bx::mtxProj(proj, activeCamera.fov, float(view3DWidth) / float(view3DHeight), activeCamera.nearClip, activeCamera.farClip, bgfx::getCaps()->homogeneousDepth);
+
+                // Mesh Edit Mode: click on a vertex to select it (or Ctrl+click to add/remove from selection).
+                bool vertexPicked = false;
+                if (g_MeshEditModeActive && selectedInstance)
+                {
+                    Instance* editInst = GetInstanceWithEditableMesh(selectedInstance);
+                    if (editInst)
+                    {
+                        auto mit = g_InstanceMeshData.find(editInst->id);
+                        if (mit != g_InstanceMeshData.end())
+                        {
+                            const MeshData& mesh = mit->second;
+                            if (!mesh.vertices.empty())
+                            {
+                                float world[16];
+                                BuildWorldMatrix(editInst, world);
+                                float viewProj[16];
+                                bx::mtxMul(viewProj, proj, view);
+                                float mouseLocalX = (float)(mouseX_input - (int)g_ViewportRectX);
+                                float mouseLocalY = (float)(mouseY_input - (int)g_ViewportRectY);
+                                const float pickRadius = 28.0f;
+                                int bestVi = -1;
+                                float bestDist2 = pickRadius * pickRadius;
+                                for (int vi = 0; vi < (int)mesh.vertices.size(); ++vi)
+                                {
+                                    const auto& v = mesh.vertices[vi];
+                                    float wx, wy, wz;
+                                    TransformPosition(world, v.x, v.y, v.z, wx, wy, wz);
+                                    float clip[4];
+                                    clip[0] = viewProj[0]*wx + viewProj[4]*wy + viewProj[8]*wz + viewProj[12];
+                                    clip[1] = viewProj[1]*wx + viewProj[5]*wy + viewProj[9]*wz + viewProj[13];
+                                    clip[2] = viewProj[2]*wx + viewProj[6]*wy + viewProj[10]*wz + viewProj[14];
+                                    clip[3] = viewProj[3]*wx + viewProj[7]*wy + viewProj[11]*wz + viewProj[15];
+                                    if (clip[3] <= 0.0f) continue;
+                                    float ndcX = clip[0] / clip[3];
+                                    float ndcY = clip[1] / clip[3];
+                                    float sx = (ndcX * 0.5f + 0.5f) * (float)view3DWidth;
+                                    float sy = (float)view3DHeight - (ndcY * 0.5f + 0.5f) * (float)view3DHeight;
+                                    float dx = sx - mouseLocalX;
+                                    float dy = sy - mouseLocalY;
+                                    float d2 = dx*dx + dy*dy;
+                                    if (d2 < bestDist2) { bestDist2 = d2; bestVi = vi; }
+                                }
+                                if (bestVi >= 0)
+                                {
+                                    vertexPicked = true;
+                                    bool ctrl = InputManager::isKeyPressed(GLFW_KEY_LEFT_CONTROL) || InputManager::isKeyPressed(GLFW_KEY_RIGHT_CONTROL);
+                                    if (ctrl)
+                                    {
+                                        if (g_SelectedVertices.count(bestVi)) g_SelectedVertices.erase(bestVi);
+                                        else g_SelectedVertices.insert(bestVi);
+                                    }
+                                    else
+                                    {
+                                        g_SelectedVertices.clear();
+                                        g_SelectedVertices.insert(bestVi);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (!vertexPicked && InputManager::getSkipPickingPass) {
                     const uint32_t PICKING_VIEW_ID = 0;
                     bgfx::setViewFrameBuffer(PICKING_VIEW_ID, s_pickingFB);
                     bgfx::setViewRect(PICKING_VIEW_ID, 0, 0, PICKING_DIM, PICKING_DIM);
-
-                    // Use the same camera for the picking pass.
-                    Camera& activeCamera = cameras[currentCameraIndex];
-                    float view[16];
-                    bx::mtxLookAt(view, activeCamera.position, bx::add(activeCamera.position, activeCamera.front), activeCamera.up);
-                    float proj[16];
-                    bx::mtxProj(proj, activeCamera.fov, float(view3DWidth) / float(view3DHeight), activeCamera.nearClip, activeCamera.farClip, bgfx::getCaps()->homogeneousDepth);
                     bgfx::setViewTransform(PICKING_VIEW_ID, view, proj);
 
                     // Render each instance with the picking shader.
@@ -7514,72 +7572,50 @@ int main(void)
                     bgfx::setViewTransform(1, view, proj);
                     InputManager::toggleSkipPickingPass();
                 }
-                // Use a dedicated view ID for picking (choose one not used by your normal rendering)
-                const uint32_t PICKING_VIEW_ID = 0;
-                bgfx::setViewFrameBuffer(PICKING_VIEW_ID, s_pickingFB);
-                bgfx::setViewRect(PICKING_VIEW_ID, 0, 0, PICKING_DIM, PICKING_DIM);
-
-                // Use the same camera for the picking pass.
-                Camera& activeCamera = cameras[currentCameraIndex];
-                float view[16];
-                bx::mtxLookAt(view, activeCamera.position, bx::add(activeCamera.position, activeCamera.front), activeCamera.up);
-                float proj[16];
-                bx::mtxProj(proj, activeCamera.fov, float(view3DWidth) / float(view3DHeight), activeCamera.nearClip, activeCamera.farClip, bgfx::getCaps()->homogeneousDepth);
-                bgfx::setViewTransform(PICKING_VIEW_ID, view, proj);
-
-                // Render each instance with the picking shader.
-                for (const Instance* instance : instances)
+                if (!vertexPicked)
                 {
-                    renderInstancePickingRecursive(instance, nullptr, PICKING_VIEW_ID);
-                }
+                    const uint32_t PICKING_VIEW_ID = 0;
+                    bgfx::setViewFrameBuffer(PICKING_VIEW_ID, s_pickingFB);
+                    bgfx::setViewRect(PICKING_VIEW_ID, 0, 0, PICKING_DIM, PICKING_DIM);
+                    bgfx::setViewTransform(PICKING_VIEW_ID, view, proj);
 
-                // Blit the picking render target to the CPU-readable texture.
-                const uint32_t PICKING_BLIT_VIEW = 2;
-                bgfx::blit(PICKING_BLIT_VIEW, s_pickingReadTex, 0, 0, s_pickingRT);
-                // Submit a frame to ensure the blit is complete.
-                bgfx::frame();
+                    for (const Instance* instance : instances)
+                        renderInstancePickingRecursive(instance, nullptr, PICKING_VIEW_ID);
 
-                // Read back the texture data into s_pickingBlitData.
-                bgfx::readTexture(s_pickingReadTex, s_pickingBlitData);
+                    const uint32_t PICKING_BLIT_VIEW = 2;
+                    bgfx::blit(PICKING_BLIT_VIEW, s_pickingReadTex, 0, 0, s_pickingRT);
+                    bgfx::frame();
+                    bgfx::readTexture(s_pickingReadTex, s_pickingBlitData);
 
-                // Convert mouse to viewport-window-local coords for picking.
-                float mouseLocalX = (float)(mouseX_input - (int)g_ViewportRectX);
-                float mouseLocalY = (float)(mouseY_input - (int)g_ViewportRectY);
-                int mouseY_flip = view3DHeight - (int)mouseLocalY;
-                int pickX = (int)(mouseLocalX * (float)PICKING_DIM / (float)view3DWidth);
-                int pickY = (mouseY_flip * PICKING_DIM) / view3DHeight;
+                    float mouseLocalX = (float)(mouseX_input - (int)g_ViewportRectX);
+                    float mouseLocalY = (float)(mouseY_input - (int)g_ViewportRectY);
+                    int mouseY_flip = view3DHeight - (int)mouseLocalY;
+                    int pickX = (int)(mouseLocalX * (float)PICKING_DIM / (float)view3DWidth);
+                    int pickY = (mouseY_flip * PICKING_DIM) / view3DHeight;
+                    pickX = std::max(0, std::min(pickX, PICKING_DIM - 1));
+                    pickY = std::max(0, std::min(pickY, PICKING_DIM - 1));
 
-                // Clamp the coordinates.
-                pickX = std::max(0, std::min(pickX, PICKING_DIM - 1));
-                pickY = std::max(0, std::min(pickY, PICKING_DIM - 1));
+                    int pixelIndex = (pickY * PICKING_DIM + pickX) * 4;
+                    uint8_t r = s_pickingBlitData[pixelIndex + 0];
+                    uint8_t g = s_pickingBlitData[pixelIndex + 1];
+                    uint8_t b = s_pickingBlitData[pixelIndex + 2];
+                    uint32_t pickedID = (r << 16) | (g << 8) | b;
 
-                // Read the pixel (RGBA8: 4 bytes per pixel)
-                int pixelIndex = (pickY * PICKING_DIM + pickX) * 4;
-                uint8_t r = s_pickingBlitData[pixelIndex + 0];
-                uint8_t g = s_pickingBlitData[pixelIndex + 1];
-                uint8_t b = s_pickingBlitData[pixelIndex + 2];
-
-                // Decode the ID from the red channel.
-                uint32_t pickedID = (r << 16) | (g << 8) | b;
-
-                // Search through instances to find the one with this ID.
-                Instance* pickedInstance = findInstanceById(instances, pickedID);
-                if (pickedInstance)
-                {
-                    if (selectedInstance == pickedInstance) {
-                        selectedInstance = nullptr;
+                    Instance* pickedInstance = findInstanceById(instances, pickedID);
+                    if (pickedInstance)
+                    {
+                        if (selectedInstance == pickedInstance)
+                            selectedInstance = nullptr;
+                        else
+                        {
+                            selectedInstance = pickedInstance;
+                            std::cout << "Picked object: " << selectedInstance->name << std::endl;
+                        }
                     }
-                    else {
-                        selectedInstance = pickedInstance;
-                        std::cout << "Picked object: " << selectedInstance->name << std::endl;
-                    }
+                    bgfx::setViewFrameBuffer(0, BGFX_INVALID_HANDLE);
+                    bgfx::setViewRect(1, (uint16_t)g_ViewportRectX, (uint16_t)g_ViewportRectY, (uint16_t)view3DWidth, (uint16_t)view3DHeight);
+                    bgfx::setViewTransform(1, view, proj);
                 }
-                // Detach the picking framebuffer by setting it to BGFX_INVALID_HANDLE.
-                bgfx::setViewFrameBuffer(0, BGFX_INVALID_HANDLE);
-                // Reset the viewport to the 3D viewport window rect (view 1).
-                bgfx::setViewRect(1, (uint16_t)g_ViewportRectX, (uint16_t)g_ViewportRectY, (uint16_t)view3DWidth, (uint16_t)view3DHeight);
-                // Reset the view transforms for your normal scene.
-                bgfx::setViewTransform(1, view, proj);
             }
         }
 
