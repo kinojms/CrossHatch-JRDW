@@ -314,18 +314,60 @@ static void PushVertexDot(std::vector<LineVertex>& out, float cx, float cy, floa
 }
 
 // Billboard quad at (cx,cy,cz) facing the camera using view matrix columns as right/up. 6 vertices.
-static void PushBillboardDot(std::vector<LineVertex>& out, float cx, float cy, float cz, float r, uint32_t abgr, const float* view)
+static void PushBillboardDot(
+    std::vector<LineVertex>& out,
+    float cx, float cy, float cz,
+    float r,
+    uint32_t abgr,
+    const float* view,
+    int segments = 16) // more = smoother
 {
-    float rx = view[0], ry = view[4], rz = view[8];
-    float ux = view[1], uy = view[5], uz = view[9];
-    LineVertex v{}; v.nx = 0; v.ny = 1; v.nz = 0; v.u = 0; v.v = 0; v.abgr = abgr;
-    auto push = [&](float x, float y, float z) { v.x = x; v.y = y; v.z = z; out.push_back(v); };
-    push(cx + r * (rx + ux), cy + r * (ry + uy), cz + r * (rz + uz)); // 0
-    push(cx + r * (rx - ux), cy + r * (ry - uy), cz + r * (rz - uz)); // 1
-    push(cx - r * (rx + ux), cy - r * (ry + uy), cz - r * (rz + uz)); // 2
-    push(cx + r * (rx + ux), cy + r * (ry + uy), cz + r * (rz + uz)); // 0
-    push(cx - r * (rx + ux), cy - r * (ry + uy), cz - r * (rz + uz)); // 2
-    push(cx - r * (rx - ux), cy - r * (ry - uy), cz - r * (rz - uz)); // 3
+    float rx = view[0], ry = view[4], rz = view[8];  // camera right
+    float ux = view[1], uy = view[5], uz = view[9];  // camera up
+
+    LineVertex v{};
+    v.nx = 0; v.ny = 1; v.nz = 0;
+    v.u = 0; v.v = 0;
+    v.abgr = abgr;
+
+    auto push = [&](float x, float y, float z)
+        {
+            v.x = x;
+            v.y = y;
+            v.z = z;
+            out.push_back(v);
+        };
+
+    // Center vertex
+    LineVertex center = v;
+    center.x = cx;
+    center.y = cy;
+    center.z = cz;
+
+    for (int i = 0; i < segments; ++i)
+    {
+        float a0 = (float)i / segments * bx::kPi * 2.0f;
+        float a1 = (float)(i + 1) / segments * bx::kPi * 2.0f;
+
+        float cos0 = bx::cos(a0);
+        float sin0 = bx::sin(a0);
+        float cos1 = bx::cos(a1);
+        float sin1 = bx::sin(a1);
+
+        // Circle points in camera-facing plane
+        float x0 = cx + r * (cos0 * rx + sin0 * ux);
+        float y0 = cy + r * (cos0 * ry + sin0 * uy);
+        float z0 = cz + r * (cos0 * rz + sin0 * uz);
+
+        float x1 = cx + r * (cos1 * rx + sin1 * ux);
+        float y1 = cy + r * (cos1 * ry + sin1 * uy);
+        float z1 = cz + r * (cos1 * rz + sin1 * uz);
+
+        // Triangle fan
+        out.push_back(center);
+        push(x0, y0, z0);
+        push(x1, y1, z1);
+    }
 }
 
 // Thick line segment as a quad (2 triangles, 6 vertices). Perpendicular to edge and view direction.
