@@ -7900,9 +7900,10 @@ int main(){
         }
 
         // Wireframe overlay when mesh edit mode is active: thick blue edges and billboard vertex dots on top of geometry.
+        // Do not call RegisterInstanceMeshFromType here: it would overwrite g_InstanceMeshData with the base template
+        // every frame and undo smoothing/subdivision. The overlay's lazy-init copies from g_BaseMeshData only when missing.
         if (g_MeshEditModeActive && selectedInstance)
         {
-            RegisterInstanceMeshFromType(selectedInstance);
             const Instance* overlayTarget = GetInstanceWithEditableMeshConst(selectedInstance);
             if (overlayTarget)
             {
