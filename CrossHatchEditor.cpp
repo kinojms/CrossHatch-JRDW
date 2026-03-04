@@ -313,6 +313,85 @@ static void PushVertexDot(std::vector<LineVertex>& out, float cx, float cy, floa
     push(cx - r, cy + r, cz);
 }
 
+// Billboard quad at (cx,cy,cz) facing the camera using view matrix columns as right/up. 6 vertices.
+static void PushBillboardDot(
+    std::vector<LineVertex>& out,
+    float cx, float cy, float cz,
+    float r,
+    uint32_t abgr,
+    const float* view,
+    int segments = 16) // more = smoother
+{
+    float rx = view[0], ry = view[4], rz = view[8];  // camera right
+    float ux = view[1], uy = view[5], uz = view[9];  // camera up
+
+    LineVertex v{};
+    v.nx = 0; v.ny = 1; v.nz = 0;
+    v.u = 0; v.v = 0;
+    v.abgr = abgr;
+
+    auto push = [&](float x, float y, float z)
+        {
+            v.x = x;
+            v.y = y;
+            v.z = z;
+            out.push_back(v);
+        };
+
+    // Center vertex
+    LineVertex center = v;
+    center.x = cx;
+    center.y = cy;
+    center.z = cz;
+
+    for (int i = 0; i < segments; ++i)
+    {
+        float a0 = (float)i / segments * bx::kPi * 2.0f;
+        float a1 = (float)(i + 1) / segments * bx::kPi * 2.0f;
+
+        float cos0 = bx::cos(a0);
+        float sin0 = bx::sin(a0);
+        float cos1 = bx::cos(a1);
+        float sin1 = bx::sin(a1);
+
+        // Circle points in camera-facing plane
+        float x0 = cx + r * (cos0 * rx + sin0 * ux);
+        float y0 = cy + r * (cos0 * ry + sin0 * uy);
+        float z0 = cz + r * (cos0 * rz + sin0 * uz);
+
+        float x1 = cx + r * (cos1 * rx + sin1 * ux);
+        float y1 = cy + r * (cos1 * ry + sin1 * uy);
+        float z1 = cz + r * (cos1 * rz + sin1 * uz);
+
+        // Triangle fan
+        out.push_back(center);
+        push(x0, y0, z0);
+        push(x1, y1, z1);
+    }
+}
+
+// Thick line segment as a quad (2 triangles, 6 vertices). Perpendicular to edge and view direction.
+static void PushThickLine(std::vector<LineVertex>& out, float ax, float ay, float az, float bx, float by, float bz,
+    float camX, float camY, float camZ, float halfWidth, uint32_t abgr)
+{
+    float dx = bx - ax, dy = by - ay, dz = bz - az;
+    float mx = (ax + bx) * 0.5f, my = (ay + by) * 0.5f, mz = (az + bz) * 0.5f;
+    float tox = camX - mx, toy = camY - my, toz = camZ - mz;
+    float rx = dy * toz - dz * toy, ry = dz * tox - dx * toz, rz = dx * toy - dy * tox;
+    float len = bx::sqrt(rx * rx + ry * ry + rz * rz);
+    if (len < 1e-6f) return;
+    len = halfWidth / len;
+    rx *= len; ry *= len; rz *= len;
+    LineVertex v{}; v.nx = 0; v.ny = 1; v.nz = 0; v.u = 0; v.v = 0; v.abgr = abgr;
+    auto push = [&](float x, float y, float z) { v.x = x; v.y = y; v.z = z; out.push_back(v); };
+    push(ax + rx, ay + ry, az + rz);
+    push(ax - rx, ay - ry, az - rz);
+    push(bx - rx, by - ry, bz - rz);
+    push(ax + rx, ay + ry, az + rz);
+    push(bx - rx, by - ry, bz - rz);
+    push(bx + rx, by + ry, bz + rz);
+}
+
 static void DrawWorldAxesAndGrid(uint16_t viewId, const Camera& cam, bgfx::ProgramHandle program)
 {
     if (!bgfx::isValid(program))
@@ -774,6 +853,8 @@ CommandManager gCmdManager;
 
 // CPU-side editable mesh data for instances that support geometry operations.
 // Keyed by Instance::id.
+// Per-instance vertex buffer for manipulation: each vertex has xyz (position) and rgb (MeshData.vertices = PosColorVertex).
+// Populated from g_BaseMeshData when instances are created or on first overlay draw. Cube = 8 vertices, 12 edges.
 static std::unordered_map<int, MeshData> g_InstanceMeshData;
 // Base mesh templates keyed by instance type (e.g. "cube", "plane", "mesh").
 // These are cloned into g_InstanceMeshData when instances are created.
@@ -2053,36 +2134,48 @@ static void SmoothMesh(MeshData& mesh, int iterations, float factor)
 
 
 // Mesh Edit Mode overlay: green edges/vertices; selected vertex is blue so it stands out.
-static const uint32_t kNeonGreenEdge   = PackAbgr(0xff, 0x20, 0xaa, 0x20); // lighter neon green for edges
-static const uint32_t kNeonGreenVert   = PackAbgr(0xff, 0x00, 0xff, 0x00); // neon green for vertices
-static const uint32_t kSelectedVertexBlue = PackAbgr(0xff, 0xff, 0x00, 0x00); // selected vertex: blue (ABGR)
+// Wireframe overlay colors: thick blue outline and vertex dots (visible like in reference).
+static const uint32_t kWireframeEdge =
+PackAbgr(0xff, 0x00, 0x55, 0x00); // dark green for edges
 
-// Draw mesh edit overlay: edge outline (lighter neon green), then vertex dots (strongest neon green). Selection highlights.
-static void DrawMeshEditModeOverlay(const Instance* inst, const float* worldMatrix, uint16_t viewId)
+static const uint32_t kWireframeVert =
+PackAbgr(0xff, 0x00, 0x99, 0x00); // medium green for vertices
+
+static const uint32_t kSelectedVertexGreen =
+PackAbgr(0xff, 0x00, 0xff, 0x00); // bright neon green for selected vertex
+
+// Draw mesh edit overlay: thick edges (quads) and billboard vertex dots. Uses view/camera so overlay is always visible.
+// FallbackProgram used when unlitColorProgram is invalid so overlay always draws.
+static void DrawMeshEditModeOverlay(const Instance* inst, const float* worldMatrix, const float* viewMatrix,
+    float camX, float camY, float camZ, uint16_t viewId, bgfx::ProgramHandle fallbackProgram)
 {
     if (!inst || !g_MeshEditModeActive) return;
+    bgfx::ProgramHandle program = bgfx::isValid(unlitColorProgram) ? unlitColorProgram : fallbackProgram;
+    if (!bgfx::isValid(program)) return;
+
     const Instance* target = GetInstanceWithEditableMeshConst(inst);
     if (!target) return;
     auto it = g_InstanceMeshData.find(target->id);
+    if (it == g_InstanceMeshData.end())
+    {
+        auto baseIt = g_BaseMeshData.find(target->type);
+        if (baseIt != g_BaseMeshData.end())
+            g_InstanceMeshData[target->id] = baseIt->second;
+        it = g_InstanceMeshData.find(target->id);
+    }
     if (it == g_InstanceMeshData.end()) return;
     const MeshData& mesh = it->second;
     if (mesh.vertices.empty() || mesh.indices.empty()) return;
 
-    const uint64_t lineState = BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_BLEND_ALPHA | BGFX_STATE_PT_LINES;
-    const uint64_t overlayLineState = BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_DEPTH_TEST_ALWAYS | BGFX_STATE_BLEND_ALPHA | BGFX_STATE_PT_LINES;
+    const float lineHalfWidth = 0.02f;  // thick edges
+    const float rNorm = 0.08f;
+    const float rSel  = 0.11f;
+    const uint64_t triState = BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_BLEND_ALPHA;
+    const uint64_t triStateOnTop = BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_DEPTH_TEST_ALWAYS | BGFX_STATE_BLEND_ALPHA;
 
+    // 1) Edges as thick quads (triangles) so they are clearly visible
     std::vector<LineVertex> edgeVerts;
-    edgeVerts.reserve(mesh.indices.size() * 2);
-
-    auto pushLine = [&](std::vector<LineVertex>& out, float x0, float y0, float z0, float x1, float y1, float z1, uint32_t abgr)
-    {
-        LineVertex a{}; a.x = x0; a.y = y0; a.z = z0; a.nx = 0; a.ny = 1; a.nz = 0; a.abgr = abgr; a.u = a.v = 0;
-        LineVertex b{}; b.x = x1; b.y = y1; b.z = z1; b.nx = 0; b.ny = 1; b.nz = 0; b.abgr = abgr; b.u = b.v = 0;
-        out.push_back(a);
-        out.push_back(b);
-    };
-
-    // 1) Edges: lighter neon green overlay outline (depth-tested first, then overlay on top)
+    edgeVerts.reserve(mesh.indices.size() * 6 * 2); // 6 verts per edge, 2 passes
     for (size_t i = 0; i + 2 < mesh.indices.size(); i += 3)
     {
         uint32_t i0 = mesh.indices[i], i1 = mesh.indices[i + 1], i2 = mesh.indices[i + 2];
@@ -2091,20 +2184,17 @@ static void DrawMeshEditModeOverlay(const Instance* inst, const float* worldMatr
         TransformPosition(worldMatrix, mesh.vertices[i0].x, mesh.vertices[i0].y, mesh.vertices[i0].z, x0, y0, z0);
         TransformPosition(worldMatrix, mesh.vertices[i1].x, mesh.vertices[i1].y, mesh.vertices[i1].z, x1, y1, z1);
         TransformPosition(worldMatrix, mesh.vertices[i2].x, mesh.vertices[i2].y, mesh.vertices[i2].z, x2, y2, z2);
-        uint32_t edgeColor = kNeonGreenEdge;
-        pushLine(edgeVerts, x0, y0, z0, x1, y1, z1, edgeColor);
-        pushLine(edgeVerts, x1, y1, z1, x2, y2, z2, edgeColor);
-        pushLine(edgeVerts, x2, y2, z2, x0, y0, z0, edgeColor);
+        PushThickLine(edgeVerts, x0, y0, z0, x1, y1, z1, camX, camY, camZ, lineHalfWidth, kWireframeEdge);
+        PushThickLine(edgeVerts, x1, y1, z1, x2, y2, z2, camX, camY, camZ, lineHalfWidth, kWireframeEdge);
+        PushThickLine(edgeVerts, x2, y2, z2, x0, y0, z0, camX, camY, camZ, lineHalfWidth, kWireframeEdge);
     }
     if (!edgeVerts.empty())
     {
-        SubmitLineList(viewId, unlitColorProgram, edgeVerts.data(), static_cast<uint32_t>(edgeVerts.size()), lineState);
-        SubmitLineList(viewId, unlitColorProgram, edgeVerts.data(), static_cast<uint32_t>(edgeVerts.size()), overlayLineState);
+        SubmitTriangleList(viewId, program, edgeVerts.data(), static_cast<uint32_t>(edgeVerts.size()), triState);
+        SubmitTriangleList(viewId, program, edgeVerts.data(), static_cast<uint32_t>(edgeVerts.size()), triStateOnTop);
     }
 
-    // 2) Vertex dots: clear visual feedback at every vertex (green; blue when selected). Draw on top so they're always visible and clickable.
-    const float rNorm = 0.045f;
-    const float rSel  = 0.065f;
+    // 2) Vertex dots as billboard quads (always face camera) so all 8 cube vertices are visible
     std::vector<LineVertex> dotVerts;
     dotVerts.reserve(mesh.vertices.size() * 6);
     for (size_t idx = 0; idx < mesh.vertices.size(); ++idx)
@@ -2113,17 +2203,14 @@ static void DrawMeshEditModeOverlay(const Instance* inst, const float* worldMatr
         float cx, cy, cz;
         TransformPosition(worldMatrix, v.x, v.y, v.z, cx, cy, cz);
         bool sel = g_SelectedVertices.count((int)idx) != 0;
-        uint32_t color = sel ? kSelectedVertexBlue : kNeonGreenVert;
+        uint32_t color = sel ? kSelectedVertexGreen : kWireframeVert;
         float r = sel ? rSel : rNorm;
-        PushVertexDot(dotVerts, cx, cy, cz, r, color);
+        PushBillboardDot(dotVerts, cx, cy, cz, r, color, viewMatrix);
     }
     if (!dotVerts.empty())
     {
-        SubmitTriangleList(viewId, unlitColorProgram, dotVerts.data(), static_cast<uint32_t>(dotVerts.size()),
-            BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_BLEND_ALPHA);
-        // Draw dots again on top (no depth test) so they're always visible for selection/click feedback
-        SubmitTriangleList(viewId, unlitColorProgram, dotVerts.data(), static_cast<uint32_t>(dotVerts.size()),
-            BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_DEPTH_TEST_ALWAYS | BGFX_STATE_BLEND_ALPHA);
+        SubmitTriangleList(viewId, program, dotVerts.data(), static_cast<uint32_t>(dotVerts.size()), triState);
+        SubmitTriangleList(viewId, program, dotVerts.data(), static_cast<uint32_t>(dotVerts.size()), triStateOnTop);
     }
 }
 
@@ -7952,6 +8039,20 @@ int main(){
             }
 
             drawInstance(instance, defaultProgram, lightDebugProgram, textProgram, comicProgram, u_comicColor, u_noiseTex, u_diffuseTex, u_objectColor, u_tint, u_inkColor, u_e, u_params, u_extraParams, u_paramsLayer, defaultWhiteTexture, BGFX_INVALID_HANDLE, BGFX_INVALID_HANDLE, instance->objectColor); // your usual shader program
+        }
+
+        // Wireframe overlay when mesh edit mode is active: thick blue edges and billboard vertex dots on top of geometry.
+        // Do not call RegisterInstanceMeshFromType here: it would overwrite g_InstanceMeshData with the base template
+        // every frame and undo smoothing/subdivision. The overlay's lazy-init copies from g_BaseMeshData only when missing.
+        if (g_MeshEditModeActive && selectedInstance)
+        {
+            const Instance* overlayTarget = GetInstanceWithEditableMeshConst(selectedInstance);
+            if (overlayTarget)
+            {
+                float world[16];
+                BuildWorldMatrix(overlayTarget, world);
+                DrawMeshEditModeOverlay(selectedInstance, world, view, activeCamera.position.x, activeCamera.position.y, activeCamera.position.z, 1, defaultProgram);
+            }
         }
 
         // Update your vertex layout to include normals
