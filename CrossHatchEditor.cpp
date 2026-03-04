@@ -781,6 +781,8 @@ static std::unordered_map<std::string, MeshData> g_BaseMeshData;
 
 // --- Mesh Edit Mode (Blender/ProBuilder-style): dedicated editing state ---
 static bool g_MeshEditModeActive = false;
+// When true, left-pane "Vertex Operation" is selected; mesh edit overlay (vertex dots) is shown and object gizmo is hidden.
+static bool g_VertexOperationActive = false;
 enum class MeshEditMode { Object, Vertex, Edge, Face };
 static MeshEditMode g_MeshEditMode = MeshEditMode::Vertex;
 static std::set<int> g_SelectedVertices;
@@ -1098,6 +1100,8 @@ void DrawGizmoForSelected(Instance* selectedInstance, float originX, float origi
             }
             return; // In vertex gizmo mode we don't draw the object gizmo.
         }
+        if (g_VertexOperationActive)
+            return; // Vertex operation: show only vertex overlay, no object gizmo.
     }
 
     // 1) Build world matrix from the selected instance
@@ -1936,160 +1940,7 @@ static void DrawMeshEditModeOverlay(const Instance* inst, const float* worldMatr
             BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_DEPTH_TEST_ALWAYS | BGFX_STATE_BLEND_ALPHA);
     }
 }
-// Draw overlay for selected mesh (edges + vertex dots)
-// Assumes mesh data already exists in g_InstanceMeshData.
-static void DrawSelectedMeshOverlay(const Instance* inst,
-    const float* worldMatrix,
-    uint16_t viewId)
-{
-    if (!inst)
-        return;
 
-    // Validate shader program
-    if (!bgfx::isValid(unlitColorProgram))
-        return;
-
-    // Mesh edit mode handled separately
-    if (g_MeshEditModeActive)
-    {
-        DrawMeshEditModeOverlay(inst, worldMatrix, viewId);
-        return;
-    }
-
-    auto it = g_InstanceMeshData.find(inst->id);
-    if (it == g_InstanceMeshData.end())
-        return;
-
-    const MeshData& mesh = it->second;
-
-    if (mesh.vertices.empty() || mesh.indices.empty())
-        return;
-
-    // ------------------------------------------------------------
-    // Setup render state (ALWAYS render on top)
-    // ------------------------------------------------------------
-
-    const uint64_t overlayState =
-        BGFX_STATE_WRITE_RGB |
-        BGFX_STATE_WRITE_A |
-        BGFX_STATE_BLEND_ALPHA |
-        BGFX_STATE_DEPTH_TEST_ALWAYS;
-
-    const uint64_t lineState =
-        overlayState |
-        BGFX_STATE_PT_LINES;
-
-    const uint64_t triState =
-        overlayState;
-
-    // Because we are manually transforming vertices to world space,
-    // we use identity transform for submission.
-    float identity[16];
-    bx::mtxIdentity(identity);
-    bgfx::setTransform(identity);
-
-    // ------------------------------------------------------------
-    // 1️⃣ Draw Edges
-    // ------------------------------------------------------------
-
-    std::vector<LineVertex> edgeVerts;
-    edgeVerts.reserve(mesh.indices.size() * 2);
-
-    auto pushLine = [&](float x0, float y0, float z0,
-        float x1, float y1, float z1,
-        uint32_t color)
-        {
-            LineVertex a{};
-            a.x = x0; a.y = y0; a.z = z0;
-            a.abgr = color;
-
-            LineVertex b{};
-            b.x = x1; b.y = y1; b.z = z1;
-            b.abgr = color;
-
-            edgeVerts.push_back(a);
-            edgeVerts.push_back(b);
-        };
-
-    for (size_t i = 0; i + 2 < mesh.indices.size(); i += 3)
-    {
-        uint32_t i0 = mesh.indices[i];
-        uint32_t i1 = mesh.indices[i + 1];
-        uint32_t i2 = mesh.indices[i + 2];
-
-        if (i0 >= mesh.vertices.size() ||
-            i1 >= mesh.vertices.size() ||
-            i2 >= mesh.vertices.size())
-            continue;
-
-        float x0, y0, z0;
-        float x1, y1, z1;
-        float x2, y2, z2;
-
-        TransformPosition(worldMatrix,
-            mesh.vertices[i0].x,
-            mesh.vertices[i0].y,
-            mesh.vertices[i0].z,
-            x0, y0, z0);
-
-        TransformPosition(worldMatrix,
-            mesh.vertices[i1].x,
-            mesh.vertices[i1].y,
-            mesh.vertices[i1].z,
-            x1, y1, z1);
-
-        TransformPosition(worldMatrix,
-            mesh.vertices[i2].x,
-            mesh.vertices[i2].y,
-            mesh.vertices[i2].z,
-            x2, y2, z2);
-
-        pushLine(x0, y0, z0, x1, y1, z1, kNeonGreenEdge);
-        pushLine(x1, y1, z1, x2, y2, z2, kNeonGreenEdge);
-        pushLine(x2, y2, z2, x0, y0, z0, kNeonGreenEdge);
-    }
-
-    if (!edgeVerts.empty())
-    {
-        SubmitLineList(viewId,
-            unlitColorProgram,
-            edgeVerts.data(),
-            static_cast<uint32_t>(edgeVerts.size()),
-            lineState);
-    }
-
-    // ------------------------------------------------------------
-    // 2️⃣ Draw Vertex Dots
-    // ------------------------------------------------------------
-
-    std::vector<LineVertex> dotVerts;
-    dotVerts.reserve(mesh.vertices.size() * 6);
-
-    const float radius = 0.018f;
-
-    for (const auto& v : mesh.vertices)
-    {
-        float cx, cy, cz;
-
-        TransformPosition(worldMatrix,
-            v.x, v.y, v.z,
-            cx, cy, cz);
-
-        PushVertexDot(dotVerts,
-            cx, cy, cz,
-            radius,
-            kNeonGreenVert);
-    }
-
-    if (!dotVerts.empty())
-    {
-        SubmitTriangleList(viewId,
-            unlitColorProgram,
-            dotVerts.data(),
-            static_cast<uint32_t>(dotVerts.size()),
-            triState);
-    }
-}
 std::string openFileDialog(bool save) {
 #ifdef _WIN32
     char filePath[MAX_PATH] = { 0 };
@@ -2677,6 +2528,7 @@ bool IsWhite(const float color[4], float epsilon = 0.001f)
 void drawInstance(Instance* instance, bgfx::ProgramHandle defaultProgram, bgfx::ProgramHandle lightDebugProgram, bgfx::ProgramHandle textProgram, bgfx::ProgramHandle comicProgram, bgfx::UniformHandle u_comicColor, bgfx::UniformHandle u_noiseTex, bgfx::UniformHandle u_diffuseTex, bgfx::UniformHandle u_objectColor, bgfx::UniformHandle u_tint, bgfx::UniformHandle u_inkColor, bgfx::UniformHandle u_e, bgfx::UniformHandle u_params, bgfx::UniformHandle u_extraParams, bgfx::UniformHandle u_paramsLayer,
     bgfx::TextureHandle defaultWhiteTexture, bgfx::TextureHandle inheritedNoiseTex, bgfx::TextureHandle inheritedTexture, const float* parentColor = nullptr, const float* parentTransform = nullptr)
 {
+
     float local[16];
     bx::mtxSRT(local,
         instance->scale[0], instance->scale[1], instance->scale[2],
@@ -2869,11 +2721,6 @@ void drawInstance(Instance* instance, bgfx::ProgramHandle defaultProgram, bgfx::
             }
         }
 
-        // When this instance is selected, draw mesh overlay (vertices/edges). Always in Mesh Edit Mode.
-        if (selectedInstance == instance && (highlightVisible || g_MeshEditModeActive))
-        {
-            DrawSelectedMeshOverlay(instance, world, 1);
-        }
     }
     // Determine what color to pass to children.
     // If the effective color is white, then children should use their own objectColor.
@@ -4412,6 +4259,18 @@ static void RenderLeftSidebar()
             dl->AddTriangleFilled(p_to, ImVec2(p_to.x - ah, p_to.y), ImVec2(p_to.x, p_to.y + ah), col);
         };
 
+        auto draw_vertex_icon = [](ImDrawList* dl, ImVec2 p0, ImVec2 p1, ImU32 col)
+        {
+            const ImVec2 c((p0.x + p1.x) * 0.5f, (p0.y + p1.y) * 0.5f);
+            const float w = (p1.x - p0.x);
+            const float h = (p1.y - p0.y);
+            const float r = ImMin(w, h) * 0.12f;
+            // Three dots in a triangle (vertex-like)
+            dl->AddCircleFilled(ImVec2(c.x - 4.0f, c.y - 2.0f), r, col);
+            dl->AddCircleFilled(ImVec2(c.x + 4.0f, c.y - 2.0f), r, col);
+            dl->AddCircleFilled(ImVec2(c.x, c.y + 4.0f), r, col);
+        };
+
         auto operation_button = [&](const char* id, const char* tooltip, ImGuizmo::OPERATION op, bool enabled, auto&& draw_icon)
         {
             const bool selected = (currentGizmoOperation == op);
@@ -4420,7 +4279,10 @@ static void RenderLeftSidebar()
                 ImGui::BeginDisabled();
 
             if (ImGui::Button(id, ImVec2(button_sz, button_sz)))
+            {
                 currentGizmoOperation = op;
+                g_VertexOperationActive = false;
+            }
 
             const ImRect r(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
             ImDrawList* dl = ImGui::GetWindowDrawList();
@@ -4453,6 +4315,30 @@ static void RenderLeftSidebar()
         operation_button("##op_rotate", "Rotate (2)", ImGuizmo::ROTATE, hasSelection, draw_rotate_icon);
         ImGui::Spacing();
         operation_button("##op_scale", "Scale (3)", ImGuizmo::SCALE, hasSelection, draw_scale_icon);
+        ImGui::Spacing();
+        // Vertex operation: mesh edit overlay with dots on vertices (no object gizmo)
+        {
+            const bool selected = g_VertexOperationActive;
+            if (!hasSelection)
+                ImGui::BeginDisabled();
+            if (ImGui::Button("##op_vertex", ImVec2(button_sz, button_sz)))
+            {
+                g_VertexOperationActive = true;
+                g_MeshEditModeActive = true;
+            }
+            const ImRect r(ImGui::GetItemRectMin(), ImGui::GetItemRectMax());
+            ImDrawList* dl = ImGui::GetWindowDrawList();
+            if (selected)
+                dl->AddCircleFilled(ImVec2(r.Min.x + 8.0f, r.Min.y + 8.0f), circle_r, accent);
+            const ImU32 icon_col = hasSelection ? ImGui::GetColorU32(ImGuiCol_Text) : ImGui::GetColorU32(ImGuiCol_TextDisabled);
+            const ImVec2 icon0(r.Min.x + icon_pad, r.Min.y + icon_pad);
+            const ImVec2 icon1(r.Max.x - icon_pad, r.Max.y - icon_pad);
+            draw_vertex_icon(dl, icon0, icon1, icon_col);
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
+                ImGui::SetTooltip("%s", "Vertex Operation (4)");
+            if (!hasSelection)
+                ImGui::EndDisabled();
+        }
 
         // If nothing is selected, hint that the toolbar still affects the gizmo once an object is picked.
         if (!hasSelection)
@@ -4800,68 +4686,7 @@ static void RenderInspectorBody(Instance* selectedInstance, std::vector<Instance
 
                 // Mesh Edit Mode: when active, panel shows ONLY Subdivision and Smoothing.
                 ImGui::Separator();
-                bool wasEditMode = g_MeshEditModeActive;
-                if (ImGui::Checkbox("Mesh Edit Mode", &g_MeshEditModeActive))
-                {
-                    if (!g_MeshEditModeActive)
-                    {
-                        g_SelectedVertices.clear();
-                        g_SelectedEdges.clear();
-                        g_SelectedFaces.clear();
-                    }
-                }
-                if (g_MeshEditModeActive)
-                {
-                    ImGui::Text("Selection");
-                    if (ImGui::SmallButton("Select All Vertices"))
-                    {
-                        g_SelectedVertices.clear();
-                        if (mesh) for (int i = 0; i < (int)mesh->vertices.size(); ++i) g_SelectedVertices.insert(i);
-                    }
-                    ImGui::SameLine();
-                    if (ImGui::SmallButton("Clear Selection"))
-                    {
-                        g_SelectedVertices.clear();
-                        g_SelectedEdges.clear();
-                        g_SelectedFaces.clear();
-                    }
-                    if (!g_SelectedVertices.empty() && mesh)
-                    {
-                        ImGui::SameLine();
-                        if (ImGui::SmallButton("Delete Selected Vertices"))
-                        {
-                            DeleteSelectedVertices(*mesh);
-                            ApplyEditableMeshToInstance(selectedInstance);
-                        }
-                    }
-                    ImGui::Separator();
-                    // --- Only Subdivision and Smoothing in Mesh Edit Mode ---
-                    static int s_subdivideLevels = 1;
-                    ImGui::Text("Subdivision");
-                    ImGui::SetNextItemWidth(input_width);
-                    ImGui::SliderInt("Levels##subdiv", &s_subdivideLevels, 1, 3);
-                    if (ImGui::Button("Apply Subdivision"))
-                    {
-                        if (mesh) { SubdivideMesh(*mesh, s_subdivideLevels); ApplyEditableMeshToInstance(selectedInstance); }
-                    }
-                    static int s_smoothIterations = 1;
-                    static float s_smoothFactor = 0.5f;
-                    ImGui::Separator();
-                    ImGui::Text("Smoothing");
-                    ImGui::SetNextItemWidth(input_width);
-                    ImGui::SliderInt("Iterations##smooth", &s_smoothIterations, 1, 10);
-                    ImGui::SetNextItemWidth(input_width);
-                    ImGui::SliderFloat("Factor##smooth", &s_smoothFactor, 0.01f, 1.0f);
-                    if (ImGui::Button("Smooth Mesh"))
-                    {
-                        if (mesh) {
-                            SubdivideOnce(*mesh);
-                            SmoothMesh(*mesh, s_smoothIterations, s_smoothFactor);
-                            ApplyEditableMeshToInstance(selectedInstance);
-                        }
-                    }
-                }
-                else
+                
                 {
                     // Normal mode: show all tools (Boundary, Subdivision, Merge, Smoothing).
                     static ImVec4 s_boundaryColor = ImVec4(1.0f, 0.1f, 0.1f, 1.0f);
@@ -5942,12 +5767,19 @@ int main(){
         {
             if (ImGui::IsKeyPressed(ImGuiKey_1)) {
                 currentGizmoOperation = ImGuizmo::TRANSLATE;
+                g_VertexOperationActive = false;
             }
             if (ImGui::IsKeyPressed(ImGuiKey_2)) {
                 currentGizmoOperation = ImGuizmo::ROTATE;
+                g_VertexOperationActive = false;
             }
             if (ImGui::IsKeyPressed(ImGuiKey_3)) {
                 currentGizmoOperation = ImGuizmo::SCALE;
+                g_VertexOperationActive = false;
+            }
+            if (ImGui::IsKeyPressed(ImGuiKey_4)) {
+                g_VertexOperationActive = true;
+                g_MeshEditModeActive = true;
             }
             // Delete key: in mesh edit mode with vertices selected, delete those vertices; otherwise delete instance (undoable)
             if (ImGui::IsKeyPressed(ImGuiKey_Delete)) {
